@@ -55,7 +55,9 @@ def tun():
     $routes = @(Get-NetRoute -InterfaceIndex $index -AddressFamily IPv4 |
       Where-Object DestinationPrefix -eq '198.18.0.0/15')
     $dns = @(Get-DnsClientServerAddress -InterfaceIndex $index -AddressFamily IPv4).ServerAddresses
-    @{index=$index;fixture_route=($routes.Count -eq 1);dns=@($dns)} | ConvertTo-Json -Compress
+    $defaults = @(Get-NetRoute -InterfaceIndex $index -AddressFamily IPv4 |
+      Where-Object DestinationPrefix -eq '0.0.0.0/0')
+    @{index=$index;fixture_route=($routes.Count -eq 1);dns=@($dns);automatic_default=($defaults.Count -gt 0)} | ConvertTo-Json -Compress
     """)
 
 
@@ -64,6 +66,10 @@ def prepare_tun(info, origin):
     if not info['fixture_route'] or not info['dns']:
         raise RuntimeError('missing_tun_routes_or_dns')
     index = int(info['index'])
+    # Windows can create an on-link default along with the adapter address.
+    # Keep the fixture bounded even when that route is present.
+    if info['automatic_default']:
+        ps(f"Get-NetRoute -InterfaceIndex {index} -DestinationPrefix '0.0.0.0/0' | Remove-NetRoute -Confirm:$false | Out-Null")
     os.environ['LIWETUN_CI_ORIGIN'] = origin
     # Preserve ordinary endpoint egress. Create an exact task-owned physical
     # host route only when none exists; never alter/delete a pre-existing route.
@@ -78,6 +84,7 @@ def prepare_tun(info, origin):
     @{created=$true;index=$physical.InterfaceIndex} | ConvertTo-Json -Compress
     """)
     ps(f"New-NetRoute -InterfaceIndex {index} -DestinationPrefix ($env:LIWETUN_CI_ORIGIN + '/32') -NextHop '0.0.0.0' -RouteMetric 5000 -PolicyStore ActiveStore | Out-Null")
+    ps(f"if (@(Find-NetRoute -RemoteIPAddress $env:LIWETUN_CI_ORIGIN | Where-Object InterfaceIndex -eq {index}).Count) {{ throw 'Endpoint egress loop' }}")
 
 
 def remove_physical_route():
@@ -258,9 +265,17 @@ def main():
             delivered = dns = False
             probe_error = None
             dns_bytes = {key: 0 for key in before}
+            idle_bytes = {key: 0 for key in before}
+            startup_bytes = {key: 0 for key in before}
             index = int(info['index']) if info else 0
             if info and info['fixture_route']:
                 prepare_tun(info, origin)
+                idle_before = totals()
+                time.sleep(1)
+                idle_after = totals()
+                idle_bytes = {key: idle_after[key] - idle_before[key] for key in before}
+                startup_bytes = {key: idle_after[key] - before[key] for key in before}
+                before = idle_after  # Measure the controlled probes separately.
                 delivered = https_probe(index, origin)
                 probe_error = PROBE_ERROR
                 if not name.startswith('wrong-'):
@@ -293,12 +308,17 @@ def main():
             no_direct_fallback = not https_probe(index, origin) if index else not delivered
             positive = not name.startswith('wrong-')
             transport = delta[protocol] > 0 and all(delta[key] == 0 for key in delta if key != protocol)
+            bounded_bytes = sum(idle_bytes.values()) < 16384 and sum(delta.values()) < 524288
             passed = cleaned and no_direct_fallback and (
-                (delivered and dns and transport and dns_bytes[protocol] > 0) if positive
+                (delivered and dns and transport and dns_bytes[protocol] > 0 and bounded_bytes) if positive
                 else (not delivered and sum(delta.values()) == 0))
             result['cases'].append({'case': name, 'tls_https_delivered': delivered, 'dns_fixture_answer': dns,
                                     'endpoint_bytes_by_transport': delta, 'routes_dns_adapter_restored': cleaned,
                                     'dns_endpoint_bytes_by_transport': dns_bytes, 'https_probe_error': probe_error,
+                                    'idle_endpoint_bytes_by_transport': idle_bytes,
+                                    'startup_endpoint_bytes_by_transport': startup_bytes,
+                                    'automatic_tun_default_removed': bool(info and info['automatic_default']),
+                                    'bounded_bytes': bounded_bytes,
                                     'closed_interface_denies_delivery': no_direct_fallback, 'passed': passed})
             print('network_case:' + name + (':passed' if passed else ':failed'), flush=True)
             endpoint.close('quit')

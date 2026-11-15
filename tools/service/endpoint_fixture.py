@@ -22,7 +22,9 @@ def dns_server(stop):
                 continue
             # Exact synthetic A question only. No upstream DNS/public query.
             question = b'\x07liwetun\x07invalid\x00\x00\x01\x00\x01'
-            if len(packet) >= 12 and packet[12:] == question:
+            # DnsLibs may append EDNS records. Match the single exact question;
+            # optional additional records do not change this fixture's answer.
+            if packet[4:6] == b'\x00\x01' and packet[12:12 + len(question)] == question:
                 response = packet[:2] + b'\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00'
                 response += question + b'\xc0\x0c\x00\x01\x00\x01\x00\x00\x00\x00\x00\x04\xc0\x00\x02\x7b'
                 sock.sendto(response, address)
