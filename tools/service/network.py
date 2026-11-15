@@ -24,7 +24,7 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 INIT_STAGE = 'arguments'
 PROBE_ERROR = None
-PHYSICAL_ROUTE = None
+PHYSICAL_ROUTES = []
 
 
 def ps(script):
@@ -62,7 +62,6 @@ def tun():
 
 
 def prepare_tun(info, origin):
-    global PHYSICAL_ROUTE
     if not info['fixture_route'] or not info['dns']:
         raise RuntimeError('missing_tun_routes_or_dns')
     index = int(info['index'])
@@ -71,28 +70,40 @@ def prepare_tun(info, origin):
     if info['automatic_default']:
         ps(f"Get-NetRoute -InterfaceIndex {index} -DestinationPrefix '0.0.0.0/0' | Remove-NetRoute -Confirm:$false | Out-Null")
     os.environ['LIWETUN_CI_ORIGIN'] = origin
-    # Preserve ordinary endpoint egress. Create an exact task-owned physical
-    # host route only when none exists; never alter/delete a pre-existing route.
-    PHYSICAL_ROUTE = ps("""
-    $prefix = $env:LIWETUN_CI_ORIGIN + '/32'
-    $existing = @(Get-NetRoute -DestinationPrefix $prefix -ErrorAction SilentlyContinue)
-    if ($existing.Count) { @{created=$false} | ConvertTo-Json -Compress; exit }
-    $physical = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -AddressFamily IPv4 |
-      Sort-Object RouteMetric | Select-Object -First 1
-    if (!$physical) { throw 'Missing physical route' }
-    New-NetRoute -DestinationPrefix $prefix -InterfaceIndex $physical.InterfaceIndex -NextHop $physical.NextHop -RouteMetric 0 -PolicyStore ActiveStore | Out-Null
-    @{created=$true;index=$physical.InterfaceIndex} | ConvertTo-Json -Compress
-    """)
+    # The endpoint shares Windows routing with the client. Preserve physical
+    # egress for both the HTTPS origin and SDK-configured DNS destinations;
+    # otherwise original-destination DNS forwarded by the endpoint can re-enter
+    # the TUN's DNS host routes. Test sockets still explicitly bind to TUN.
+    for address in dict.fromkeys([origin] + info['dns']):
+        address = str(ipaddress.IPv4Address(address))
+        os.environ['LIWETUN_CI_ROUTE_ADDRESS'] = address
+        route = ps(f"""
+        $prefix = $env:LIWETUN_CI_ROUTE_ADDRESS + '/32'
+        $existing = @(Get-NetRoute -DestinationPrefix $prefix -ErrorAction SilentlyContinue |
+          Where-Object InterfaceIndex -ne {index})
+        if ($existing.Count) {{ @{{created=$false}} | ConvertTo-Json -Compress; exit }}
+        $physical = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -AddressFamily IPv4 |
+          Sort-Object RouteMetric | Select-Object -First 1
+        if (!$physical) {{ throw 'Missing physical route' }}
+        New-NetRoute -DestinationPrefix $prefix -InterfaceIndex $physical.InterfaceIndex -NextHop $physical.NextHop -RouteMetric 0 -PolicyStore ActiveStore | Out-Null
+        @{{created=$true;index=$physical.InterfaceIndex}} | ConvertTo-Json -Compress
+        """)
+        PHYSICAL_ROUTES.append({'address': address, **route})
+        if address != origin:
+            ps(f"Set-NetRoute -InterfaceIndex {index} -DestinationPrefix ($env:LIWETUN_CI_ROUTE_ADDRESS + '/32') -RouteMetric 5000 -Confirm:$false | Out-Null")
+            ps(f"if (@(Find-NetRoute -RemoteIPAddress $env:LIWETUN_CI_ROUTE_ADDRESS | Where-Object InterfaceIndex -eq {index}).Count) {{ throw 'Endpoint DNS egress loop' }}")
     ps(f"New-NetRoute -InterfaceIndex {index} -DestinationPrefix ($env:LIWETUN_CI_ORIGIN + '/32') -NextHop '0.0.0.0' -RouteMetric 5000 -PolicyStore ActiveStore | Out-Null")
     ps(f"if (@(Find-NetRoute -RemoteIPAddress $env:LIWETUN_CI_ORIGIN | Where-Object InterfaceIndex -eq {index}).Count) {{ throw 'Endpoint egress loop' }}")
 
 
 def remove_physical_route():
-    global PHYSICAL_ROUTE
-    if PHYSICAL_ROUTE and PHYSICAL_ROUTE['created']:
-        index = int(PHYSICAL_ROUTE['index'])
-        ps(f"Remove-NetRoute -InterfaceIndex {index} -DestinationPrefix ($env:LIWETUN_CI_ORIGIN + '/32') -RouteMetric 0 -Confirm:$false | Out-Null")
-    PHYSICAL_ROUTE = None
+    while PHYSICAL_ROUTES:
+        route = PHYSICAL_ROUTES[-1]
+        if route['created']:
+            os.environ['LIWETUN_CI_ROUTE_ADDRESS'] = route['address']
+            index = int(route['index'])
+            ps(f"Remove-NetRoute -InterfaceIndex {index} -DestinationPrefix ($env:LIWETUN_CI_ROUTE_ADDRESS + '/32') -RouteMetric 0 -Confirm:$false | Out-Null")
+        PHYSICAL_ROUTES.pop()
 
 
 class Child:
