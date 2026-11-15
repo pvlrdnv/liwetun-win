@@ -22,6 +22,7 @@ import threading
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
+INIT_STAGE = 'arguments'
 
 
 def ps(script):
@@ -164,6 +165,7 @@ def wait_clean(baseline):
 
 
 def main():
+    global INIT_STAGE
     parser = argparse.ArgumentParser()
     parser.add_argument('--client', type=Path, required=True)
     args = parser.parse_args()
@@ -176,19 +178,28 @@ def main():
     directory.mkdir(exist_ok=True, parents=True)
     wsl = ['wsl.exe', '-d', distro, '--']
     def linux(path):
-        return subprocess.check_output(wsl + ['wslpath', '-u', str(path)], text=True, timeout=10).strip()
+        # Legacy WSL1 command dispatch passes through a shell. Forward slashes
+        # prevent unquoted backslashes in drive paths from being consumed.
+        return subprocess.check_output(wsl + ['wslpath', '-u', path.as_posix()],
+                                       text=True, stderr=subprocess.DEVNULL, timeout=10).strip()
+    INIT_STAGE = 'linux_paths'
     fixture = linux(ROOT / 'tools/service/endpoint_fixture.py')
     folder = linux(directory)
     endpoint_binary = linux(ROOT / 'build/endpoint/trusttunnel_endpoint')
+    INIT_STAGE = 'synthetic_certificates'
     subprocess.run(wsl + ['python3', fixture, folder, endpoint_binary, 'prepare'],
                    check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)
+    INIT_STAGE = 'synthetic_profile_generator'
     subprocess.run(['cargo', 'run', '--manifest-path', str(ROOT / 'native/trusttunnel_bridge/Cargo.toml'),
                     '--locked', '--release', '--example', 'network_fixture', '--', str(directory)],
                    check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
+    INIT_STAGE = 'public_origin_resolution'
     origin = socket.getaddrinfo('example.com', 443, socket.AF_INET, socket.SOCK_STREAM)[0][4][0]
     if not ipaddress.ip_address(origin).is_global:
         raise RuntimeError('public_example_origin_required')
+    INIT_STAGE = 'baseline_snapshot'
     baseline = snapshot()
+    INIT_STAGE = 'preexisting_adapter_check'
     if tun() is not None:
         raise RuntimeError('preexisting_adapter')
     result = {'release_ready': False, 'mode': 'interface_bound_ipv4_default_route_high_metric',
@@ -275,7 +286,13 @@ def main():
 if __name__ == '__main__':
     try:
         raise SystemExit(main())
-    except Exception:
+    except Exception as error:
         # The caller records the fixed failure; no traceback/profile/core output.
-        print('network_fixture_initialization_failed')
+        result = {'all_passed': False, 'release_ready': False, 'failed_stage': INIT_STAGE,
+                  'error_type': type(error).__name__,
+                  'subprocess_exit': error.returncode if isinstance(error, subprocess.CalledProcessError) else None}
+        destination = ROOT / 'build/service-evidence/network.json'
+        destination.parent.mkdir(exist_ok=True, parents=True)
+        destination.write_text(json.dumps(result, indent=2) + '\n')
+        print('network_fixture_initialization_failed:' + INIT_STAGE)
         raise SystemExit(1)
