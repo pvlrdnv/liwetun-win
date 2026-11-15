@@ -90,6 +90,20 @@ try {
     $runtimeReady = $query.runtime_ready
     $checks.Add('signed_owner_query')
     $checks.Add('unknown_metrics_and_core_state_preserved')
+    $holding = [System.Diagnostics.Process]::new()
+    $holding.StartInfo = [System.Diagnostics.ProcessStartInfo]::new($client, '--hold-pipe')
+    $holding.StartInfo.UseShellExecute = $false
+    $holding.StartInfo.RedirectStandardOutput = $true
+    try {
+        if (!$holding.Start() -or $holding.StandardOutput.ReadLine() -ne 'held') { throw 'Busy-pipe fixture failed' }
+        $queued = (& $client --query | ConvertFrom-Json)
+        if ($LASTEXITCODE -ne 0 -or $queued.code -ne 0) { throw 'Busy-pipe query failed' }
+        if (!$holding.WaitForExit(5000) -or $holding.ExitCode -ne 0) { throw 'Busy-pipe fixture did not close' }
+    } finally {
+        if (!$holding.HasExited) { $holding.Kill(); $holding.WaitForExit() }
+        $holding.Dispose()
+    }
+    $checks.Add('busy_pipe_waits_without_resending')
     $invalid = (& $client --invalid-profile | ConvertFrom-Json)
     if ($LASTEXITCODE -ne 0 -or $invalid.code -ne 5) { throw 'Malformed profile was not rejected before core execution' }
     $checks.Add('invalid_profile_denied')

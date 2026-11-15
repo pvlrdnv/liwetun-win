@@ -1,5 +1,18 @@
 #include "pipe_io.h"
+#include "protocol.h"
 namespace liwetun {
+Handle OpenControlPipe() {
+  // Wait only for transport availability; never resend a request whose outcome
+  // is unknown. The server may still be disconnecting the previous client.
+  for (unsigned attempt = 0; attempt < 8; ++attempt) {
+    HANDLE pipe = CreateFileW(kPipeName, GENERIC_READ | GENERIC_WRITE, 0, nullptr,
+        OPEN_EXISTING, FILE_FLAG_OVERLAPPED | SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION, nullptr);
+    if (pipe != INVALID_HANDLE_VALUE) return Handle(pipe);
+    if (GetLastError() != ERROR_PIPE_BUSY) return {};
+    WaitNamedPipeW(kPipeName, 250);
+  }
+  return {};
+}
 bool PipeIo(HANDLE pipe, HANDLE stop, void* buffer, DWORD length, bool write) {
   DWORD offset = 0;
   while (offset < length) {

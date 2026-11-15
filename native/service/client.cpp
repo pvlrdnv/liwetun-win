@@ -31,8 +31,7 @@ Reply ServiceRequest(Command command, const std::string& profile, bool start_ser
     if (manager) CloseServiceHandle(manager);
     if (!started) { reply.code = Code::ServiceUnavailable; return reply; }
   }
-  Handle pipe(CreateFileW(kPipeName, GENERIC_READ | GENERIC_WRITE, 0, nullptr,
-      OPEN_EXISTING, FILE_FLAG_OVERLAPPED | SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION, nullptr));
+  Handle pipe = OpenControlPipe();
   reply.code = Code::ServiceUnavailable;
   if (!pipe || pipe.get() == INVALID_HANDLE_VALUE) return reply;
   if (!VerifyServer(pipe.get(), client)) { reply.code = Code::Denied; return reply; }

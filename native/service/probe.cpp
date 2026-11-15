@@ -20,6 +20,13 @@ std::optional<bool> AdapterPresent(const wchar_t* alias) {
 }
 int wmain(int argc, wchar_t** argv) {
   const std::wstring mode = argc >= 2 ? argv[1] : L"";
+  if (mode == L"--hold-pipe") {
+    Handle pipe = OpenControlPipe();
+    if (!pipe) return 52;
+    std::cout << "held" << std::endl;
+    Sleep(750);
+    return 0;
+  }
   if (mode == L"--network-session" && argc == 3) {
     // Keep the authenticated lease process alive while the external CI harness
     // probes its own TUN. Never print the profile or accept arbitrary commands.
@@ -140,9 +147,9 @@ int wmain(int argc, wchar_t** argv) {
     return 0;
   }
   if (mode == L"--attack" || mode == L"--bad-frame") {
-    Handle pipe(CreateFileW(kPipeName, GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING,
-        FILE_FLAG_OVERLAPPED | SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION, nullptr));
-    if (!pipe || pipe.get() == INVALID_HANDLE_VALUE) { std::cout << "rejected\n"; return 0; }
+    Handle pipe = OpenControlPipe();
+    // An unavailable server is not evidence of authorization rejection.
+    if (!pipe) { std::cout << "unavailable\n"; return 53; }
     Request request{};
     request.nonce = 9;
     if (mode == L"--bad-frame") request.length = kMaxPayload + 1;
