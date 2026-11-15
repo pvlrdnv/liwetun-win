@@ -1,0 +1,74 @@
+name: Windows native import check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-import:
+    runs-on: windows-2022
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install pinned development tools on disposable runner
+        run: |
+          $flutterDir = Join-Path $env:RUNNER_TEMP 'liwetun-flutter'
+          git clone --depth 1 --branch 3.38.10 https://github.com/flutter/flutter.git $flutterDir
+          if ($LASTEXITCODE -ne 0) { throw 'Flutter checkout failed' }
+          $revision = (git -C $flutterDir rev-parse HEAD).Trim()
+          if ($revision -ne 'c6f67dede3d4aa1aa7a69dd56a3494a5cde6cc80') { throw 'Flutter revision mismatch' }
+          (Join-Path $flutterDir 'bin') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          rustup toolchain install 1.95.0 --profile minimal --component rustfmt
+          if ($LASTEXITCODE -ne 0) { throw 'Rust install failed' }
+      - name: Verify native formatting
+        run: cargo fmt --manifest-path native/trusttunnel_bridge/Cargo.toml -- --check
+      - name: Test actual official decoder through the C ABI
+        run: cargo test --manifest-path native/trusttunnel_bridge/Cargo.toml --locked
+      - name: Prepare synthetic fixtures without printing links
+        run: |
+          New-Item -ItemType Directory -Force build | Out-Null
+          cargo run --manifest-path native/trusttunnel_bridge/Cargo.toml --locked --release --example synthetic_fixture -- build/native-fixture.json
+          if ($LASTEXITCODE -ne 0) { throw 'Synthetic fixture generation failed' }
+      - name: Verify Dart dependency lock
+        run: |
+          flutter pub get --enforce-lockfile
+          if ($LASTEXITCODE -ne 0) { throw 'Flutter dependency resolution failed' }
+          git diff --exit-code -- pubspec.lock
+          if ($LASTEXITCODE -ne 0) { throw 'Dart dependency lock changed' }
+      - name: Analyze application
+        run: flutter analyze --no-pub
+      - name: Run application and privacy unit tests
+        run: flutter test --no-pub --reporter expanded
+      - name: Build Windows release shell with static native parser
+        run: flutter build windows --release --no-pub
+      - name: Exercise real Windows channel without installing or starting a service
+        timeout-minutes: 10
+        run: flutter test integration_test/native_bridge_test.dart -d windows --no-pub --dart-define-from-file=build/native-fixture.json
+      - name: Write build evidence
+        run: |
+          $exe = 'build/windows/x64/runner/Release/liwetun.exe'
+          if (!(Test-Path $exe)) { throw 'Expected Windows executable missing' }
+          $report = [ordered]@{
+            source_commit = '${{ github.sha }}'
+            decoder_revision = '48f424c0874eb6f6374ee84492c5cd55aa04dca9'
+            runner_os = 'windows-2022'
+            executable_sha256 = (Get-FileHash -Algorithm SHA256 $exe).Hash.ToLowerInvariant()
+            native_import = 'verified'
+            tunnel_service = 'not_installed'
+            network_tests = 'not_run'
+            release_ready = $false
+          }
+          $report | ConvertTo-Json | Set-Content -Encoding utf8 build/windows-import-evidence.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: windows-import-evidence
+          path: build/windows-import-evidence.json
+          retention-days: 7
+          if-no-files-found: error

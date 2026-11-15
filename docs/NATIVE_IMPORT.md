@@ -1,0 +1,63 @@
+# Native TrustTunnel import — implementation and boundaries
+
+The real TrustTunnel binary deep-link parser is integrated through a small Rust
+static library, a C ABI, the Flutter Windows C++ runner and a typed Dart channel.
+The parser is the official crate used by TrustTunnelClient's Windows SDK:
+
+- SDK interface research: TrustTunnelClient
+  `a1ce3f9d2572e8c3fd6c31e6c31881d307131f40`.
+- Actual parser dependency: TrustTunnel/TrustTunnel
+  `48f424c0874eb6f6374ee84492c5cd55aa04dca9` (upstream tag v1.3.0-beta.2).
+- Rust 1.95.0; Cargo.lock includes all transitive registry checksums.
+
+This is an import bridge, not the complete SDK tunnel/service integration.
+No random DLL is loaded, logger initialized, network request made or Windows
+service installed. The method channel has two operations: `capabilities` and
+`inspectTrustTunnel`. No generic privileged command, TOML runner or shell call.
+
+`canConnect` is hardcoded false. Successful parsing is displayed separately
+from unknown entitlement/reachability and never changes the connected state.
+Without the native platform, a link may be retained as explicitly unvalidated.
+On Windows, SDK-invalid, TLS-bypass or unsupported TT links are rejected.
+Embedded TT version-2 subscription URLs require a separate transport contract
+and are rejected even when accompanied by fallback server parameters.
+
+## Why not link the full C++ adapter for import
+
+SDK `trusttunnel_decode_deeplink` logs the parser's free-form error. The service
+has connection-info callbacks and optional persistent per-connection ring
+storage; these are outside the client's privacy requirements. Using the same
+official parser directly allows dropping its error without invoking that logger.
+
+Before tunnel integration, decide how to disable/filter core logs before any
+write and eliminate per-destination collection in the service path. Leaving
+the Dart callback unset alone does not prove collection is disabled upstream.
+The service signer check also accepts certain intact self-signed/expired chains
+for signer matching; release trust, caller identity/session ACL, service identity
+verification and installer directory ACL require separate qualification.
+
+## Verification
+
+The manual GitHub workflow `Windows native import check` runs on a disposable
+Windows Server 2022 runner with Visual Studio tooling. It pins Flutter and Rust,
+runs Rust C-ABI tests, Dart tests, compiles the real Windows shell and runs a
+desktop integration test through the actual C++ channel. Synthetic HTTP/2 and
+HTTP/3 fixtures come from the official encoder; no real credentials are used.
+It never installs/starts a tunnel/service and uploads only build-evidence JSON,
+not an unsigned application package. This is distinct from Windows 11 clean-host
+network/DNS/IPv6/recovery acceptance, which remains open.
+
+Run locally on a Windows development machine with Visual Studio C++ tools,
+Rust 1.95.0 and the pinned Flutter:
+
+```powershell
+cargo test --manifest-path native/trusttunnel_bridge/Cargo.toml --locked
+New-Item -ItemType Directory -Force build | Out-Null
+cargo run --manifest-path native/trusttunnel_bridge/Cargo.toml --locked --release --example synthetic_fixture -- build/native-fixture.json
+flutter pub get --enforce-lockfile
+flutter test integration_test/native_bridge_test.dart -d windows --no-pub --dart-define-from-file=build/native-fixture.json
+```
+
+The owner's accessible host is Windows 10 x64 with no detected Flutter or Visual
+Studio toolchain. Read-only preflight only: no host tools were installed, no
+certificate store, network settings, drivers or services were changed.

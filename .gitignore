@@ -15,3 +15,4 @@ windows/flutter/ephemeral/
 .idea/
 *.iml
 .DS_Store
+native/trusttunnel_bridge/target/

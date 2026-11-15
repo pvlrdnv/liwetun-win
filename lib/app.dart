@@ -380,7 +380,9 @@ class _HomeState extends State<_Home> {
               subtitle: Text(
                 connection.link.kind == ImportKind.subscription
                     ? 'Ожидает загрузки · обновлений ещё не было'
-                    : 'Доступность и право доступа не проверены',
+                    : connection.inspection == null
+                    ? 'Формат ожидает нативной проверки · доступность неизвестна'
+                    : 'Формат проверен · доступность и право доступа неизвестны',
               ),
               trailing: connection.link.kind == ImportKind.subscription
                   ? null
@@ -400,7 +402,10 @@ class _HomeState extends State<_Home> {
               ListTile(
                 title: Text(connection.title),
                 subtitle: Text(
-                  connection.link.protocol?.name ?? 'HTTPS-подписка',
+                  connection.inspection == null
+                      ? connection.link.protocol?.name ?? 'HTTPS-подписка'
+                      : 'TrustTunnel · HTTP/${connection.inspection!.transport} · '
+                            '${connection.inspection!.customCertificate == true ? "сертификат профиля" : "системное доверие"}',
                 ),
               ),
             const ListTile(
@@ -526,7 +531,10 @@ class _HomeState extends State<_Home> {
       await Future<void>.delayed(const Duration(milliseconds: 300));
       text.dispose();
     }
-    if (result != null && mounted) _message(widget.controller.import(result));
+    if (result != null && mounted) {
+      final message = await widget.controller.importValidated(result);
+      if (mounted) _message(message);
+    }
   }
 
   void _unavailable() {

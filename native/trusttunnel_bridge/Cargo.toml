@@ -1,0 +1,15 @@
+[package]
+name = "liwetun-native"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "liwetun_native"
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+trusttunnel-deeplink = { git = "https://github.com/TrustTunnel/TrustTunnel", rev = "48f424c0874eb6f6374ee84492c5cd55aa04dca9" }
+
+[profile.release]
+panic = "unwind"

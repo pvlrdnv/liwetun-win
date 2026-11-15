@@ -2,8 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liwetun/app.dart';
 import 'package:liwetun/app_controller.dart';
+import 'package:liwetun/domain/import_link.dart';
+import 'package:liwetun/native/trusttunnel.dart';
 
 import 'fixtures.dart';
+
+final class _UnavailableInspector implements TrustTunnelInspector {
+  @override
+  Future<NativeInspection> inspect(SecretLink link) async =>
+      const NativeInspection(NativeImportStatus.unavailable);
+}
 
 void main() {
   for (final size in [const Size(1280, 800), const Size(480, 800)]) {
@@ -38,7 +46,7 @@ void main() {
   testWidgets('import obscures input and never reports a live connection', (
     tester,
   ) async {
-    final controller = AppController();
+    final controller = AppController(inspector: _UnavailableInspector());
     addTearDown(controller.dispose);
     await tester.pumpWidget(LiWeTunApp(controller: controller));
     await tester.ensureVisible(find.text('Добавить подключение'));

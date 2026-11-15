@@ -1,5 +1,15 @@
 # Development checkpoint — 2026-11-15
 
+## Native import continuation — IN PROGRESS
+
+Owner authorized the next native stage. Added official-parser Rust staticlib,
+bounded C ABI, Windows C++/Dart method channel and native rejection handling in
+UI. SDK/parser source revisions and Cargo.lock pinned; Apache license retained.
+Added Rust tests, desktop integration test and manual disposable-Windows CI.
+This bridge cannot connect a tunnel. Native build/test results are pending;
+the previous checkpoint below records the initial slice only.
+See [native integration boundaries](NATIVE_IMPORT.md).
+
 Scope: LOCAL client development only. Product LiWeTun; GitHub description
 `LiWeTun — Windows connection client`. Independent private repository:
 https://github.com/pvlrdnv/liwetun-win

@@ -9,6 +9,7 @@ import '../domain/import_link.dart';
 enum EventId {
   appStarted,
   importAccepted,
+  nativeImportValidated,
   importRejected,
   coreUnavailable,
   reportSaved,
