@@ -1,8 +1,10 @@
 # Windows native acceptance — OPEN
 
 No Windows result can be inferred from Dart unit tests or a Linux build.
-Run on a disposable clean Windows 11 x64 host with synthetic credentials and
-a local test endpoint. A real LikeWeb node requires separate authorization.
+Run separately on Windows 10 x64 and Windows 11 x64 with synthetic credentials
+and a test endpoint. The owner has a separate Windows 10 PC; the corporate
+tunnel on the development device stays operating. See
+[compatibility and test plan](WINDOWS_COMPATIBILITY.md). A real LikeWeb node requires separate authorization.
 
 Completed prerequisite, distinct from the tunnel gates below: Windows Server
 2022 CI compiled the C++/Rust/Flutter shell and exercised the actual native import
