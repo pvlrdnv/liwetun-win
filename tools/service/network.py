@@ -48,6 +48,15 @@ def snapshot():
     """)
 
 
+def service_cpu():
+    return ps("""
+    $service = Get-CimInstance Win32_Service -Filter "Name='LiWeTun'"
+    $expected = '"' + $env:LIWETUN_EXPECTED_SERVICE + '" --service '
+    if (!$service.ProcessId -or !$service.PathName.StartsWith($expected)) { throw 'Unexpected service identity' }
+    @{pid=$service.ProcessId;seconds=(Get-Process -Id $service.ProcessId).CPU} | ConvertTo-Json -Compress
+    """)
+
+
 def tun():
     return ps("""
     $adapter = @(Get-NetAdapter -IncludeHidden | Where-Object Name -eq 'LiWeTun')
@@ -70,15 +79,9 @@ def tun():
 
 
 def prepare_tun(info, origin):
-    if not info['fixture_route']:
+    if not info['fixture_route'] or not info['dns']:
         raise RuntimeError('missing_tun_routes_or_dns')
     index = int(info['index'])
-    # Deliberately controlled DNS on this task-created adapter only. SDK default
-    # DNS configuration/cleanup has separate functional evidence; this mode
-    # isolates packet attribution from same-host resolver routing.
-    ps(f"Set-DnsClientServerAddress -InterfaceIndex {index} -ServerAddresses '198.18.0.53' | Out-Null")
-    ps(f"New-NetRoute -InterfaceIndex {index} -DestinationPrefix '198.18.0.53/32' -NextHop '0.0.0.0' -RouteMetric 5000 -PolicyStore ActiveStore | Out-Null")
-    info['dns'] = ['198.18.0.53']
     # Windows can create an on-link default along with the adapter address.
     # Keep the fixture bounded even when that route is present.
     if info['automatic_default']:
@@ -239,6 +242,7 @@ def main():
     if not re.fullmatch(r'LiWeTunCI[0-9]+', distro):
         raise RuntimeError('invalid_task_distribution')
     directory = (ROOT / 'build/network-fixture').resolve()
+    os.environ['LIWETUN_EXPECTED_SERVICE'] = str(args.client.parent / 'liwetun_service.exe')
     directory.mkdir(exist_ok=True, parents=True)
     wsl = ['wsl.exe', '-d', distro, '--']
     def linux(path):
@@ -267,7 +271,7 @@ def main():
     if tun() is not None:
         raise RuntimeError('preexisting_adapter')
     diagnostic = os.environ.get('LIWETUN_NETWORK_DIAGNOSTIC') == 'true'
-    result = {'release_ready': False, 'mode': 'interface_bound_ipv4_fixture_dns',
+    result = {'release_ready': False, 'mode': 'interface_bound_ipv4_bounded_host_route',
               'diagnostic_only': diagnostic,
               'endpoint_version': os.environ.get('LIWETUN_ENDPOINT_VERSION'),
               'origin': 'example.com_https_normal_tls', 'cases': [], 'all_passed': False}
@@ -305,6 +309,7 @@ def main():
             before_dns_bytes = {key: 0 for key in before}
             idle_no_dns_sockets = None
             idle_no_dns_directions = None
+            idle_cpu_fraction = None
             index = int(info['index']) if info else 0
             if info and info['fixture_route']:
                 idle_no_dns_before = totals()
@@ -314,9 +319,14 @@ def main():
                 idle_no_dns_directions = ENDPOINT_DIRECTIONS
                 before_dns_bytes = {key: idle_no_dns_after[key] - idle_no_dns_before[key] for key in before}
                 prepare_tun(info, origin)
+                cpu_before = service_cpu()
+                cpu_wall_start = time.monotonic()
                 idle_before = totals()
                 time.sleep(1)
                 idle_after = totals()
+                cpu_after = service_cpu()
+                if cpu_after['pid'] == cpu_before['pid']:
+                    idle_cpu_fraction = (cpu_after['seconds'] - cpu_before['seconds']) / (time.monotonic() - cpu_wall_start)
                 idle_bytes = {key: idle_after[key] - idle_before[key] for key in before}
                 startup_bytes = {key: idle_after[key] - before[key] for key in before}
                 before = idle_after  # Measure the controlled probes separately.
@@ -354,21 +364,26 @@ def main():
             positive = not name.startswith('wrong-')
             transport = delta[protocol] > 0 and all(delta[key] == 0 for key in delta if key != protocol)
             bounded_bytes = sum(idle_bytes.values()) < 16384 and sum(delta.values()) < 524288
+            bounded_resources = (idle_no_dns_sockets is not None and
+                                 idle_no_dns_sockets.get('udp') is not None and idle_no_dns_sockets['udp'] <= 8 and
+                                 idle_no_dns_sockets.get('tcp') is not None and idle_no_dns_sockets['tcp'] <= 4 and
+                                 idle_cpu_fraction is not None and idle_cpu_fraction < .5)
             passed = cleaned and no_direct_fallback and (
-                (delivered and dns and transport and dns_bytes[protocol] > 0 and bounded_bytes) if positive
+                (delivered and dns and transport and dns_bytes[protocol] > 0 and bounded_bytes and bounded_resources) if positive
                 else (not delivered and sum(delta.values()) == 0))
             result['cases'].append({'case': name, 'tls_https_delivered': delivered, 'dns_fixture_answer': dns,
                                     'endpoint_bytes_by_transport': delta, 'routes_dns_adapter_restored': cleaned,
                                     'dns_endpoint_bytes_by_transport': dns_bytes, 'https_probe_error': probe_error,
                                     'idle_endpoint_bytes_by_transport': idle_bytes,
-                                    'idle_before_fixture_dns': before_dns_bytes,
+                                    'idle_before_fixture_routes': before_dns_bytes,
                                     'idle_endpoint_sockets': idle_no_dns_sockets,
-                                    'endpoint_direction_totals_before_fixture_dns': idle_no_dns_directions,
+                                    'endpoint_direction_totals_before_fixture_routes': idle_no_dns_directions,
                                     'task_adapter_route_prefix_lengths': info['prefix_lengths'] if info else None,
                                     'startup_endpoint_bytes_by_transport': startup_bytes,
                                     'dns_fixture_counts': dns_fixture_counts,
                                     'automatic_tun_default_removed': bool(info and info['automatic_default']),
                                     'bounded_bytes': bounded_bytes,
+                                    'bounded_resources': bounded_resources, 'idle_service_cpu_fraction': idle_cpu_fraction,
                                     'closed_interface_denies_delivery': no_direct_fallback, 'passed': passed})
             print('network_case:' + name + (':passed' if passed else ':failed'), flush=True)
             endpoint.close('quit')

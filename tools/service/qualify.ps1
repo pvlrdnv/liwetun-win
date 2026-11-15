@@ -51,6 +51,12 @@ function Reject([string]$Executable) {
     $answer = & $Executable --attack
     if ($LASTEXITCODE -ne 0 -or $answer.Trim() -ne 'rejected') { throw 'Unauthorized client accepted' }
 }
+function SaveFailure([string]$Stage, $Reply) {
+    # Only closed numeric probe fields; never a raw exception/core message.
+    $failure = @{stage=$Stage;native_exit=$LASTEXITCODE;code=$Reply.code;state=$Reply.state;core_state=$Reply.core_state;runtime_ready=$Reply.runtime_ready}
+    New-Item -ItemType Directory -Force build/service-evidence | Out-Null
+    $failure | ConvertTo-Json | Set-Content -Encoding utf8 build/service-evidence/service-failure.json
+}
 try {
     & (Join-Path $Build 'liwetun_service_probe.exe') --protocol
     if ($LASTEXITCODE -ne 0) { throw 'Protocol bounds check failed' }
@@ -84,7 +90,7 @@ try {
     $checks.Add('unsigned_client_denied_by_service')
     Sign $client $certs[0]
     $query = (& $client --query | ConvertFrom-Json)
-    if ($LASTEXITCODE -ne 0 -or $query.code -ne 0 -or $query.state -ne 0 -or $query.core_state -ne 4294967295) { throw 'Signed owner query failed' }
+    if ($LASTEXITCODE -ne 0 -or $query.code -ne 0 -or $query.state -ne 0 -or $query.core_state -ne 4294967295) { SaveFailure 'signed_owner_query' $query; throw 'Signed owner query failed' }
     if ($Sdk -and $query.runtime_ready -ne 1) { throw 'Signed SDK failed admission' }
     if (!$Sdk -and $query.runtime_ready -ne 0) { throw 'Missing SDK incorrectly available' }
     $runtimeReady = $query.runtime_ready
@@ -111,7 +117,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Oversized frame accepted' }
     $checks.Add('oversized_frame_denied')
     $stop = (& $client --stop | ConvertFrom-Json)
-    if ($LASTEXITCODE -ne 0 -or $stop.code -ne 0) { throw 'Idempotent stop failed' }
+    if ($LASTEXITCODE -ne 0 -or $stop.code -ne 0) { SaveFailure 'idempotent_stop' $stop; throw 'Idempotent stop failed' }
     $checks.Add('idempotent_stop')
     # Different trusted signer, same directory and filename: bypass client-side
     # admission in the attack helper to exercise the server check itself.

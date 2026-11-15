@@ -126,7 +126,10 @@ void Backend::Run() {
       if (endpoint) {
         const size_t size = strnlen(endpoint, 131072);
         if (size < 131072) {
-          config = "loglevel=\"error\"\nvpn_mode=\"general\"\nkillswitch_enabled=false\nexclusions=[]\n";
+          // Windows adds multicast routes to virtual adapters independently of
+          // included_routes. Keep local discovery/broadcast out of the exit.
+          config = "loglevel=\"error\"\nvpn_mode=\"general\"\nkillswitch_enabled=false\n"
+              "exclusions=[\"224.0.0.0/4\",\"ff00::/8\",\"255.255.255.255\"]\n";
           config.append(endpoint, size);
           config += "\n[listener.tun]\ndevice_name=\"LiWeTun\"\n";
 #ifdef LIWETUN_TEST_NO_GLOBAL_ROUTES
@@ -135,7 +138,7 @@ void Backend::Run() {
           // Same-host CI only: never capture ambient runner/endpoint egress.
           // The harness adds one high-metric origin host route to this adapter;
           // probe sockets explicitly bind IP_UNICAST_IF to it.
-          config += "included_routes=[\"198.18.0.0/15\"]\nexcluded_routes=[]\nchange_system_dns=false\n";
+          config += "included_routes=[\"198.18.0.0/15\"]\nexcluded_routes=[]\nchange_system_dns=true\n";
 #else
           config += "change_system_dns=true\n";
 #endif
