@@ -1,0 +1,34 @@
+name: Windows protected storage qualification
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  storage:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: x64
+      - name: Build actual current-user storage and adversarial probe
+        run: |
+          cmake -S native/storage -B build/storage -A x64
+          if ($LASTEXITCODE -ne 0) { throw 'Storage configure failed' }
+          cmake --build build/storage --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { throw 'Storage build failed' }
+      - name: User protection, atomicity, ACLs and cross-context denial
+        run: ./tools/storage/qualify.ps1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: storage-safe-evidence
+          path: build/storage-evidence/
+          retention-days: 7
+          if-no-files-found: warn
