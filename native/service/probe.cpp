@@ -20,6 +20,31 @@ std::optional<bool> AdapterPresent(const wchar_t* alias) {
 }
 int wmain(int argc, wchar_t** argv) {
   const std::wstring mode = argc >= 2 ? argv[1] : L"";
+  if (mode == L"--network-session" && argc == 3) {
+    // Keep the authenticated lease process alive while the external CI harness
+    // probes its own TUN. Never print the profile or accept arbitrary commands.
+    std::ifstream input{std::filesystem::path(argv[2])};
+    std::string uri;
+    std::getline(input, uri);
+    if (!uri.empty() && uri.back() == '\r') uri.pop_back();
+    if (!uri.starts_with("tt://?") || uri.size() > kMaxPayload) return 50;
+    auto print = [](const Reply& r) {
+      std::cout << "{\"code\":" << static_cast<uint32_t>(r.code)
+          << ",\"state\":" << static_cast<uint32_t>(r.state)
+          << ",\"core_state\":" << r.core_state << "}" << std::endl;
+    };
+    const auto start = ServiceRequest(Command::Start, uri, true);
+    SecureZeroMemory(uri.data(), uri.size());
+    print(start);
+    std::string command;
+    while (std::getline(std::cin, command)) {
+      if (command == "query") print(ServiceRequest(Command::Query));
+      else if (command == "stop") { print(ServiceRequest(Command::Stop)); return 0; }
+      else return 51;
+    }
+    ServiceRequest(Command::Stop);
+    return 0;
+  }
   if (mode == L"--sdk-privacy") {
     Image self, sdk;
     if (!OpenTrustedImage(SelfPath(), self) || !OpenTrustedImage(Directory(self.path) + L"\\trusttunnel.dll", sdk) || !SameSigner(self, sdk)) return 40;

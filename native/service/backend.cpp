@@ -131,6 +131,11 @@ void Backend::Run() {
           config += "\n[listener.tun]\ndevice_name=\"LiWeTun\"\n";
 #ifdef LIWETUN_TEST_NO_GLOBAL_ROUTES
           config += "included_routes=[]\nexcluded_routes=[]\nchange_system_dns=false\n";
+#elif defined(LIWETUN_TEST_TUN_NETWORK)
+          // Disposable same-host endpoint fixture only. The harness raises this
+          // route's metric so ordinary endpoint egress keeps its physical route;
+          // the probe explicitly binds IP_UNICAST_IF to this TUN interface.
+          config += "included_routes=[\"0.0.0.0/0\"]\nexcluded_routes=[]\nchange_system_dns=true\n";
 #else
           config += "change_system_dns=true\n";
 #endif

@@ -1,7 +1,8 @@
 # ONLY for a disposable GitHub runner, never an installer for the owner's PC.
-param([string]$Build = 'build/service/Release', [string]$Sdk = '')
+param([string]$Build = 'build/service/Release', [string]$Sdk = '', [switch]$Network)
 $ErrorActionPreference = 'Stop'
 if ($env:GITHUB_ACTIONS -ne 'true' -or !$env:GITHUB_RUN_ID) { throw 'Disposable GitHub runner required' }
+if ($Network -and !$Sdk) { throw 'Network qualification requires actual SDK' }
 $root = Join-Path $env:ProgramFiles ('LiWeTun-CI-' + $env:GITHUB_RUN_ID)
 if (Test-Path $root) { throw 'Fresh isolated installation directory required' }
 $service = Join-Path $root 'liwetun_service.exe'
@@ -127,12 +128,17 @@ try {
         $lifecycle = (& $client --native-lifecycle build/service-local-uri.txt | ConvertFrom-Json)
         if ($LASTEXITCODE -ne 0 -or !$lifecycle.core_state_observed -or !$lifecycle.stopped_and_cleaned) { throw 'Actual SDK service lifecycle failed' }
         $checks.Add('real_sdk_start_observe_stop')
+        if ($Network) {
+            python tools/service/network.py --client $client
+            if ($LASTEXITCODE -ne 0) { throw 'Real TUN network qualification failed; see safe network.json' }
+            $checks.Add('tun_https_dns_transport_and_cleanup')
+        }
         Uninstall
     }
     $checks.Add('service_uninstalled')
     if ((DnsSnapshot) -ne $dnsBefore -or (DefaultRoutes) -ne $routesBefore) { throw 'DNS or default routes changed in bounded CI mode' }
     $checks.Add('dns_and_default_routes_unchanged')
-    $result = @{checks=@($checks); core_runtime_ready=$runtimeReady; signed_service_ipc='verified'; driver_cycle=$driver; sdk_lifecycle=$lifecycle; test_mode_no_global_routes=$true; dns_and_default_routes_unchanged=$true; release_ready=$false}
+    $result = @{checks=@($checks); core_runtime_ready=$runtimeReady; signed_service_ipc='verified'; driver_cycle=$driver; sdk_lifecycle=$lifecycle; test_mode_no_global_routes=(!$Network); dns_and_default_routes_unchanged=$true; release_ready=$false}
     New-Item -ItemType Directory -Force build/service-evidence | Out-Null
     $result | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 build/service-evidence/qualification.json
 } finally {

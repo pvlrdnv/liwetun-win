@@ -1,0 +1,93 @@
+"""Real pinned endpoint plus deterministic DNS fixture, disposable WSL1 only.
+
+No replacement tunnel implementation. Raw endpoint output is discarded. TLS
+material/credentials are synthetic and remain in the CI task directory.
+"""
+import argparse
+from pathlib import Path
+import socket
+import subprocess
+import threading
+import time
+
+
+def dns_server(stop):
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        sock.bind(('127.0.0.1', 38553))
+        sock.settimeout(.2)
+        while not stop.is_set():
+            try:
+                packet, address = sock.recvfrom(4096)
+            except socket.timeout:
+                continue
+            # Exact synthetic A question only. No upstream DNS/public query.
+            question = b'\x07liwetun\x07invalid\x00\x00\x01\x00\x01'
+            if len(packet) >= 12 and packet[12:] == question:
+                response = packet[:2] + b'\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00'
+                response += question + b'\xc0\x0c\x00\x01\x00\x01\x00\x00\x00\x00\x00\x04\xc0\x00\x02\x7b'
+                sock.sendto(response, address)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('directory', type=Path)
+    parser.add_argument('binary', type=Path)
+    parser.add_argument('protocol', choices=['prepare', 'http2', 'http3'])
+    args = parser.parse_args()
+    directory = args.directory.resolve()
+    directory.mkdir(exist_ok=True, parents=True)
+    if args.protocol == 'prepare':
+        for prefix in ['', 'wrong-']:
+            subprocess.run([
+                'openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
+                '-subj', '/CN=localhost', '-addext', 'subjectAltName=DNS:localhost',
+                '-keyout', str(directory / (prefix + 'key.pem')),
+                '-out', str(directory / (prefix + 'cert.pem')),
+            ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            (directory / (prefix + 'key.pem')).chmod(0o600)
+            subprocess.run(['openssl', 'x509', '-in', str(directory / (prefix + 'cert.pem')),
+                            '-outform', 'DER', '-out', str(directory / (prefix + 'cert.der'))],
+                           check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return
+    (directory / 'credentials.toml').write_text('[[client]]\nusername="synthetic-user"\npassword="synthetic-password"\n')
+    protocol = 'http2' if args.protocol == 'http2' else 'quic'
+    # H3 case deliberately has NO H2 listener: fallback cannot pass the test.
+    (directory / 'vpn.toml').write_text(
+        'listen_address="127.0.0.1:38443"\ncredentials_file="credentials.toml"\n'
+        'ipv6_available=false\nallow_private_network_connections=true\n'
+        'connection_establishment_timeout_secs=5\n'
+        f'[listen_protocols.http1]\n[listen_protocols.{protocol}]\n'
+        '[metrics]\naddress="127.0.0.1:38444"\nper_client_metrics=false\n')
+    (directory / 'hosts.toml').write_text(
+        '[[main_hosts]]\nhostname="localhost"\ncert_chain_path="cert.pem"\nprivate_key_path="key.pem"\n')
+    stop = threading.Event()
+    worker = threading.Thread(target=dns_server, args=(stop,), daemon=True)
+    worker.start()
+    endpoint = subprocess.Popen([str(args.binary.resolve()), 'vpn.toml', 'hosts.toml', '--jobs', '2'],
+                                cwd=directory, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        for _ in range(100):
+            if endpoint.poll() is not None:
+                raise RuntimeError('endpoint_exited')
+            try:
+                with socket.create_connection(('127.0.0.1', 38444), timeout=.1):
+                    break
+            except OSError:
+                time.sleep(.1)
+        else:
+            raise RuntimeError('endpoint_not_ready')
+        print('ready', flush=True)
+        input()  # Parent pipe EOF/quit tears down this exact fixture.
+    finally:
+        stop.set()
+        endpoint.terminate()
+        try:
+            endpoint.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            endpoint.kill()
+            endpoint.wait(timeout=5)
+        worker.join(timeout=1)
+
+
+if __name__ == '__main__':
+    main()

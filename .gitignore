@@ -16,3 +16,5 @@ windows/flutter/ephemeral/
 *.iml
 .DS_Store
 native/trusttunnel_bridge/target/
+__pycache__/
+*.pyc
