@@ -71,8 +71,17 @@ jobs:
         run: |
           cmake -S build/vendor/sdk/platform/windows -B build/sdk-build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DTT_CLIENT_VERSION=1.1.12-liwetun.1
           if ($LASTEXITCODE -ne 0) { throw 'SDK configure failed' }
+          python tools/sdk/closure.py --actual-lock build/sdk-build/liwetun-conan.lock
+          if ($LASTEXITCODE -ne 0) { throw 'SDK dependency lock drift' }
           cmake --build build/sdk-build --target trusttunnel_windows --parallel 2
           if ($LASTEXITCODE -ne 0) { throw 'SDK build failed' }
+      - name: Collect actual packaged dependency notices for review
+        run: |
+          $cache = (conan config home).Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Conan cache unavailable' }
+          python tools/sdk/closure.py --actual-lock build/sdk-build/liwetun-conan.lock --graph build/sdk-build/liwetun-conan-graph.json --cache $cache --output build/sdk-notices
+          if ($LASTEXITCODE -ne 0) { throw 'SDK notice collection failed' }
+          Copy-Item build/sdk-notices/inventory.json build/sdk-evidence/notice-inventory.json
       - name: Stage private development SDK and evidence
         run: |
           New-Item -ItemType Directory -Force build/sdk-runtime | Out-Null
@@ -91,6 +100,13 @@ jobs:
         with:
           name: sdk-build-evidence
           path: build/sdk-evidence/
+          retention-days: 7
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: sdk-notice-candidates-not-release-qualified
+          path: build/sdk-notices/
           retention-days: 7
           if-no-files-found: warn
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

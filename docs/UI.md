@@ -18,8 +18,9 @@ LiWeTun        Главная / Серверы / Поддержка
 [Добавить подключение]
 ```
 
-Real imported names appear only after an explicit user action. All imports
-remain in memory for this development slice. Connection CTA dispatches start/stop to the Windows service channel. Unsigned
+Imported profiles are restored from the protected current-user cache without
+automatic connection; new profiles require explicit import. Storage status
+distinguishes loading/saving/saved and memory-only failure. Connection CTA dispatches start/stop to the Windows service channel. Unsigned
 workspace builds cannot access the service. Tunnel-ready is labelled separately
 from verified Internet; unknown outcomes remain uncertain and permit stop.
 

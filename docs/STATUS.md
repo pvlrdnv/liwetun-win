@@ -24,6 +24,12 @@ GUI worker channel, bounded profile schema, serialized persistence and honest
 failure states are implemented; updated native application checks are pending.
 Local analyze and 99 Dart tests passed. [Storage design/evidence](PROFILE_STORAGE.md).
 
+SDK build continuation: enforced Conan recipe input lock, output/graph drift
+checks and bounded packaged-notice collection implemented; five local tests and
+fresh-source preparation passed. Updated SDK rebuild remains pending; this does
+not qualify licenses or change the earlier network artifact. See
+[dependency closure](DEPENDENCY_CLOSURE.md).
+
 ## Current stage
 
 LOCAL development in independent private repository

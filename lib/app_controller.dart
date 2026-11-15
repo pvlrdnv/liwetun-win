@@ -48,7 +48,9 @@ final class AppController extends ChangeNotifier {
     ProfileStorageState.loading => 'Загружаем сохранённые подключения…',
     ProfileStorageState.saving => 'Сохраняем подключения…',
     ProfileStorageState.saved =>
-      'Подключения сохранены с защитой вашей учётной записи Windows.',
+      storageCode == StorageCode.missing
+          ? 'Защищённое сохранение подключений доступно.'
+          : 'Подключения сохранены с защитой вашей учётной записи Windows.',
     ProfileStorageState.memoryOnly =>
       'Ссылки сохраняются только до закрытия приложения.',
     ProfileStorageState.blocked =>

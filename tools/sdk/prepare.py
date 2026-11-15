@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import shutil
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -39,12 +40,15 @@ def prepare(source, bootstrap, output):
     text = provider.read_text()
     text = replace_once(text,
         'set(CONAN_ARGS ${CONAN_ARGS} -of=${CONAN_OUTPUT_FOLDER})',
-        'set(CONAN_ARGS ${CONAN_ARGS} -of=${CONAN_OUTPUT_FOLDER} --lockfile-out=${CMAKE_BINARY_DIR}/liwetun-conan.lock)')
+        'set(CONAN_ARGS ${CONAN_ARGS} -of=${CONAN_OUTPUT_FOLDER} '
+        '--lockfile=${CMAKE_CURRENT_FUNCTION_LIST_DIR}/liwetun-conan-input.lock '
+        '--lockfile-out=${CMAKE_BINARY_DIR}/liwetun-conan.lock)')
     text = replace_once(text,
         'string(JSON CONAN_GENERATORS_FOLDER GET ${conan_stdout} graph nodes 0 generators_folder)',
         'file(WRITE "${CMAKE_BINARY_DIR}/liwetun-conan-graph.json" "${conan_stdout}")\n'
         '        string(JSON CONAN_GENERATORS_FOLDER GET ${conan_stdout} graph nodes 0 generators_folder)')
     (source / 'cmake/conan_provider.cmake').write_text(text)
+    shutil.copyfile(ROOT / 'native/sdk/conan.lock', source / 'cmake/liwetun-conan-input.lock')
     provider.unlink()
 
     cpp = source / 'platform/windows/src/trusttunnel.cpp'
@@ -89,6 +93,7 @@ static void report_connection_info(const Tunnel *self, VpnConnection *conn, cons
     report = {
         'sdk_commit': lock['sdk_commit'], 'policy_version': 1,
         'bootstrap_sha256': lock['bootstrap']['sha256'],
+        'conan_input_lock_sha256': hashlib.sha256((ROOT / 'native/sdk/conan.lock').read_bytes()).hexdigest(),
         'prepare_script_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         'patched_files': {name: hashlib.sha256((source / name).read_bytes()).hexdigest()
                           for name in lock['patched_inputs']},
