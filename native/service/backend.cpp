@@ -135,7 +135,7 @@ void Backend::Run() {
           // Same-host CI only: never capture ambient runner/endpoint egress.
           // The harness adds one high-metric origin host route to this adapter;
           // probe sockets explicitly bind IP_UNICAST_IF to it.
-          config += "included_routes=[\"198.18.0.0/15\"]\nexcluded_routes=[]\nchange_system_dns=true\n";
+          config += "included_routes=[\"198.18.0.0/15\"]\nexcluded_routes=[]\nchange_system_dns=false\n";
 #else
           config += "change_system_dns=true\n";
 #endif

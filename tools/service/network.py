@@ -62,9 +62,15 @@ def tun():
 
 
 def prepare_tun(info, origin):
-    if not info['fixture_route'] or not info['dns']:
+    if not info['fixture_route']:
         raise RuntimeError('missing_tun_routes_or_dns')
     index = int(info['index'])
+    # Deliberately controlled DNS on this task-created adapter only. SDK default
+    # DNS configuration/cleanup has separate functional evidence; this mode
+    # isolates packet attribution from same-host resolver routing.
+    ps(f"Set-DnsClientServerAddress -InterfaceIndex {index} -ServerAddresses '198.18.0.53' | Out-Null")
+    ps(f"New-NetRoute -InterfaceIndex {index} -DestinationPrefix '198.18.0.53/32' -NextHop '0.0.0.0' -RouteMetric 5000 -PolicyStore ActiveStore | Out-Null")
+    info['dns'] = ['198.18.0.53']
     # Windows can create an on-link default along with the adapter address.
     # Keep the fixture bounded even when that route is present.
     if info['automatic_default']:
@@ -246,12 +252,15 @@ def main():
     INIT_STAGE = 'preexisting_adapter_check'
     if tun() is not None:
         raise RuntimeError('preexisting_adapter')
-    result = {'release_ready': False, 'mode': 'interface_bound_ipv4_bounded_host_route',
+    diagnostic = os.environ.get('LIWETUN_NETWORK_DIAGNOSTIC') == 'true'
+    result = {'release_ready': False, 'mode': 'interface_bound_ipv4_fixture_dns',
+              'diagnostic_only': diagnostic,
               'origin': 'example.com_https_normal_tls', 'cases': [], 'all_passed': False}
     endpoint = session = None
     stage = 'initialization'
     try:
-        for name in ['http2', 'http3', 'wrong-auth', 'wrong-ca', 'ui-death', 'service-crash']:
+        required_cases = ['http2', 'http3', 'wrong-auth', 'wrong-ca', 'ui-death', 'service-crash']
+        for name in (['http2'] if diagnostic else required_cases):
             stage = name
             protocol = 'http3' if name == 'http3' else 'http2'
             endpoint = Child(wsl + ['python3', fixture, folder, endpoint_binary, protocol])
@@ -278,8 +287,13 @@ def main():
             dns_bytes = {key: 0 for key in before}
             idle_bytes = {key: 0 for key in before}
             startup_bytes = {key: 0 for key in before}
+            before_dns_bytes = {key: 0 for key in before}
             index = int(info['index']) if info else 0
             if info and info['fixture_route']:
+                idle_no_dns_before = totals()
+                time.sleep(1)
+                idle_no_dns_after = totals()
+                before_dns_bytes = {key: idle_no_dns_after[key] - idle_no_dns_before[key] for key in before}
                 prepare_tun(info, origin)
                 idle_before = totals()
                 time.sleep(1)
@@ -328,6 +342,7 @@ def main():
                                     'endpoint_bytes_by_transport': delta, 'routes_dns_adapter_restored': cleaned,
                                     'dns_endpoint_bytes_by_transport': dns_bytes, 'https_probe_error': probe_error,
                                     'idle_endpoint_bytes_by_transport': idle_bytes,
+                                    'idle_before_fixture_dns': before_dns_bytes,
                                     'startup_endpoint_bytes_by_transport': startup_bytes,
                                     'dns_fixture_counts': dns_fixture_counts,
                                     'automatic_tun_default_removed': bool(info and info['automatic_default']),
@@ -340,7 +355,7 @@ def main():
                 raise RuntimeError('cleanup_failed')
             if name == 'service-crash':
                 ps('Start-Service LiWeTun')
-        result['all_passed'] = all(case['passed'] for case in result['cases'])
+        result['all_passed'] = len(result['cases']) == len(required_cases) and all(case['passed'] for case in result['cases'])
     except Exception as error:
         result['failed_stage'] = stage  # Closed enum; never a raw exception.
         result['error_type'] = type(error).__name__
