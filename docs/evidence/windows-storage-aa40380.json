@@ -1,0 +1,10 @@
+{
+  "source_commit": "aa40380e22505f95765c47178c737d4426f51b01",
+  "decoder_revision": "48f424c0874eb6f6374ee84492c5cd55aa04dca9",
+  "runner_os": "windows-2022",
+  "executable_sha256": "2d91e388570c7b30b1eb4ea0594b901d17a61dbc1e4dbe994c91d4374aabf5da",
+  "native_import": "verified",
+  "tunnel_service": "not_installed",
+  "network_tests": "not_run",
+  "release_ready": false
+}

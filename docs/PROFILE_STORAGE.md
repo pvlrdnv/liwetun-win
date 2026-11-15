@@ -57,7 +57,13 @@ still decrypt and remove it. Disposable test directories/service were removed.
 Fixture preparation/assertion checks are also listed in the report, not counted
 as independent security properties.
 
-The GUI channel/integration checks are pending on the updated source. Local Dart
-checks passed 99 tests and analyze. No owner-device installation or network
+The actual Windows GUI worker channel and profile restoration also **PASS** on
+source `aa40380`: [run 43752160848](https://github.com/pvlrdnv/liwetun-win/actions/runs/43752160848),
+[build evidence](evidence/windows-storage-aa40380.json). The run passed 99 Dart
+tests, six Rust tests, analyze, release build and both real desktop channel tests.
+The storage case proves save/load, stale-write rejection, malformed-channel
+rejection, restored selection, repeated official inspection and no auto-connect;
+it then removes the synthetic cache. The unsigned app still rejects service
+commands before privileged side effects. No owner-device installation or network
 mutation occurred. Desktop Windows 10/11, non-elevated installed GUI, abrupt
 power loss and profile reset/recovery UI remain separate acceptance gates.

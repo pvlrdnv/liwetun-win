@@ -15,14 +15,17 @@ acceptance. The corporate tunnel on the development device stays operating.
 [Compatibility plan](WINDOWS_COMPATIBILITY.md). Windows Server CI is not desktop
 acceptance and normal global routing/IPv6 remain open.
 
-## Protected-storage continuation — native PASS, GUI verification pending
+## Protected storage — native and GUI PASS
 
 Current-user Windows DPAPI, private per-user ACLs, encrypted atomic replacement
 and revision compare-and-swap passed actual Windows qualification on `a08114b`:
 [run 43751590632](https://github.com/pvlrdnv/liwetun-win/actions/runs/43751590632).
 GUI worker channel, bounded profile schema, serialized persistence and honest
-failure states are implemented; updated native application checks are pending.
-Local analyze and 99 Dart tests passed. [Storage design/evidence](PROFILE_STORAGE.md).
+failure states are implemented. Updated Windows application qualification on
+`aa40380` **PASS**: [run 43752160848](https://github.com/pvlrdnv/liwetun-win/actions/runs/43752160848),
+99 Dart + 6 Rust tests, analyze, release build and 2 actual desktop channel tests,
+including DPAPI roundtrip and profile restoration without auto-connect.
+[Storage design/evidence](PROFILE_STORAGE.md).
 
 SDK build continuation: enforced Conan recipe input lock, output/graph drift
 checks and bounded packaged-notice collection implemented; five local tests and
@@ -102,8 +105,8 @@ also passed on disposable Windows CI. See [service architecture](WINDOWS_SERVICE
 ## Remaining gates
 
 The client is not release-ready. Unsigned workspace builds fail service admission;
-no service is installed on the owner's computer. Protected storage is implemented
-with native checks passed; updated GUI integration is pending. No signed
+no service is installed on the owner's computer. Protected storage and actual
+GUI integration passed disposable Windows CI. No signed
 installer/updater, subscription fetch,
 recovery/tray/startup, persistent rotated journal, real metrics, route-bound
 health probes, kill switch or Hysteria2/Xray connection adapter.
