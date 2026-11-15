@@ -1,0 +1,65 @@
+{
+  "release_ready": false,
+  "mode": "interface_bound_ipv4_default_route_high_metric",
+  "origin": "example.com_https_normal_tls",
+  "cases": [
+    {
+      "case": "http2",
+      "tls_https_delivered": false,
+      "dns_fixture_answer": false,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 121451182,
+        "http3": 0
+      },
+      "routes_dns_adapter_restored": true,
+      "closed_interface_denies_delivery": true,
+      "passed": false
+    },
+    {
+      "case": "http3",
+      "tls_https_delivered": false,
+      "dns_fixture_answer": false,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 137203361
+      },
+      "routes_dns_adapter_restored": true,
+      "closed_interface_denies_delivery": true,
+      "passed": false
+    },
+    {
+      "case": "wrong-auth",
+      "tls_https_delivered": false,
+      "dns_fixture_answer": false,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "routes_dns_adapter_restored": true,
+      "closed_interface_denies_delivery": true,
+      "passed": true
+    },
+    {
+      "case": "wrong-ca",
+      "tls_https_delivered": false,
+      "dns_fixture_answer": false,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "routes_dns_adapter_restored": true,
+      "closed_interface_denies_delivery": true,
+      "passed": true
+    }
+  ],
+  "all_passed": false,
+  "failed_stage": "ui-death",
+  "final_network_restored": true,
+  "source_commit": "c61f856",
+  "evidence_run": 43730129524,
+  "qualification": "failed; no HTTPS/DNS delivery; endpoint counters are not accepted as probe traffic"
+}

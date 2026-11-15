@@ -1,0 +1,36 @@
+{
+  "driver_cycle": {
+    "adapter_created": true,
+    "adapter_removed": true
+  },
+  "sdk_lifecycle": {
+    "core_state_observed": true,
+    "adapter_seen": true,
+    "stopped_and_cleaned": true
+  },
+  "test_mode_no_global_routes": false,
+  "dns_and_default_routes_unchanged": true,
+  "core_runtime_ready": 1,
+  "checks": [
+    "protocol_bounds",
+    "unsigned_service_denied",
+    "unsigned_client_denied_by_service",
+    "signed_owner_query",
+    "unknown_metrics_and_core_state_preserved",
+    "invalid_profile_denied",
+    "oversized_frame_denied",
+    "idempotent_stop",
+    "different_signer_denied_by_service",
+    "different_owner_sid_denied_even_to_admin",
+    "sdk_canary_no_raw_logs_or_files",
+    "real_wintun_create_close",
+    "real_sdk_start_observe_stop",
+    "tun_https_dns_transport_and_cleanup",
+    "service_uninstalled",
+    "dns_and_default_routes_unchanged"
+  ],
+  "release_ready": false,
+  "signed_service_ipc": "verified",
+  "evidence_run": 43740049813,
+  "source_commit": "a7b1ca8"
+}

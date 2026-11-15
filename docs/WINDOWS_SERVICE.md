@@ -68,9 +68,19 @@ query/start/stop correctly return untrusted-installation from an unsigned
 workspace without SCM side effects. This does not test an installed signed GUI
 with real traffic; the signed client probe and unsigned desktop tests are separate.
 
+## Bounded real-network continuation
+
+Real H2/H3 HTTPS and DNS, auth/CA denial, client death and service crash cleanup
+now pass on two pinned official endpoints. The engine excludes multicast and
+broadcast from tunnel exit routing; this removed the observed UDP socket flood.
+Busy-pipe transport waits are bounded and never replay uncertain commands.
+See [network method and actual evidence](TUN_NETWORK_ACCEPTANCE.md). These are
+Server 2022 CI tests with deliberately bounded fixture routing, not installed
+Windows 10/11 acceptance or global DNS/IPv6 qualification.
+
 ## Remaining acceptance
 
-Clean Windows 11 installation, release certificate/installer, real TUN-bound
+Clean Windows 10/11 installation, release certificate/installer, real TUN-bound
 HTTPS and HTTP/3 traffic, DNS/IPv6 routing and restoration after stop/crash,
 non-elevated UI acceptance, fake-server and cross-session adversarial tests,
 protected persistence, recovery/tray/startup and dependency notices remain open.

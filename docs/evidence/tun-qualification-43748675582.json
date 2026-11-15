@@ -1,0 +1,35 @@
+{
+  "dns_and_default_routes_unchanged": true,
+  "sdk_lifecycle": {
+    "refused_endpoint_smoke": "not_run",
+    "verified_by": "live_endpoint_network_cases"
+  },
+  "checks": [
+    "protocol_bounds",
+    "unsigned_service_denied",
+    "unsigned_client_denied_by_service",
+    "signed_owner_query",
+    "unknown_metrics_and_core_state_preserved",
+    "busy_pipe_waits_without_resending",
+    "invalid_profile_denied",
+    "oversized_frame_denied",
+    "idempotent_stop",
+    "different_signer_denied_by_service",
+    "different_owner_sid_denied_even_to_admin",
+    "sdk_canary_no_raw_logs_or_files",
+    "real_wintun_create_close",
+    "tun_https_dns_transport_and_cleanup",
+    "service_uninstalled",
+    "dns_and_default_routes_unchanged"
+  ],
+  "test_mode_no_global_routes": false,
+  "core_runtime_ready": 1,
+  "signed_service_ipc": "verified",
+  "release_ready": false,
+  "driver_cycle": {
+    "adapter_created": true,
+    "adapter_removed": true
+  },
+  "evidence_run": 43748675582,
+  "source_commit": "52c2047"
+}

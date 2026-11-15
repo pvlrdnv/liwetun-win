@@ -11,6 +11,12 @@ Completed prerequisite, distinct from the tunnel gates below: Windows Server
 channel, with synthetic HTTP/2 and HTTP/3 links and TLS-bypass rejection. Details:
 [native import verification](NATIVE_IMPORT.md#verification).
 
+Bounded Server 2022 continuation passed real H2/H3 HTTPS, DNS through the
+endpoint, auth/CA denial and stop/client-death/service-crash restoration on two
+pinned endpoint versions. Idle bytes/resources passed after multicast policy
+correction. [Actual method/evidence](TUN_NETWORK_ACCEPTANCE.md). Desktop OS gates
+below remain open; this does not qualify normal global routing or IPv6.
+
 - [ ] Pin TrustTunnel SDK version, SHA256 and all distributed licenses.
 - [ ] Verify app/service/adapter embedded signatures, common signer, Program
   Files ACL and refusal of an unauthorized process, user/session or executable.

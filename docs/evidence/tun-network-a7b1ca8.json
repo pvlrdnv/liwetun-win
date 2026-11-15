@@ -1,0 +1,126 @@
+{
+  "release_ready": false,
+  "mode": "interface_bound_ipv4_bounded_host_route",
+  "origin": "example.com_https_normal_tls",
+  "cases": [
+    {
+      "case": "http2",
+      "tls_https_delivered": true,
+      "dns_fixture_answer": true,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 53338573,
+        "http3": 0
+      },
+      "routes_dns_adapter_restored": true,
+      "dns_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 409718,
+        "http3": 0
+      },
+      "https_probe_error": null,
+      "closed_interface_denies_delivery": true,
+      "passed": true
+    },
+    {
+      "case": "http3",
+      "tls_https_delivered": true,
+      "dns_fixture_answer": true,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 32016558
+      },
+      "routes_dns_adapter_restored": true,
+      "dns_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 18717
+      },
+      "https_probe_error": null,
+      "closed_interface_denies_delivery": true,
+      "passed": true
+    },
+    {
+      "case": "wrong-auth",
+      "tls_https_delivered": false,
+      "dns_fixture_answer": false,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "routes_dns_adapter_restored": true,
+      "dns_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "https_probe_error": null,
+      "closed_interface_denies_delivery": true,
+      "passed": true
+    },
+    {
+      "case": "wrong-ca",
+      "tls_https_delivered": false,
+      "dns_fixture_answer": false,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "routes_dns_adapter_restored": true,
+      "dns_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "https_probe_error": null,
+      "closed_interface_denies_delivery": true,
+      "passed": true
+    },
+    {
+      "case": "ui-death",
+      "tls_https_delivered": true,
+      "dns_fixture_answer": true,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 84666041,
+        "http3": 0
+      },
+      "routes_dns_adapter_restored": true,
+      "dns_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 402312,
+        "http3": 0
+      },
+      "https_probe_error": null,
+      "closed_interface_denies_delivery": true,
+      "passed": true
+    },
+    {
+      "case": "service-crash",
+      "tls_https_delivered": true,
+      "dns_fixture_answer": true,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 43188153,
+        "http3": 0
+      },
+      "routes_dns_adapter_restored": true,
+      "dns_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 409919,
+        "http3": 0
+      },
+      "https_probe_error": null,
+      "closed_interface_denies_delivery": true,
+      "passed": true
+    }
+  ],
+  "all_passed": true,
+  "final_network_restored": true,
+  "evidence_run": 43740049813,
+  "source_commit": "a7b1ca8",
+  "counter_attribution": "Functional delivery and cleanup passed; large aggregate bytes require quieter fixture qualification. Not payload-size evidence."
+}
