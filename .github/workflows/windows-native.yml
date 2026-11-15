@@ -29,6 +29,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Rust install failed' }
       - name: Verify native formatting
         run: cargo fmt --manifest-path native/trusttunnel_bridge/Cargo.toml -- --check
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
       - name: Test actual official decoder through the C ABI
         run: cargo test --manifest-path native/trusttunnel_bridge/Cargo.toml --locked
       - name: Prepare synthetic fixtures without printing links
@@ -42,6 +45,13 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Flutter dependency resolution failed' }
           git diff --exit-code -- pubspec.lock
           if ($LASTEXITCODE -ne 0) { throw 'Dart dependency lock changed' }
+      - name: Collect locked Rust dependency notice candidates
+        run: |
+          cargo metadata --manifest-path native/trusttunnel_bridge/Cargo.toml --locked --offline --format-version 1 | Set-Content -Encoding utf8 build/cargo-metadata.json
+          if ($LASTEXITCODE -ne 0) { throw 'Locked Cargo metadata failed' }
+          $cargoHome = if ($env:CARGO_HOME) { $env:CARGO_HOME } else { Join-Path $env:USERPROFILE '.cargo' }
+          python tools/sdk/rust_notices.py --metadata build/cargo-metadata.json --cargo-home $cargoHome --output build/rust-notices
+          if ($LASTEXITCODE -ne 0) { throw 'Rust notice collection failed' }
       - name: Analyze application
         run: flutter analyze --no-pub
       - name: Run application and privacy unit tests
@@ -68,6 +78,13 @@ jobs:
             release_ready = $false
           }
           $report | ConvertTo-Json | Set-Content -Encoding utf8 build/windows-import-evidence.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: rust-notice-candidates-not-release-qualified
+          path: build/rust-notices/
+          retention-days: 7
+          if-no-files-found: warn
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: windows-import-evidence

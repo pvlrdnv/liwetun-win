@@ -23,8 +23,15 @@ absolute cache paths. Missing package notices remain explicitly `missing`;
 present files are `collected_for_review`, not a release approval. Build-context
 packages remain labeled separately from host dependencies.
 
-This is only the SDK Conan closure. The release inventory must also include
-Flutter/engine/Dart packages, Rust crates, Wintun and distribution tools/runtime
+`tools/sdk/rust_notices.py` also collects the native parser's exact Cargo.lock
+closure from offline Cargo metadata, verifies cached registry archive checksums
+and copies package/workspace license texts into a separate inventory. Local
+collection found notice files for all ten external crates, including the pinned
+TrustTunnel workspace license and Unicode data license. Build/procedural-macro
+dependencies are included conservatively; declaration metadata is not used to
+invent a missing license. Windows collection remains pending.
+
+The release inventory must also include Flutter/engine/Dart packages, Wintun and distribution tools/runtime
 components as applicable. Upstream SDK/Wintun notices already accompany the
 development SDK artifact. A full redistribution review remains open.
 
