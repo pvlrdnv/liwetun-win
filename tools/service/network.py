@@ -25,6 +25,8 @@ ROOT = Path(__file__).resolve().parents[2]
 INIT_STAGE = 'arguments'
 PROBE_ERROR = None
 PHYSICAL_ROUTES = []
+ENDPOINT_SOCKETS = {}
+ENDPOINT_DIRECTIONS = {}
 
 
 def ps(script):
@@ -57,7 +59,13 @@ def tun():
     $dns = @(Get-DnsClientServerAddress -InterfaceIndex $index -AddressFamily IPv4).ServerAddresses
     $defaults = @(Get-NetRoute -InterfaceIndex $index -AddressFamily IPv4 |
       Where-Object DestinationPrefix -eq '0.0.0.0/0')
-    @{index=$index;fixture_route=($routes.Count -eq 1);dns=@($dns);automatic_default=($defaults.Count -gt 0)} | ConvertTo-Json -Compress
+    $prefixes = @{}
+    Get-NetRoute -InterfaceIndex $index | ForEach-Object {
+      $family = if ($_.DestinationPrefix.Contains(':')) { 'v6/' } else { 'v4/' }
+      $key = $family + $_.DestinationPrefix.Split('/')[-1]
+      $prefixes[$key] = 1 + [int]$prefixes[$key]
+    }
+    @{index=$index;fixture_route=($routes.Count -eq 1);dns=@($dns);automatic_default=($defaults.Count -gt 0);prefix_lengths=$prefixes} | ConvertTo-Json -Depth 4 -Compress
     """)
 
 
@@ -154,6 +162,7 @@ class Child:
 
 
 def totals():
+    global ENDPOINT_SOCKETS, ENDPOINT_DIRECTIONS
     connection = HTTPConnection('127.0.0.1', 38444, timeout=3)
     try:
         connection.request('GET', '/metrics', headers={'Content-Length': '0'})
@@ -164,10 +173,15 @@ def totals():
     finally:
         connection.close()
     result = {key: 0 for key in ['http1', 'http2', 'http3']}
-    for protocol, value in re.findall(r'^(?:inbound|outbound)_traffic_bytes\{protocol_type="([A-Za-z0-9]+)"\} ([0-9]+)$', data, re.M):
+    ENDPOINT_SOCKETS = {kind: None for kind in ['tcp', 'udp']}
+    for kind, count in re.findall(r'^outbound_(tcp|udp)_sockets ([0-9]+)$', data, re.M):
+        ENDPOINT_SOCKETS[kind] = int(count)
+    ENDPOINT_DIRECTIONS = {direction: dict(result) for direction in ['inbound', 'outbound']}
+    for direction, protocol, value in re.findall(r'^(inbound|outbound)_traffic_bytes\{protocol_type="([A-Za-z0-9]+)"\} ([0-9]+)$', data, re.M):
         key = {'HTTP1': 'http1', 'HTTP2': 'http2', 'HTTP3': 'http3', 'QUIC': 'http3'}.get(protocol.upper())
         if key:
             result[key] += int(value)
+            ENDPOINT_DIRECTIONS[direction][key] += int(value)
     return result
 
 
@@ -255,6 +269,7 @@ def main():
     diagnostic = os.environ.get('LIWETUN_NETWORK_DIAGNOSTIC') == 'true'
     result = {'release_ready': False, 'mode': 'interface_bound_ipv4_fixture_dns',
               'diagnostic_only': diagnostic,
+              'endpoint_version': os.environ.get('LIWETUN_ENDPOINT_VERSION'),
               'origin': 'example.com_https_normal_tls', 'cases': [], 'all_passed': False}
     endpoint = session = None
     stage = 'initialization'
@@ -288,11 +303,15 @@ def main():
             idle_bytes = {key: 0 for key in before}
             startup_bytes = {key: 0 for key in before}
             before_dns_bytes = {key: 0 for key in before}
+            idle_no_dns_sockets = None
+            idle_no_dns_directions = None
             index = int(info['index']) if info else 0
             if info and info['fixture_route']:
                 idle_no_dns_before = totals()
                 time.sleep(1)
                 idle_no_dns_after = totals()
+                idle_no_dns_sockets = dict(ENDPOINT_SOCKETS)
+                idle_no_dns_directions = ENDPOINT_DIRECTIONS
                 before_dns_bytes = {key: idle_no_dns_after[key] - idle_no_dns_before[key] for key in before}
                 prepare_tun(info, origin)
                 idle_before = totals()
@@ -343,6 +362,9 @@ def main():
                                     'dns_endpoint_bytes_by_transport': dns_bytes, 'https_probe_error': probe_error,
                                     'idle_endpoint_bytes_by_transport': idle_bytes,
                                     'idle_before_fixture_dns': before_dns_bytes,
+                                    'idle_endpoint_sockets': idle_no_dns_sockets,
+                                    'endpoint_direction_totals_before_fixture_dns': idle_no_dns_directions,
+                                    'task_adapter_route_prefix_lengths': info['prefix_lengths'] if info else None,
                                     'startup_endpoint_bytes_by_transport': startup_bytes,
                                     'dns_fixture_counts': dns_fixture_counts,
                                     'automatic_tun_default_removed': bool(info and info['automatic_default']),

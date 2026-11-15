@@ -12,6 +12,14 @@ on:
         required: false
         default: false
         type: boolean
+      endpoint_version:
+        description: Pinned official endpoint version to compare
+        required: true
+        default: v1.1.0
+        type: choice
+        options:
+          - v1.1.0
+          - v1.3.0-beta.2
 permissions:
   contents: read
   actions: read
@@ -24,6 +32,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       LIWETUN_CI_DISTRO: LiWeTunCI${{ github.run_id }}
       LIWETUN_NETWORK_DIAGNOSTIC: ${{ inputs.diagnostic_only }}
+      LIWETUN_ENDPOINT_VERSION: ${{ inputs.endpoint_version }}
     defaults:
       run:
         shell: pwsh
@@ -61,8 +70,13 @@ jobs:
         run: |
           Invoke-WebRequest https://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/ubuntu-base-22.04.5-base-amd64.tar.gz -OutFile build/ubuntu-base.tar.gz
           if ((Get-FileHash build/ubuntu-base.tar.gz -Algorithm SHA256).Hash.ToLowerInvariant() -ne '242cd8898b33ea806ef5f13b1076ed7c76f9f989d18384452f7166692438ff1a') { throw 'Rootfs digest mismatch' }
-          Invoke-WebRequest https://github.com/TrustTunnel/TrustTunnel/releases/download/v1.1.0/trusttunnel-v1.1.0-linux-x86_64.tar.gz -OutFile build/endpoint.tar.gz
-          if ((Get-FileHash build/endpoint.tar.gz -Algorithm SHA256).Hash.ToLowerInvariant() -ne '91c2ea3db7416a01b5258a4c047ec22890490bc55e1b194206031aa75144f0e7') { throw 'Endpoint digest mismatch' }
+          if ($env:LIWETUN_ENDPOINT_VERSION -eq 'v1.1.0') {
+            $endpointDigest = '91c2ea3db7416a01b5258a4c047ec22890490bc55e1b194206031aa75144f0e7'
+          } elseif ($env:LIWETUN_ENDPOINT_VERSION -eq 'v1.3.0-beta.2') {
+            $endpointDigest = '496a27ff72014b883438efab55ffd237183b5ff95d9c341cc0de9d18342a9b11'
+          } else { throw 'Unpinned endpoint version' }
+          Invoke-WebRequest "https://github.com/TrustTunnel/TrustTunnel/releases/download/${env:LIWETUN_ENDPOINT_VERSION}/trusttunnel-${env:LIWETUN_ENDPOINT_VERSION}-linux-x86_64.tar.gz" -OutFile build/endpoint.tar.gz
+          if ((Get-FileHash build/endpoint.tar.gz -Algorithm SHA256).Hash.ToLowerInvariant() -ne $endpointDigest) { throw 'Endpoint digest mismatch' }
           New-Item -ItemType Directory -Force build/endpoint | Out-Null
           tar -xf build/endpoint.tar.gz -C build/endpoint --strip-components=1
           if ($LASTEXITCODE -ne 0) { throw 'Endpoint extraction failed' }
