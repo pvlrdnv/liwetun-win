@@ -1,0 +1,54 @@
+name: Windows signed service qualification
+on:
+  workflow_dispatch:
+    inputs:
+      sdk_run_id:
+        description: Optional successful SDK qualification run for actual DLL admission
+        required: false
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  service:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    env:
+      SDK_RUN_ID: ${{ inputs.sdk_run_id }}
+      GH_TOKEN: ${{ github.token }}
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: x64
+      - name: Pinned Rust toolchain
+        run: rustup toolchain install 1.95.0 --profile minimal
+      - name: Build actual service and adversarial client
+        run: |
+          cmake -S native/service -B build/service -A x64 -DLIWETUN_TEST_NO_GLOBAL_ROUTES=ON
+          if ($LASTEXITCODE -ne 0) { throw 'Service configure failed' }
+          cmake --build build/service --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { throw 'Service build failed' }
+      - name: Fetch optional qualified SDK only from this repository
+        if: env.SDK_RUN_ID != ''
+        run: |
+          if ($env:SDK_RUN_ID -notmatch '^[0-9]{1,20}$') { throw 'Invalid SDK run ID' }
+          $run = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:SDK_RUN_ID" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $run.name -ne 'Windows SDK qualification' -or $run.conclusion -ne 'success') { throw 'SDK source run not qualified' }
+          gh run download $env:SDK_RUN_ID --repo $env:GITHUB_REPOSITORY --name sdk-development-runtime-not-for-release --dir build/sdk-runtime
+          if ($LASTEXITCODE -ne 0) { throw 'SDK artifact download failed' }
+      - name: Real signing, installation, IPC rejection and cleanup on disposable runner
+        run: |
+          if ($env:SDK_RUN_ID) { ./tools/service/qualify.ps1 -Sdk build/sdk-runtime }
+          else { ./tools/service/qualify.ps1 }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: signed-service-qualification
+          path: build/service-evidence/
+          retention-days: 7
+          if-no-files-found: error
