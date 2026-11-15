@@ -9,10 +9,15 @@ fn main() {
         ("SYNTHETIC_TT_HTTP2", Protocol::Http2, false),
         ("SYNTHETIC_TT_HTTP3", Protocol::Http3, false),
         ("SYNTHETIC_TT_INSECURE", Protocol::Http2, true),
+        ("SYNTHETIC_TT_SERVICE_LOCAL", Protocol::Http2, false),
     ] {
         let config = DeepLinkConfig::builder()
             .hostname("node.example.invalid".into())
-            .addresses(vec!["192.0.2.1:443".into()])
+            .addresses(vec![if key == "SYNTHETIC_TT_SERVICE_LOCAL" {
+                "127.0.0.1:9".into()
+            } else {
+                "192.0.2.1:443".into()
+            }])
             .username("SYNTHETIC_NATIVE_USER_261115".into())
             .password("SYNTHETIC_NATIVE_PASSWORD_261115".into())
             .upstream_protocol(protocol)

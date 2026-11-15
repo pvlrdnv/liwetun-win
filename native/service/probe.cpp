@@ -2,10 +2,94 @@
 #include "client.h"
 #include "pipe_io.h"
 #include <iostream>
+#include <fstream>
+#include <filesystem>
+#include <optional>
+#include <iphlpapi.h>
 
 using namespace liwetun;
+std::optional<bool> AdapterPresent(const wchar_t* alias) {
+  MIB_IF_TABLE2* table = nullptr;
+  if (GetIfTable2(&table) != NO_ERROR) return std::nullopt;
+  bool found = false;
+  for (ULONG i = 0; i < table->NumEntries; ++i) if (std::wstring(table->Table[i].Alias) == alias) found = true;
+  FreeMibTable(table);
+  return found;
+}
 int wmain(int argc, wchar_t** argv) {
-  const std::wstring mode = argc == 2 ? argv[1] : L"";
+  const std::wstring mode = argc >= 2 ? argv[1] : L"";
+  if (mode == L"--sdk-privacy") {
+    Image self, sdk;
+    if (!OpenTrustedImage(SelfPath(), self) || !OpenTrustedImage(Directory(self.path) + L"\\trusttunnel.dll", sdk) || !SameSigner(self, sdk)) return 40;
+    HMODULE module = LoadLibraryExW(sdk.path.c_str(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (!module) return 41;
+    auto policy = reinterpret_cast<int (*)()>(GetProcAddress(module, "liwetun_core_policy_version"));
+    auto decode = reinterpret_cast<char* (*)(const char*)>(GetProcAddress(module, "trusttunnel_decode_deeplink"));
+    auto init = reinterpret_cast<void (*)(const wchar_t*)>(GetProcAddress(module, "trusttunnel_log_init"));
+    auto export_logs = reinterpret_cast<void (*)(const wchar_t*, void (*)(void*, const wchar_t*), void*)>(GetProcAddress(module, "trusttunnel_log_export"));
+    const auto root = Directory(self.path) + L"\\forbidden-raw-logs";
+    if (!policy || !decode || !init || !export_logs || policy() != 1 || GetFileAttributesW(root.c_str()) != INVALID_FILE_ATTRIBUTES) { FreeLibrary(module); return 42; }
+    init(root.c_str());
+    if (decode("tt://?SDK_PRIVATE_SYNTHETIC_CANARY_261115") != nullptr) { FreeLibrary(module); return 43; }
+    unsigned count = 0;
+    export_logs(root.c_str(), [](void* value, const wchar_t*) { ++*static_cast<unsigned*>(value); }, &count);
+    const bool clean = count == 0 && GetFileAttributesW(root.c_str()) == INVALID_FILE_ATTRIBUTES;
+    FreeLibrary(module);
+    if (!clean) return 44;
+    std::cout << "privacy_profile_verified\n";
+    return 0;
+  }
+  if (mode == L"--driver-cycle") {
+    if (AdapterPresent(L"LiWeTun.Driver.CI") != false) return 20;
+    Image self, driver;
+    if (!OpenTrustedImage(SelfPath(), self) || !OpenTrustedImage(Directory(self.path) + L"\\wintun.dll", driver)) return 21;
+    HMODULE module = LoadLibraryExW(driver.path.c_str(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (!module) return 22;
+    auto create = reinterpret_cast<void* (WINAPI*)(LPCWSTR, LPCWSTR, const GUID*)>(GetProcAddress(module, "WintunCreateAdapter"));
+    auto close = reinterpret_cast<void (WINAPI*)(void*)>(GetProcAddress(module, "WintunCloseAdapter"));
+    if (!create || !close) { FreeLibrary(module); return 23; }
+    void* adapter = create(L"LiWeTun.Driver.CI", L"LiWeTun", nullptr);
+    if (!adapter) { FreeLibrary(module); return 24; }
+    bool seen = false;
+    for (unsigned i = 0; i < 50; ++i) { if (AdapterPresent(L"LiWeTun.Driver.CI") == true) { seen = true; break; } Sleep(100); }
+    close(adapter);
+    bool removed = false;
+    for (unsigned i = 0; i < 50; ++i) { if (AdapterPresent(L"LiWeTun.Driver.CI") == false) { removed = true; break; } Sleep(100); }
+    FreeLibrary(module);
+    std::cout << "{\"adapter_created\":" << (seen ? "true" : "false") << ",\"adapter_removed\":" << (removed ? "true" : "false") << "}\n";
+    return seen && removed ? 0 : 25;
+  }
+  if (mode == L"--native-lifecycle" && argc == 3) {
+    std::ifstream input{std::filesystem::path(argv[2])};
+    std::string uri;
+    std::getline(input, uri);
+    if (!uri.empty() && uri.back() == '\r') uri.pop_back();
+    if (!uri.starts_with("tt://?") || uri.size() > kMaxPayload) return 30;
+    auto response = ServiceRequest(Command::Start, uri, true);
+    SecureZeroMemory(uri.data(), uri.size());
+    if (response.code != Code::Ok && response.code != Code::CoreFailure) return 31;
+    bool observed = response.core_state <= 5;
+    bool adapter_seen = false;
+    for (unsigned i = 0; i < 30; ++i) {
+      adapter_seen = adapter_seen || AdapterPresent(L"LiWeTun") == true;
+      response = ServiceRequest(Command::Query);
+      observed = observed || response.core_state <= 5;
+      if (response.state == State::Error) break;
+      Sleep(100);
+    }
+    response = ServiceRequest(Command::Stop);
+    if (response.code != Code::Ok) return 32;
+    bool stopped = false;
+    for (unsigned i = 0; i < 50; ++i) {
+      response = ServiceRequest(Command::Query);
+      if (response.code == Code::Ok && response.state == State::Disconnected && AdapterPresent(L"LiWeTun") == false) { stopped = true; break; }
+      Sleep(100);
+    }
+    std::cout << "{\"core_state_observed\":" << (observed ? "true" : "false")
+        << ",\"adapter_seen\":" << (adapter_seen ? "true" : "false")
+        << ",\"stopped_and_cleaned\":" << (stopped ? "true" : "false") << "}\n";
+    return observed && stopped ? 0 : 33;
+  }
   if (mode == L"--protocol") {
     Request request{};
     request.nonce = 7;

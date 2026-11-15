@@ -12,6 +12,7 @@ add_executable(${BINARY_NAME} WIN32
   "utils.cpp"
   "win32_window.cpp"
   "trusttunnel_channel.cpp"
+  "service_channel.cpp"
   "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
   "Runner.rc"
   "runner.exe.manifest"
@@ -37,6 +38,8 @@ target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../native/windows" "${CMAKE_CURRENT_BINARY_DIR}/liwetun_native")
 target_link_libraries(${BINARY_NAME} PRIVATE liwetun_native)
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../native/service/control.cmake")
+target_link_libraries(${BINARY_NAME} PRIVATE liwetun_control)
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.

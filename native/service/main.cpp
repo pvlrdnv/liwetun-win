@@ -64,16 +64,18 @@ void WINAPI Main(DWORD, LPWSTR*) {
   try {
     Backend backend(self);
     Actor lease;
-    bool leased = false;
+    bool leased = false, lease_closing = false;
     Status(SERVICE_RUNNING);
     while (WaitForSingleObject(stopping.get(), 0) != WAIT_OBJECT_0) {
       // Until tray/background lifecycle is implemented, a crashed/closed UI
       // cannot leave a tunnel behind. Only the verified lease process is watched.
-      if (leased && WaitForSingleObject(lease.process.get(), 0) != WAIT_TIMEOUT) backend.Stop();
-      if (WaitForSingleObject(logged_off.get(), 0) == WAIT_OBJECT_0) {
-        backend.Stop(); ResetEvent(logged_off.get());
+      if (leased && !lease_closing && WaitForSingleObject(lease.process.get(), 0) != WAIT_TIMEOUT) {
+        backend.Stop(); lease_closing = true;
       }
-      if (!backend.Busy()) { leased = false; lease = Actor{}; lease_session = MAXDWORD; }
+      if (WaitForSingleObject(logged_off.get(), 0) == WAIT_OBJECT_0) {
+        backend.Stop(); lease_closing = true; ResetEvent(logged_off.get());
+      }
+      if (!backend.Busy()) { leased = false; lease_closing = false; lease = Actor{}; lease_session = MAXDWORD; }
       Handle event(CreateEventW(nullptr, TRUE, FALSE, nullptr));
       OVERLAPPED connection{};
       connection.hEvent = event.get();
@@ -104,17 +106,20 @@ void WINAPI Main(DWORD, LPWSTR*) {
           if (!body || !alive) reply.code = Code::Denied;
           else if (request.command == Command::Start || request.command == Command::Stop) {
             if (WaitForSingleObject(logged_off.get(), 0) == WAIT_OBJECT_0) {
-              backend.Stop(); ResetEvent(logged_off.get());
+              backend.Stop(); lease_closing = true; ResetEvent(logged_off.get());
             }
             if (leased && !SameLease(actor, lease)) reply.code = Code::Busy;
             else if (request.command == Command::Start) {
               reply.code = backend.Start(std::move(payload));
               if (reply.code == Code::Ok) {
-                lease = std::move(actor); leased = true; lease_session = lease.session;
+                lease = std::move(actor); leased = true; lease_closing = false; lease_session = lease.session;
               }
-            } else { backend.Stop(); }
+            } else { backend.Stop(); lease_closing = true; }
           }
-          if (reply.code == Code::Ok) backend.Snapshot(reply);
+          if (reply.code == Code::Ok) {
+            backend.Snapshot(reply);
+            if (request.command == Command::Stop) reply.code = Code::Ok; // Acknowledge queued stop, even from prior error state.
+          }
         }
         if (!payload.empty()) SecureZeroMemory(payload.data(), payload.size());
         PipeIo(pipe.get(), stopping.get(), &reply, sizeof(reply), true);

@@ -115,7 +115,7 @@ void main() {
     addTearDown(controller.dispose);
     final message = await controller.importValidated(tt);
     expect(controller.connections.single.inspection!.transport, 2);
-    expect(message, contains('Подключение службы ещё недоступно'));
+    expect(message, equals('Формат TrustTunnel проверен нативным модулем.'));
   });
 
   test(

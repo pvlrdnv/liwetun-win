@@ -52,6 +52,7 @@ Code Backend::Start(std::string uri) {
   std::lock_guard lock(mutex_);
   if (busy_ || stop_ || shutdown_) { Clear(uri); return Code::Busy; }
   pending_ = std::move(uri);
+  core_state_ = UINT32_MAX;
   busy_ = true;
   intent_ = true;
   state_ = State::Connecting;

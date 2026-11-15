@@ -12,6 +12,11 @@ enum EventId {
   nativeImportValidated,
   importRejected,
   coreUnavailable,
+  serviceRequestAccepted,
+  serviceRequestUncertain,
+  serviceRequestRejected,
+  serviceStateObserved,
+  serviceObservationLost,
   reportSaved,
   reportSaveFailed,
 }
@@ -24,6 +29,9 @@ enum ReasonCode {
   tooLong,
   notInstalled,
   ioFailure,
+  serviceUnavailable,
+  serviceDenied,
+  coreFailure,
 }
 
 /// No arbitrary string, URI, exception, remote ID or core output is accepted.

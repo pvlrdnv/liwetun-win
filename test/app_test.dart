@@ -30,7 +30,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.power_settings_new));
       await tester.pumpAndSettle();
       expect(
-        find.textContaining('Для подключения нужен модуль Windows.'),
+        find.textContaining('Сначала добавьте и выберите подключение.'),
         findsOneWidget,
       );
       await tester.tap(find.text('Серверы').last);

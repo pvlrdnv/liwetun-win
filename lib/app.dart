@@ -7,6 +7,7 @@ import 'app_controller.dart';
 import 'brand_mark.dart';
 import 'diagnostics/journal.dart';
 import 'domain/import_link.dart';
+import 'native/service.dart';
 
 const _green = Color(0xFF84D5B5);
 const _ink = Color(0xFF112B27);
@@ -238,16 +239,24 @@ class _HomeState extends State<_Home> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.circle, size: 8, color: Colors.white54),
-                  SizedBox(width: 8),
-                  Text(
-                    'НЕ ПОДКЛЮЧЕНО',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                      letterSpacing: 2,
+                  const Icon(Icons.circle, size: 8, color: Colors.white54),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      switch (widget.controller.serviceStatus.state) {
+                        ServiceState.disconnected => 'НЕ ПОДКЛЮЧЕНО',
+                        ServiceState.connecting => 'ПОДКЛЮЧЕНИЕ',
+                        ServiceState.tunnelReady => 'ТУННЕЛЬ ЗАПУЩЕН',
+                        ServiceState.recovering => 'ВОССТАНОВЛЕНИЕ',
+                        ServiceState.error => 'НУЖНА ПРОВЕРКА',
+                      },
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        letterSpacing: 2,
+                      ),
                     ),
                   ),
                 ],
@@ -255,14 +264,18 @@ class _HomeState extends State<_Home> {
               const SizedBox(height: 36),
               Center(
                 child: IconButton.filled(
-                  tooltip: 'Проверить готовность подключения',
+                  tooltip: widget.controller.stopPossible
+                      ? 'Остановить подключение'
+                      : 'Подключиться',
                   style: IconButton.styleFrom(
                     backgroundColor: _green,
                     foregroundColor: _ink,
                     padding: const EdgeInsets.all(28),
                   ),
                   iconSize: 52,
-                  onPressed: _unavailable,
+                  onPressed: widget.controller.requesting
+                      ? null
+                      : _toggleConnection,
                   icon: const Icon(Icons.power_settings_new),
                 ),
               ),
@@ -275,11 +288,24 @@ class _HomeState extends State<_Home> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Center(
+              Center(
                 child: Text(
-                  'Модуль подключения Windows ещё не интегрирован.',
+                  switch (widget.controller.serviceStatus.state) {
+                    ServiceState.disconnected =>
+                      'Для подключения нужна подписанная установленная сборка LiWeTun.',
+                    ServiceState.connecting =>
+                      'Служба запускает туннель. Работа интернета ещё не подтверждена.',
+                    ServiceState.tunnelReady =>
+                      'Передача данных через туннель ещё не подтверждена.',
+                    ServiceState.recovering =>
+                      'Связь восстанавливается. Состояние интернета неизвестно.',
+                    ServiceState.error =>
+                      widget.controller.stopPossible
+                          ? 'Состояние требует проверки. Можно запросить остановку.'
+                          : 'Проверьте установку LiWeTun и параметры подключения.',
+                  },
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, height: 1.5),
+                  style: const TextStyle(color: Colors.white70, height: 1.5),
                 ),
               ),
               const SizedBox(height: 28),
@@ -537,11 +563,9 @@ class _HomeState extends State<_Home> {
     }
   }
 
-  void _unavailable() {
-    widget.controller.connectionUnavailable();
-    _message(
-      'Для подключения нужен модуль Windows. Он пока не интегрирован; сетевые настройки не менялись.',
-    );
+  Future<void> _toggleConnection() async {
+    final message = await widget.controller.toggleConnection();
+    if (mounted) _message(message);
   }
 
   Future<void> _export() async {

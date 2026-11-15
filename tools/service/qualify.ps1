@@ -10,6 +10,10 @@ $ownerSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 $certs = @()
 $installed = $false
 $checks = [System.Collections.Generic.List[string]]::new()
+function DnsSnapshot { return (Get-DnsClientServerAddress | Sort-Object InterfaceIndex,AddressFamily | Select-Object InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Depth 4 -Compress) }
+function DefaultRoutes { return (Get-NetRoute | Where-Object { $_.DestinationPrefix -in @('0.0.0.0/0','::/0') } | Sort-Object InterfaceIndex,DestinationPrefix,NextHop | Select-Object DestinationPrefix,InterfaceIndex,NextHop,RouteMetric | ConvertTo-Json -Compress) }
+$dnsBefore = DnsSnapshot
+$routesBefore = DefaultRoutes
 
 function Cert([string]$Name) {
     $certificate = New-SelfSignedCertificate -Type CodeSigningCert -Subject ('CN=' + $Name) -CertStoreLocation Cert:\LocalMachine\My -KeyExportPolicy NonExportable -NotAfter ([DateTime]::UtcNow.AddDays(1))
@@ -111,8 +115,24 @@ try {
     Reject $client
     $checks.Add('different_owner_sid_denied_even_to_admin')
     Uninstall
+    $driver = $null; $lifecycle = $null
+    if ($Sdk) {
+        Install $ownerSid
+        $privacy = @(& $client --sdk-privacy 2>&1)
+        if ($LASTEXITCODE -ne 0 -or $privacy.Count -ne 1 -or $privacy[0].ToString().Trim() -ne 'privacy_profile_verified') { throw 'SDK raw logging suppression failed' }
+        $checks.Add('sdk_canary_no_raw_logs_or_files')
+        $driver = (& $client --driver-cycle | ConvertFrom-Json)
+        if ($LASTEXITCODE -ne 0 -or !$driver.adapter_created -or !$driver.adapter_removed) { throw 'Actual Wintun adapter lifecycle failed' }
+        $checks.Add('real_wintun_create_close')
+        $lifecycle = (& $client --native-lifecycle build/service-local-uri.txt | ConvertFrom-Json)
+        if ($LASTEXITCODE -ne 0 -or !$lifecycle.core_state_observed -or !$lifecycle.stopped_and_cleaned) { throw 'Actual SDK service lifecycle failed' }
+        $checks.Add('real_sdk_start_observe_stop')
+        Uninstall
+    }
     $checks.Add('service_uninstalled')
-    $result = @{checks=@($checks); core_runtime_ready=$runtimeReady; signed_service_ipc='verified'; tun='not_tested'; dns_routes='not_changed'; release_ready=$false}
+    if ((DnsSnapshot) -ne $dnsBefore -or (DefaultRoutes) -ne $routesBefore) { throw 'DNS or default routes changed in bounded CI mode' }
+    $checks.Add('dns_and_default_routes_unchanged')
+    $result = @{checks=@($checks); core_runtime_ready=$runtimeReady; signed_service_ipc='verified'; driver_cycle=$driver; sdk_lifecycle=$lifecycle; test_mode_no_global_routes=$true; dns_and_default_routes_unchanged=$true; release_ready=$false}
     New-Item -ItemType Directory -Force build/service-evidence | Out-Null
     $result | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 build/service-evidence/qualification.json
 } finally {
