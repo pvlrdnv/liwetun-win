@@ -41,3 +41,7 @@ That package is not available yet. It must not ask the owner to disable corporat
 protection, install a development toolchain, weaken signature checks or import a
 temporary CI certificate. Release signing, installer validation and safe report
 collection are prerequisites to owner-machine network testing.
+
+The future owner procedure and report boundary are prepared in
+[OWNER_WINDOWS_TEST.md](OWNER_WINDOWS_TEST.md). That document does not authorize
+installing the current workspace build or using the corporate device.

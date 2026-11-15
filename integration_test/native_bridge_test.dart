@@ -9,6 +9,7 @@ import 'package:liwetun/native/trusttunnel.dart';
 import 'package:liwetun/native/service.dart';
 import 'package:liwetun/native/storage.dart';
 import 'package:liwetun/domain/profile_cache.dart';
+import 'package:liwetun/native/environment.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +19,10 @@ void main() {
     final controller = AppController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(LiWeTunApp(controller: controller));
+    final environment = await const WindowsEnvironment().read();
+    expect(environment.major, 10);
+    expect(environment.build, greaterThanOrEqualTo(20348));
+    expect(environment.appArchitecture, AppArchitecture.x64);
     final capabilities = await WindowsTrustTunnel.channel
         .invokeMapMethod<String, dynamic>('capabilities');
     expect(capabilities?['canInspect'], true);

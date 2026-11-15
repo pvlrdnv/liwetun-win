@@ -56,7 +56,7 @@ final class AppController extends ChangeNotifier {
     ProfileStorageState.blocked =>
       storageCode == StorageCode.conflict
           ? 'Другое окно изменило подключения. Новые изменения только в памяти; откройте приложение заново.'
-          : 'Хранилище недоступно. Новые изменения только в памяти; существующий файл сохранён.',
+        : 'Сохранение не подтверждено. Новые изменения могут остаться только в этом сеансе; проверьте их после перезапуска.',
   };
 
   Future<void> initializeStorage() async {
@@ -334,6 +334,7 @@ final class AppController extends ChangeNotifier {
               coreState: response.coreState,
             )
           : response;
+      journal.observeService(response);
       if (response.code == ServiceCode.ok ||
           response.code == ServiceCode.coreFailure ||
           uncertain) {
@@ -377,6 +378,7 @@ final class AppController extends ChangeNotifier {
     try {
       final response = await _safeService(_service.query);
       if (_disposed || epoch != _serviceEpoch) return;
+      journal.observeService(response);
       if (response.code == ServiceCode.ok ||
           response.code == ServiceCode.coreFailure) {
         _failedPolls = 0;

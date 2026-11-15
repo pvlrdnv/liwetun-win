@@ -5,6 +5,8 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 
 import '../domain/import_link.dart';
+import '../native/environment.dart';
+import '../native/service.dart';
 
 enum EventId {
   appStarted,
@@ -75,6 +77,13 @@ final class Journal {
   final DateTime Function() _clock;
   final int maxEvents;
   final Queue<DiagnosticEvent> _events = Queue();
+  ClientEnvironment environment = const ClientEnvironment();
+  ServiceStatus? _serviceObservation;
+  DateTime? _serviceObservedAt;
+  void observeService(ServiceStatus status) {
+    _serviceObservation = status;
+    _serviceObservedAt = _clock().toUtc();
+  }
 
   void record(
     EventId event, {
@@ -106,9 +115,20 @@ final class Journal {
   Uint8List exportZip() {
     final snapshot = events;
     final summary = {
-      'schema_version': 1,
+      'schema_version': 2,
       'app_version': '0.1.0+1',
-      'native_service': 'not_integrated',
+      'environment': environment.toJson(),
+      'service_observation': {
+        'observed_at': _serviceObservedAt?.toIso8601String(),
+        'code': _serviceObservation?.code.name,
+        'state': _serviceStateKnown ? _serviceObservation?.state.name : null,
+        'runtime_ready': _serviceStateKnown
+            ? _serviceObservation?.runtimeReady
+            : null,
+        'core_state': _serviceStateKnown
+            ? _serviceObservation?.coreState
+            : null,
+      },
       'core_versions': <String, String>{},
       'traffic_metrics': 'unknown',
       'event_count': snapshot.length,
@@ -129,4 +149,8 @@ final class Journal {
       );
     return Uint8List.fromList(ZipEncoder().encode(archive));
   }
+
+  bool get _serviceStateKnown =>
+      _serviceObservation?.code == ServiceCode.ok ||
+      _serviceObservation?.code == ServiceCode.coreFailure;
 }

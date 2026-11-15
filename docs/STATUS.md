@@ -33,6 +33,12 @@ fresh-source preparation passed. Updated SDK rebuild remains pending; this does
 not qualify licenses or change the earlier network artifact. See
 [dependency closure](DEPENDENCY_CLOSURE.md).
 
+Owner-test preparation: safe report summary v2 adds bounded Windows API build /
+application architecture and timestamped service response; failed observations
+stay unknown. Local analyze and **102 Dart tests PASS**; updated Windows channel
+check pending. [Prepared scenario](OWNER_WINDOWS_TEST.md), no installer available
+yet. Journal persistence/rotation remains open.
+
 ## Current stage
 
 LOCAL development in independent private repository

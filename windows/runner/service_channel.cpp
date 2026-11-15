@@ -18,6 +18,26 @@ ServiceChannel::ServiceChannel(flutter::BinaryMessenger* messenger, HWND window)
   channel_ = std::make_unique<flutter::MethodChannel<Value>>(
       messenger, "top.likeweb.liwetun/service", &flutter::StandardMethodCodec::GetInstance());
   channel_->SetMethodCallHandler([this](const auto& call, auto result) {
+    if (call.method_name() == "environment") {
+      if (call.arguments() && !std::holds_alternative<std::monostate>(*call.arguments())) {
+        result->Error("invalid_arguments", "Invalid environment request"); return;
+      }
+      // Diagnostic observation only. The manifest declares Windows 10/11;
+      // compatibility modes can affect this API. Never use it as a feature gate.
+      OSVERSIONINFOW version{};
+      version.dwOSVersionInfoSize = sizeof(version);
+#pragma warning(push)
+#pragma warning(disable: 4996)
+      const bool known = GetVersionExW(&version) != FALSE;
+#pragma warning(pop)
+      result->Success(Value(flutter::EncodableMap{
+          {Value("major"), known ? Value(static_cast<int32_t>(version.dwMajorVersion)) : Value()},
+          {Value("minor"), known ? Value(static_cast<int32_t>(version.dwMinorVersion)) : Value()},
+          {Value("build"), known ? Value(static_cast<int32_t>(version.dwBuildNumber)) : Value()},
+          {Value("architecture"), Value("x64")},
+      }));
+      return;
+    }
     liwetun::Command command;
     std::string profile;
     if (call.method_name() == "query") command = liwetun::Command::Query;

@@ -46,6 +46,7 @@ DNS/IPv6 и приёмка на чистой Windows остаются отдел
 - [Экраны и состояния](docs/UI.md)
 - [Приёмка на Windows](docs/WINDOWS_ACCEPTANCE.md)
 - [Совместимость и проверка на втором ПК](docs/WINDOWS_COMPATIBILITY.md)
+- [Подготовка сценария проверки без среды разработки](docs/OWNER_WINDOWS_TEST.md)
 - [Нативный импорт и его границы](docs/NATIVE_IMPORT.md)
 - [Windows-служба и границы проверки](docs/WINDOWS_SERVICE.md)
 - [Приёмка реального TUN-трафика](docs/TUN_NETWORK_ACCEPTANCE.md)
