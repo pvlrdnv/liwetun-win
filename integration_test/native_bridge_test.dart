@@ -5,6 +5,7 @@ import 'package:liwetun/app.dart';
 import 'package:liwetun/app_controller.dart';
 import 'package:liwetun/domain/import_link.dart';
 import 'package:liwetun/native/trusttunnel.dart';
+import 'package:liwetun/native/service.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -56,6 +57,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('НЕ ПОДКЛЮЧЕНО'), findsOneWidget);
     expect(controller.connections.length, 2);
+    // This unsigned workspace build must fail before SCM/pipe side effects.
+    // Exercise the actual worker and platform-thread result delivery.
+    const service = WindowsService();
+    for (final request in [service.query, service.stop]) {
+      final status = await request();
+      expect(status.code, ServiceCode.untrustedInstallation);
+      expect(status.runtimeReady, false);
+      expect(status.coreState, isNull);
+    }
+    final start = await service.start(
+      const SecretLink(String.fromEnvironment('SYNTHETIC_TT_HTTP2')),
+    );
+    expect(start.code, ServiceCode.untrustedInstallation);
     await expectLater(
       WindowsTrustTunnel.channel.invokeMethod<void>(
         'arbitraryPrivilegedCommand',
