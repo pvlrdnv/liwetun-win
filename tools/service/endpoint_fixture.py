@@ -11,11 +11,11 @@ import subprocess
 import threading
 import time
 import sys
+import ipaddress
 
 
-def dns_server(stop, counters):
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.bind(('127.0.0.1', 38553))
+def dns_server(stop, counters, sock):
+    with sock:
         sock.settimeout(.2)
         while not stop.is_set():
             try:
@@ -82,7 +82,15 @@ def main():
         '[[main_hosts]]\nhostname="localhost"\ncert_chain_path="cert.pem"\nprivate_key_path="key.pem"\n')
     stop = threading.Event()
     counters = {'requests': 0, 'request_bytes': 0, 'synthetic_answers': 0, 'other_answers': 0, 'non_questions': 0}
-    worker = threading.Thread(target=dns_server, args=(stop, counters), daemon=True)
+    dns_host = '127.0.0.1'
+    if (directory / 'dns-host.txt').exists():
+        address = ipaddress.IPv4Address((directory / 'dns-host.txt').read_text().strip())
+        if not address.is_private or address.is_loopback:
+            raise RuntimeError('task_private_dns_address_required')
+        dns_host = str(address)
+    dns_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    dns_socket.bind((dns_host, 38553))
+    worker = threading.Thread(target=dns_server, args=(stop, counters, dns_socket), daemon=True)
     worker.start()
     endpoint = subprocess.Popen([str(args.binary.resolve()), 'vpn.toml', 'hosts.toml', '--jobs', '2'],
                                 cwd=directory, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

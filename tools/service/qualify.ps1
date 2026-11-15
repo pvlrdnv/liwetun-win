@@ -53,7 +53,7 @@ function Reject([string]$Executable) {
 }
 function SaveFailure([string]$Stage, $Reply) {
     # Only closed numeric probe fields; never a raw exception/core message.
-    $failure = @{stage=$Stage;native_exit=$LASTEXITCODE;code=$Reply.code;state=$Reply.state;core_state=$Reply.core_state;runtime_ready=$Reply.runtime_ready}
+    $failure = @{stage=$Stage;native_exit=$LASTEXITCODE;code=$Reply.code;state=$Reply.state;core_state=$Reply.core_state;runtime_ready=$Reply.runtime_ready;core_state_observed=$Reply.core_state_observed;adapter_seen=$Reply.adapter_seen;stopped_and_cleaned=$Reply.stopped_and_cleaned}
     New-Item -ItemType Directory -Force build/service-evidence | Out-Null
     $failure | ConvertTo-Json | Set-Content -Encoding utf8 build/service-evidence/service-failure.json
 }
@@ -145,13 +145,16 @@ try {
         $driver = (& $client --driver-cycle | ConvertFrom-Json)
         if ($LASTEXITCODE -ne 0 -or !$driver.adapter_created -or !$driver.adapter_removed) { throw 'Actual Wintun adapter lifecycle failed' }
         $checks.Add('real_wintun_create_close')
-        $lifecycle = (& $client --native-lifecycle build/service-local-uri.txt | ConvertFrom-Json)
-        if ($LASTEXITCODE -ne 0 -or !$lifecycle.core_state_observed -or !$lifecycle.stopped_and_cleaned) { throw 'Actual SDK service lifecycle failed' }
-        $checks.Add('real_sdk_start_observe_stop')
+        if (!$Network) {
+            $lifecycle = (& $client --native-lifecycle build/service-local-uri.txt | ConvertFrom-Json)
+            if ($LASTEXITCODE -ne 0 -or !$lifecycle.core_state_observed -or !$lifecycle.stopped_and_cleaned) { SaveFailure 'sdk_refused_endpoint_lifecycle' $lifecycle; throw 'Actual SDK service lifecycle failed' }
+            $checks.Add('real_sdk_start_observe_stop')
+        }
         if ($Network) {
             python tools/service/network.py --client $client
             if ($LASTEXITCODE -ne 0) { throw 'Real TUN network qualification failed; see safe network.json' }
             $checks.Add('tun_https_dns_transport_and_cleanup')
+            $lifecycle = @{verified_by='live_endpoint_network_cases';refused_endpoint_smoke='not_run'}
         }
         Uninstall
     }

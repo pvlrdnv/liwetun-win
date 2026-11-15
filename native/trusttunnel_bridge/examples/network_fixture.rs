@@ -6,6 +6,12 @@ fn main() {
     assert_eq!(env::var("GITHUB_ACTIONS").as_deref(), Ok("true"));
     let directory = env::args().nth(1).expect("fixture directory required");
     let directory = Path::new(&directory);
+    let dns_host: std::net::Ipv4Addr = fs::read_to_string(directory.join("dns-host.txt"))
+        .expect("task private DNS address")
+        .trim()
+        .parse()
+        .expect("task IPv4 DNS address");
+    assert!(dns_host.is_private() && !dns_host.is_loopback());
     let certificate = fs::read(directory.join("cert.der")).expect("synthetic certificate");
     let wrong_certificate = fs::read(directory.join("wrong-cert.der")).expect("synthetic wrong CA");
     for (name, protocol, password, cert) in [
@@ -32,7 +38,7 @@ fn main() {
             .upstream_protocol(protocol)
             .has_ipv6(false)
             .certificate(Some(cert.clone()))
-            .dns_upstreams(vec!["127.0.0.1:38553".into()])
+            .dns_upstreams(vec![format!("{dns_host}:38553")])
             .build()
             .expect("fixed synthetic fixture");
         fs::write(

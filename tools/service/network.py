@@ -244,6 +244,17 @@ def main():
     directory = (ROOT / 'build/network-fixture').resolve()
     os.environ['LIWETUN_EXPECTED_SERVICE'] = str(args.client.parent / 'liwetun_service.exe')
     directory.mkdir(exist_ok=True, parents=True)
+    INIT_STAGE = 'fixture_private_dns_address'
+    dns_host = ps("""
+    $route = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -AddressFamily IPv4 | Sort-Object RouteMetric | Select-Object -First 1
+    $address = Get-NetIPAddress -InterfaceIndex $route.InterfaceIndex -AddressFamily IPv4 |
+      Where-Object AddressState -eq 'Preferred' | Select-Object -First 1
+    $address.IPAddress | ConvertTo-Json -Compress
+    """)
+    address = ipaddress.IPv4Address(dns_host)
+    if not address.is_private or address.is_loopback:
+        raise RuntimeError('private_task_dns_address_required')
+    (directory / 'dns-host.txt').write_text(str(address))
     wsl = ['wsl.exe', '-d', distro, '--']
     def linux(path):
         # Legacy WSL1 command dispatch passes through a shell. Forward slashes
@@ -339,6 +350,14 @@ def main():
                     except OSError:
                         dns = False
                     dns_after = totals()
+                    # Counter updates may follow delivery on another endpoint
+                    # worker. Observe a short bounded interval, never fabricate
+                    # DNS transport from a correct response alone.
+                    for _ in range(10):
+                        if dns_after[protocol] > dns_before[protocol]:
+                            break
+                        time.sleep(.1)
+                        dns_after = totals()
                     dns_bytes = {key: dns_after[key] - dns_before[key] for key in dns_before}
             after = totals()
             dns_fixture_counts = endpoint.command('stats')
