@@ -1,0 +1,101 @@
+name: Windows SDK qualification
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sdk:
+    runs-on: windows-2022
+    timeout-minutes: 80
+    env:
+      RUSTUP_TOOLCHAIN: 1.95.0
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: TrustTunnel/TrustTunnelClient
+          ref: a1ce3f9d2572e8c3fd6c31e6c31881d307131f40
+          path: build/vendor/sdk
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: AdguardTeam/NativeLibsCommon
+          ref: c546b329360642576cea25f10bdcbf41d52163df
+          path: build/vendor/common
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: AdguardTeam/DnsLibs
+          ref: 3d6359be7b99e2eccbfe905e970dd08a7f1d9108
+          path: build/vendor/dns
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: x64
+      - name: Install build tools on disposable runner
+        run: |
+          python -m pip install conan==2.12.2
+          if ($LASTEXITCODE -ne 0) { throw 'Conan installation failed' }
+          rustup toolchain install 1.95.0 --profile minimal
+          if ($LASTEXITCODE -ne 0) { throw 'Rust installation failed' }
+          choco install nasm strawberryperl --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Assembly tool installation failed' }
+      - name: Prepare pinned SDK privacy profile
+        run: |
+          $lock = Get-Content native/sdk/inputs.json -Raw | ConvertFrom-Json
+          Invoke-WebRequest $lock.bootstrap.url -OutFile build/conanfiles.tar.gz
+          Invoke-WebRequest $lock.wintun.url -OutFile build/wintun.zip
+          if ((Get-FileHash build/wintun.zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne $lock.wintun.sha256) { throw 'Wintun digest mismatch' }
+          python tools/sdk/prepare.py --source build/vendor/sdk --bootstrap build/conanfiles.tar.gz --output build/sdk-evidence
+          if ($LASTEXITCODE -ne 0) { throw 'SDK source verification failed' }
+          python -m pip freeze | Set-Content build/sdk-evidence/python-build-packages.txt
+      - name: Export pinned local dependency recipes
+        run: |
+          conan export build/vendor/common --user adguard --channel oss --version 8.2.0
+          if ($LASTEXITCODE -ne 0) { throw 'Common recipe export failed' }
+          Get-ChildItem build/vendor/common/conan/recipes -Directory | ForEach-Object {
+            conan export $_.FullName --user adguard --channel oss
+            if ($LASTEXITCODE -ne 0) { throw 'Custom recipe export failed' }
+          }
+          conan export build/vendor/dns --user adguard --channel oss --version 2.11.0-alpha.1-3-g3d6359be
+          if ($LASTEXITCODE -ne 0) { throw 'DNS recipe export failed' }
+      - name: Configure and build actual SDK DLL
+        run: |
+          cmake -S build/vendor/sdk/platform/windows -B build/sdk-build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DTT_CLIENT_VERSION=1.1.12-liwetun.1
+          if ($LASTEXITCODE -ne 0) { throw 'SDK configure failed' }
+          cmake --build build/sdk-build --target trusttunnel_windows --parallel 2
+          if ($LASTEXITCODE -ne 0) { throw 'SDK build failed' }
+      - name: Stage private development SDK and evidence
+        run: |
+          New-Item -ItemType Directory -Force build/sdk-runtime | Out-Null
+          $dll = @(Get-ChildItem build/sdk-build -Recurse -Filter trusttunnel.dll)
+          if ($dll.Count -ne 1) { throw 'SDK DLL missing or ambiguous' }
+          Copy-Item $dll[0].FullName build/sdk-runtime/trusttunnel.dll
+          Expand-Archive build/wintun.zip build/wintun
+          Copy-Item build/wintun/wintun/bin/amd64/wintun.dll build/sdk-runtime/wintun.dll
+          Copy-Item build/wintun/wintun/LICENSE.txt build/sdk-runtime/WINTUN_LICENSE.txt
+          Copy-Item build/vendor/sdk/LICENSE build/sdk-runtime/TrustTunnel-Apache-2.0.txt
+          Copy-Item build/sdk-build/liwetun-conan.lock build/sdk-evidence/conan.lock
+          Copy-Item build/sdk-build/liwetun-conan-graph.json build/sdk-evidence/conan-graph.json
+          Get-FileHash build/sdk-runtime/*.dll -Algorithm SHA256 | Select-Object @{N='file';E={Split-Path $_.Path -Leaf}},Hash | ConvertTo-Json | Set-Content build/sdk-evidence/binary-digests.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: sdk-build-evidence
+          path: build/sdk-evidence/
+          retention-days: 7
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sdk-development-runtime-not-for-release
+          path: build/sdk-runtime/
+          retention-days: 3
+          if-no-files-found: error

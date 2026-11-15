@@ -1,0 +1,17 @@
+{
+  "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+  "common_commit": "c546b329360642576cea25f10bdcbf41d52163df",
+  "dns_commit": "3d6359be7b99e2eccbfe905e970dd08a7f1d9108",
+  "bootstrap": {
+    "url": "https://github.com/AdguardTeam/NativeLibsCommon/releases/download/v8.2.0/conanfiles.tar.gz",
+    "sha256": "7e7c23f79a5275653f899a135528190e319334dd547f3284fab58289d56dfeb2"
+  },
+  "wintun": {
+    "url": "https://www.wintun.net/builds/wintun-0.14.1.zip",
+    "sha256": "07c256185d6ee3652e09fa55c0b673e2624b565e02c4b9091c79ca7d2f24ef51"
+  },
+  "patched_inputs": {
+    "platform/windows/src/trusttunnel.cpp": "6026784293f517ce5c1efa73871a9f51aca5ea77473acd0e7f1dda4879c6cb64",
+    "core/src/tunnel.cpp": "eb340cbdfc551ab74e664f1f3a42cb9b796e1ba0c05aee373d7331c2b3025034"
+  }
+}

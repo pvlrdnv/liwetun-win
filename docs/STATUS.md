@@ -1,5 +1,14 @@
 # Development checkpoint — 2026-11-15
 
+## Service continuation — IN PROGRESS
+
+Owner authorized full SDK/service work. A manual SDK qualification workflow is
+being added with pinned SDK/common/DNS source commits, Conan/bootstrap/Wintun
+versions/digests and guarded source patches for a silent, destination-free
+LiWeTun SDK profile. Build/Conan closure and service/native acceptance are not
+yet complete. These changes do not enable the connection button or install
+anything on the owner's Windows machine. Earlier verified results remain below.
+
 ## Current native stage — verified import, partial network qualification
 
 Owner authorized the next native stage. Added official-parser Rust staticlib,
