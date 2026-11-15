@@ -1,5 +1,6 @@
 // Disposable-runner CI client. Only synthetic loopback profiles are used.
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #include "client.h"
 #include "pipe_io.h"
 #include <iostream>
@@ -7,7 +8,6 @@
 #include <filesystem>
 #include <optional>
 #include <iphlpapi.h>
-#include <netioapi.h>
 
 using namespace liwetun;
 std::optional<bool> AdapterPresent(const wchar_t* alias) {
