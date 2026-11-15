@@ -19,6 +19,9 @@ enum EventId {
   serviceObservationLost,
   reportSaved,
   reportSaveFailed,
+  profilesRestored,
+  profilesSaved,
+  profileStorageFailed,
 }
 
 enum ReasonCode {

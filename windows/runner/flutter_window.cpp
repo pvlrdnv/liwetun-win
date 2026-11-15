@@ -27,6 +27,7 @@ bool FlutterWindow::OnCreate() {
   RegisterPlugins(flutter_controller_->engine());
   trusttunnel_channel_ = std::make_unique<TrustTunnelChannel>(flutter_controller_->engine()->messenger());
   service_channel_ = std::make_unique<ServiceChannel>(flutter_controller_->engine()->messenger(), GetHandle());
+  storage_channel_ = std::make_unique<StorageChannel>(flutter_controller_->engine()->messenger(), GetHandle());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -42,6 +43,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  storage_channel_.reset();
   service_channel_.reset();
   trusttunnel_channel_.reset();
   if (flutter_controller_) {
@@ -55,6 +57,10 @@ LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
+  if (message == StorageChannel::kCompletion && storage_channel_) {
+    storage_channel_->Complete();
+    return 0;
+  }
   if (message == ServiceChannel::kCompletion && service_channel_) {
     service_channel_->Complete();
     return 0;

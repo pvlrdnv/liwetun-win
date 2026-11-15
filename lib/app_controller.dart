@@ -4,8 +4,12 @@ import 'package:flutter/foundation.dart';
 
 import 'diagnostics/journal.dart';
 import 'domain/import_link.dart';
+import 'domain/profile_cache.dart';
 import 'native/trusttunnel.dart';
 import 'native/service.dart';
+import 'native/storage.dart';
+
+enum ProfileStorageState { memoryOnly, loading, saved, saving, blocked }
 
 final class LocalConnection {
   const LocalConnection(this.number, this.link, {this.inspection});
@@ -22,15 +26,148 @@ final class AppController extends ChangeNotifier {
     Journal? journal,
     TrustTunnelInspector? inspector,
     ServiceGateway? service,
+    StorageGateway? storage,
   }) : journal = journal ?? Journal(),
        _inspector = inspector ?? const WindowsTrustTunnel(),
-       _service = service ?? const WindowsService() {
+       _service = service ?? const WindowsService(),
+       _storage = storage ?? const WindowsStorage() {
     this.journal.record(EventId.appStarted);
   }
 
   final Journal journal;
   final TrustTunnelInspector _inspector;
   final ServiceGateway _service;
+  final StorageGateway _storage;
+  ProfileStorageState storageState = ProfileStorageState.memoryOnly;
+  StorageCode storageCode = StorageCode.unavailable;
+  bool _storageInitialized = false, _storageWritable = false;
+  String _storageRevision = '';
+  int _profileVersion = 0;
+  bool _saving = false;
+  String get storageNotice => switch (storageState) {
+    ProfileStorageState.loading => 'Загружаем сохранённые подключения…',
+    ProfileStorageState.saving => 'Сохраняем подключения…',
+    ProfileStorageState.saved =>
+      'Подключения сохранены с защитой вашей учётной записи Windows.',
+    ProfileStorageState.memoryOnly =>
+      'Ссылки сохраняются только до закрытия приложения.',
+    ProfileStorageState.blocked =>
+      storageCode == StorageCode.conflict
+          ? 'Другое окно изменило подключения. Новые изменения только в памяти; откройте приложение заново.'
+          : 'Хранилище недоступно. Новые изменения только в памяти; существующий файл сохранён.',
+  };
+
+  Future<void> initializeStorage() async {
+    if (_storageInitialized || _disposed) return;
+    _storageInitialized = true;
+    if (_connections.isNotEmpty) {
+      _blockStorage(StorageCode.conflict);
+      return;
+    }
+    storageState = ProfileStorageState.loading;
+    notifyListeners();
+    try {
+      final reply = await _storage.load();
+      if (_disposed) return;
+      if (reply.code == StorageCode.unavailable) {
+        storageState = ProfileStorageState.memoryOnly;
+      } else if (reply.code == StorageCode.missing) {
+        _storageWritable = true;
+        storageState = ProfileStorageState.saved;
+      } else if (reply.code == StorageCode.ok &&
+          reply.payload != null &&
+          reply.revision.isNotEmpty) {
+        final cache = ProfileCache.decode(reply.payload!);
+        final restored = <LocalConnection>[];
+        for (final link in cache.links) {
+          NativeInspection? inspection;
+          if (link.protocol == Protocol.trusttunnel) {
+            inspection = await _inspector.inspect(link.secret);
+            if (_disposed) return;
+            if (inspection.status != NativeImportStatus.accepted &&
+                inspection.status != NativeImportStatus.unavailable) {
+              _blockStorage(StorageCode.corrupt);
+              return;
+            }
+          }
+          restored.add(
+            LocalConnection(restored.length + 1, link, inspection: inspection),
+          );
+        }
+        _connections.addAll(restored);
+        _selectedId = cache.selectedId;
+        _storageRevision = reply.revision;
+        _storageWritable = true;
+        storageState = ProfileStorageState.saved;
+        journal.record(EventId.profilesRestored);
+      } else {
+        _blockStorage(
+          reply.code == StorageCode.ok ? StorageCode.failed : reply.code,
+        );
+        return;
+      }
+      storageCode = reply.code;
+      notifyListeners();
+    } on CacheException catch (error) {
+      if (!_disposed) {
+        _blockStorage(
+          error.reason == CacheFailure.unsupported
+              ? StorageCode.unsupported
+              : StorageCode.corrupt,
+        );
+      }
+    } catch (_) {
+      if (!_disposed) _blockStorage(StorageCode.failed);
+    }
+  }
+
+  void _blockStorage(StorageCode code) {
+    _storageWritable = false;
+    storageCode = code;
+    storageState = ProfileStorageState.blocked;
+    journal.record(EventId.profileStorageFailed, reason: ReasonCode.ioFailure);
+    notifyListeners();
+  }
+
+  void _profilesChanged() {
+    _profileVersion++;
+    if (_storageWritable && !_saving) unawaited(_saveProfiles());
+  }
+
+  Future<void> _saveProfiles() async {
+    _saving = true;
+    storageState = ProfileStorageState.saving;
+    try {
+      while (_storageWritable && !_disposed) {
+        final version = _profileVersion;
+        final payload = ProfileCache(
+          links: _connections.map((connection) => connection.link),
+          selectedId: _selectedId,
+        ).encode();
+        final reply = await _storage.save(payload, _storageRevision);
+        if (_disposed) return;
+        if (reply.code != StorageCode.ok || reply.revision.isEmpty) {
+          _blockStorage(
+            reply.code == StorageCode.ok ? StorageCode.failed : reply.code,
+          );
+          return;
+        }
+        _storageRevision = reply.revision;
+        storageCode = StorageCode.ok;
+        if (version == _profileVersion) {
+          storageState = ProfileStorageState.saved;
+          journal.record(EventId.profilesSaved);
+          break;
+        }
+      }
+    } catch (_) {
+      if (!_disposed) _blockStorage(StorageCode.failed);
+    } finally {
+      _saving = false;
+    }
+    if (!_disposed) notifyListeners();
+  }
+
   ServiceStatus serviceStatus = const ServiceStatus();
   Timer? _pollTimer;
   bool _requesting = false, _polling = false, _stopPossible = false;
@@ -51,6 +188,9 @@ final class AppController extends ChangeNotifier {
   }
 
   Future<String> importValidated(String value) async {
+    if (storageState == ProfileStorageState.loading) {
+      return 'Дождитесь загрузки подключений.';
+    }
     ImportedLink parsed;
     try {
       parsed = parseLink(value);
@@ -87,6 +227,7 @@ final class AppController extends ChangeNotifier {
       final index = _connections.indexWhere(
         (item) => item.link.localId == parsed.localId,
       );
+      if (index < 0) return message;
       _connections[index] = LocalConnection(
         _connections[index].number,
         parsed,
@@ -104,14 +245,22 @@ final class AppController extends ChangeNotifier {
 
   /// Returns a fixed message; never the user's input or a raw parser exception.
   String import(String value) {
+    if (_disposed) return 'Приложение закрыто.';
+    if (storageState == ProfileStorageState.loading) {
+      return 'Дождитесь загрузки подключений.';
+    }
     try {
       final link = parseLink(value);
       if (_connections.any((item) => item.link.localId == link.localId)) {
         return 'Эта ссылка уже добавлена.';
       }
+      if (_connections.length >= ProfileCache.maxProfiles) {
+        return 'Достигнут предел: 100 подключений и подписок.';
+      }
       _connections.add(LocalConnection(_connections.length + 1, link));
       if (link.kind == ImportKind.profile) _selectedId ??= link.localId;
       journal.record(EventId.importAccepted, protocol: link.protocol);
+      _profilesChanged();
       notifyListeners();
       return link.kind == ImportKind.subscription
           ? 'Ссылка добавлена. Загрузка подписки будет доступна на следующем этапе.'
@@ -136,8 +285,14 @@ final class AppController extends ChangeNotifier {
   }
 
   void select(LocalConnection connection) {
-    if (connection.link.kind != ImportKind.profile) return;
+    if (_disposed ||
+        connection.link.kind != ImportKind.profile ||
+        !_connections.contains(connection) ||
+        _selectedId == connection.link.localId) {
+      return;
+    }
     _selectedId = connection.link.localId;
+    _profilesChanged();
     notifyListeners();
   }
 

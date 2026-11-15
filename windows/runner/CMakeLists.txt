@@ -13,6 +13,7 @@ add_executable(${BINARY_NAME} WIN32
   "win32_window.cpp"
   "trusttunnel_channel.cpp"
   "service_channel.cpp"
+  "storage_channel.cpp"
   "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
   "Runner.rc"
   "runner.exe.manifest"
@@ -40,6 +41,8 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../native/windows" "${CMAKE_CUR
 target_link_libraries(${BINARY_NAME} PRIVATE liwetun_native)
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../native/service/control.cmake")
 target_link_libraries(${BINARY_NAME} PRIVATE liwetun_control)
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../native/storage/storage.cmake")
+target_link_libraries(${BINARY_NAME} PRIVATE liwetun_storage)
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.

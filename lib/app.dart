@@ -333,9 +333,9 @@ class _HomeState extends State<_Home> {
         label: const Text('Добавить подключение'),
       ),
       const SizedBox(height: 16),
-      const Text(
-        'Ссылки сохраняются только до закрытия приложения.',
-        style: TextStyle(fontSize: 12),
+      Text(
+        widget.controller.storageNotice,
+        style: const TextStyle(fontSize: 12),
       ),
     ],
   );
@@ -521,7 +521,7 @@ class _HomeState extends State<_Home> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Вставьте ссылку подключения или HTTPS-подписки. Она останется только в памяти приложения.',
+                  'Вставьте ссылку подключения или HTTPS-подписки. Состояние сохранения отображается в приложении.',
                 ),
                 const SizedBox(height: 20),
                 TextField(

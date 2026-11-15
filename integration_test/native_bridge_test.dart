@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:liwetun/app.dart';
@@ -6,6 +7,8 @@ import 'package:liwetun/app_controller.dart';
 import 'package:liwetun/domain/import_link.dart';
 import 'package:liwetun/native/trusttunnel.dart';
 import 'package:liwetun/native/service.dart';
+import 'package:liwetun/native/storage.dart';
+import 'package:liwetun/domain/profile_cache.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -77,4 +80,57 @@ void main() {
       throwsA(isA<MissingPluginException>()),
     );
   });
+  testWidgets(
+    'actual user DPAPI channel restores profiles without connecting',
+    (tester) async {
+      // This test writes synthetic profiles only on a disposable runner.
+      expect(Platform.environment['GITHUB_ACTIONS'], 'true');
+      const storage = WindowsStorage();
+      final initial = await storage.load();
+      expect(initial.code, StorageCode.missing);
+      String revision = '';
+      try {
+        final link = parseLink(
+          const String.fromEnvironment('SYNTHETIC_TT_HTTP3'),
+        );
+        final saved = await storage.save(
+          ProfileCache(links: [link], selectedId: link.localId).encode(),
+          '',
+        );
+        expect(saved.code, StorageCode.ok);
+        revision = saved.revision;
+        final conflict = await storage.save('{}', '');
+        expect(conflict.code, StorageCode.conflict);
+        final controller = AppController();
+        addTearDown(controller.dispose);
+        await controller.initializeStorage();
+        expect(controller.storageState, ProfileStorageState.saved);
+        expect(controller.selected?.link.localId, link.localId);
+        expect(
+          controller.selected?.inspection?.status,
+          NativeImportStatus.accepted,
+        );
+        expect(controller.stopPossible, false);
+        final loaded = await storage.load();
+        expect(loaded.code, StorageCode.ok);
+        expect(loaded.revision, revision);
+        expect(
+          ProfileCache.decode(loaded.payload!).links.single.secret.value,
+          link.secret.value,
+        );
+        await expectLater(
+          WindowsStorage.channel.invokeMethod<void>('save', {
+            'path': 'PRIVATE_CANARY',
+          }),
+          throwsA(isA<PlatformException>()),
+        );
+        expect((await storage.load()).revision, revision);
+      } finally {
+        if (revision.isNotEmpty) {
+          expect((await storage.clear(revision)).code, StorageCode.ok);
+          expect((await storage.load()).code, StorageCode.missing);
+        }
+      }
+    },
+  );
 }

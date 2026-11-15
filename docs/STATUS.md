@@ -15,11 +15,14 @@ acceptance. The corporate tunnel on the development device stays operating.
 [Compatibility plan](WINDOWS_COMPATIBILITY.md). Windows Server CI is not desktop
 acceptance and normal global routing/IPv6 remain open.
 
-## Protected-storage continuation — starting
+## Protected-storage continuation — native PASS, GUI verification pending
 
-Next: current-user Windows DPAPI, private per-user ACLs, encrypted atomic storage,
-strict bounded profile snapshots and honest load/save failure handling. Profiles
-are still memory-only until that code and actual Windows checks pass.
+Current-user Windows DPAPI, private per-user ACLs, encrypted atomic replacement
+and revision compare-and-swap passed actual Windows qualification on `a08114b`:
+[run 43751590632](https://github.com/pvlrdnv/liwetun-win/actions/runs/43751590632).
+GUI worker channel, bounded profile schema, serialized persistence and honest
+failure states are implemented; updated native application checks are pending.
+Local analyze and 99 Dart tests passed. [Storage design/evidence](PROFILE_STORAGE.md).
 
 ## Current stage
 
@@ -37,7 +40,7 @@ also passed on disposable Windows CI. See [service architecture](WINDOWS_SERVICE
 ## Implemented
 
 - Flutter Windows shell with three screens, system themes and own SVG/ICO mark.
-- In-memory TT direct/QR import through official Rust parser and real Windows
+- TT direct/QR import through official Rust parser and real Windows
   C++ channel; restricted TLS VLESS/HY2 import, HTTPS subscription-source parsing.
   TLS bypass and unsupported embedded TT subscriptions are rejected.
 - Strict proposed subscription snapshot parser/store: atomic complete/partial
@@ -93,8 +96,9 @@ also passed on disposable Windows CI. See [service architecture](WINDOWS_SERVICE
 ## Remaining gates
 
 The client is not release-ready. Unsigned workspace builds fail service admission;
-no service is installed on the owner's computer. Imported secrets disappear on
-exit. No protected storage, signed installer/updater, subscription fetch,
+no service is installed on the owner's computer. Protected storage is implemented
+with native checks passed; updated GUI integration is pending. No signed
+installer/updater, subscription fetch,
 recovery/tray/startup, persistent rotated journal, real metrics, route-bound
 health probes, kill switch or Hysteria2/Xray connection adapter.
 
