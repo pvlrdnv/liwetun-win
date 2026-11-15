@@ -6,6 +6,7 @@
 namespace liwetun::storage {
 constexpr size_t kMaxPayload = 1024 * 1024;
 enum class Code : uint32_t { Ok, Missing, Corrupt, Denied, Busy, Conflict, TooLarge, Failed, Unsupported };
+enum class Area { Profiles, Journal };
 struct Snapshot {
   Code code = Code::Failed;
   std::string payload;
@@ -20,9 +21,9 @@ struct Snapshot {
 };
 
 // Fixed current-user location only. There is no caller-supplied file path.
-Snapshot Load();
-Snapshot Save(std::string payload, const std::string& expected_revision);
-Snapshot Clear(const std::string& expected_revision);
+Snapshot Load(Area area = Area::Profiles);
+Snapshot Save(std::string payload, const std::string& expected_revision, Area area = Area::Profiles);
+Snapshot Clear(const std::string& expected_revision, Area area = Area::Profiles);
 
 #ifdef LIWETUN_STORAGE_TEST_ONLY
 std::wstring TestDirectory();

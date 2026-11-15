@@ -15,7 +15,7 @@ constexpr size_t kMaxContainer = kMaxPayload + 65536;
 constexpr std::array<unsigned char, 8> kHeader{'L', 'W', 'P', 'S', 1, 0, 0, 0};
 constexpr std::array<unsigned char, 8> kInner{'L', 'W', 'P', 'D', 1, 0, 0, 0};
 constexpr char kPurpose[] = "LiWeTun.profile-store.v1";
-constexpr wchar_t kFile[] = L"profiles.v1.bin";
+constexpr char kJournalPurpose[] = "LiWeTun.diagnostic-journal.v1";
 #ifdef LIWETUN_STORAGE_TEST_ONLY
 constexpr wchar_t kDirectory[] = L"LiWeTun-Storage-CI";
 #else
@@ -37,7 +37,9 @@ struct Blob {
   DATA_BLOB data{};
   ~Blob() { if (data.pbData) { SecureZeroMemory(data.pbData, data.cbData); LocalFree(data.pbData); } }
 };
-DATA_BLOB Entropy() {
+DATA_BLOB Entropy(Area area) {
+  if (area == Area::Journal) return DATA_BLOB{static_cast<DWORD>(sizeof(kJournalPurpose) - 1),
+      reinterpret_cast<BYTE*>(const_cast<char*>(kJournalPurpose))};
   return DATA_BLOB{static_cast<DWORD>(sizeof(kPurpose) - 1),
       reinterpret_cast<BYTE*>(const_cast<char*>(kPurpose))};
 }
@@ -78,6 +80,7 @@ std::wstring StoreDirectory() {
   return path + L"\\" + kDirectory;
 }
 struct Context {
+  Area area = Area::Profiles;
   std::vector<unsigned char> token_user;
   std::wstring sid, directory;
   Local descriptor;
@@ -87,6 +90,10 @@ struct Context {
   ~Context() { if (acquired) ReleaseMutex(mutex.get()); }
   PSID User() const { return reinterpret_cast<const TOKEN_USER*>(token_user.data())->User.Sid; }
 };
+std::wstring File(const Context& context, bool pending = false) {
+  return context.directory + L"\\" + (pending ? L".journal.v1.pending.bin" :
+      context.area == Area::Profiles ? L"profiles.v1.bin" : L"journal.v1.bin");
+}
 bool PrivateObject(HANDLE file, PSID user, bool directory) {
   FILE_ATTRIBUTE_TAG_INFO attributes{};
   if (!GetFileInformationByHandleEx(file, FileAttributeTagInfo, &attributes, sizeof(attributes)) ||
@@ -112,7 +119,9 @@ bool PrivateObject(HANDLE file, PSID user, bool directory) {
   }
   return own_access;
 }
-bool OpenContext(Context& context, bool create) {
+bool OpenContext(Context& context, bool create, Area area) {
+  if (area != Area::Profiles && area != Area::Journal) return false;
+  context.area = area;
   Handle token;
   HANDLE raw_token = nullptr;
   if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &raw_token)) return false;
@@ -159,8 +168,8 @@ bool OpenContext(Context& context, bool create) {
   context.code = Code::Ok;
   return true;
 }
-Code ReadContainer(Context& context, std::vector<unsigned char>& bytes, std::string& revision) {
-  Handle file(CreateFileW((context.directory + L"\\" + kFile).c_str(), GENERIC_READ | READ_CONTROL,
+Code ReadContainer(Context& context, std::vector<unsigned char>& bytes, std::string& revision, bool pending = false) {
+  Handle file(CreateFileW(File(context, pending).c_str(), GENERIC_READ | READ_CONTROL,
       FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, nullptr));
   if (!file || file.get() == INVALID_HANDLE_VALUE) return IoCode(GetLastError());
   if (!PrivateObject(file.get(), context.User(), false)) return Code::Denied;
@@ -175,11 +184,11 @@ Code ReadContainer(Context& context, std::vector<unsigned char>& bytes, std::str
   revision = Hex(digest);
   return Code::Ok;
 }
-Snapshot Decode(const std::vector<unsigned char>& bytes) {
+Snapshot Decode(const std::vector<unsigned char>& bytes, Area area) {
   if (bytes.size() < kHeader.size() || !std::equal(kHeader.begin(), kHeader.begin() + 4, bytes.begin())) return Snapshot(Code::Corrupt);
   if (!std::equal(kHeader.begin(), kHeader.end(), bytes.begin())) return Snapshot(Code::Unsupported);
   DATA_BLOB input{static_cast<DWORD>(bytes.size() - kHeader.size()), const_cast<BYTE*>(bytes.data() + kHeader.size())};
-  DATA_BLOB entropy = Entropy();
+  DATA_BLOB entropy = Entropy(area);
   Blob plain;
   if (!CryptUnprotectData(&input, nullptr, &entropy, nullptr, nullptr, CRYPTPROTECT_UI_FORBIDDEN, &plain.data)) return Snapshot(Code::Corrupt);
   const size_t prefix = kInner.size() + Digest{}.size();
@@ -193,7 +202,7 @@ Snapshot Decode(const std::vector<unsigned char>& bytes) {
   result.payload.assign(reinterpret_cast<const char*>(payload), size);
   return result;
 }
-Code Encode(std::string& payload, std::vector<unsigned char>& bytes) {
+Code Encode(std::string& payload, std::vector<unsigned char>& bytes, Area area) {
   if (payload.size() > kMaxPayload) return Code::TooLarge;
   Digest digest{};
   if (!HashBytes(reinterpret_cast<const unsigned char*>(payload.data()), payload.size(), digest)) return Code::Failed;
@@ -202,7 +211,7 @@ Code Encode(std::string& payload, std::vector<unsigned char>& bytes) {
   plain.insert(plain.end(), digest.begin(), digest.end());
   plain.insert(plain.end(), payload.begin(), payload.end());
   DATA_BLOB input{static_cast<DWORD>(plain.size()), plain.data()};
-  DATA_BLOB entropy = Entropy();
+  DATA_BLOB entropy = Entropy(area);
   Blob encrypted;
   // No CRYPTPROTECT_LOCAL_MACHINE: bind protection to the calling Windows user.
   if (!CryptProtectData(&input, L"LiWeTun profile store v1", &entropy, nullptr, nullptr,
@@ -212,12 +221,30 @@ Code Encode(std::string& payload, std::vector<unsigned char>& bytes) {
   bytes.insert(bytes.end(), encrypted.data.pbData, encrypted.data.pbData + encrypted.data.cbData);
   return Code::Ok;
 }
+Code RemoveJournalPending(Context& context, bool explicit_clear) {
+  if (context.area != Area::Journal) return Code::Ok;
+  std::vector<unsigned char> bytes;
+  std::string revision;
+  const Code found = ReadContainer(context, bytes, revision, true);
+  if (found == Code::Missing) return Code::Ok;
+  if (found != Code::Ok) return found;
+  // After a crash retain the last committed canonical file. Only a private,
+  // valid task-specific encrypted pending file can be discarded automatically.
+  if (!explicit_clear) {
+    auto decoded = Decode(bytes, Area::Journal);
+    if (decoded.code != Code::Ok) return decoded.code;
+  }
+  return DeleteFileW(File(context, true).c_str()) ? Code::Ok : IoCode(GetLastError());
+}
 Code Replace(Context& context, const std::vector<unsigned char>& bytes) {
   Digest random{};
   if (BCryptGenRandom(nullptr, random.data(), static_cast<ULONG>(random.size()), BCRYPT_USE_SYSTEM_PREFERRED_RNG) < 0) return Code::Failed;
   const std::string suffix = Hex(random);
-  const std::wstring temporary = context.directory + L"\\.profiles." + std::wstring(suffix.begin(), suffix.end()) + L".tmp";
-  const std::wstring destination = context.directory + L"\\" + kFile;
+  const std::wstring temporary = context.area == Area::Journal ? File(context, true) :
+      context.directory + L"\\.profiles." + std::wstring(suffix.begin(), suffix.end()) + L".tmp";
+  const std::wstring destination = File(context);
+  const Code pending = RemoveJournalPending(context, false);
+  if (pending != Code::Ok) return pending;
   SECURITY_ATTRIBUTES attributes{sizeof(SECURITY_ATTRIBUTES), context.descriptor.get(), FALSE};
   Handle file(CreateFileW(temporary.c_str(), GENERIC_WRITE, 0, &attributes, CREATE_NEW, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH, nullptr));
   if (!file || file.get() == INVALID_HANDLE_VALUE) return IoCode(GetLastError());
@@ -239,37 +266,37 @@ Snapshot& Snapshot::operator=(Snapshot&& other) noexcept {
   if (this != &other) { Wipe(payload); code = other.code; payload = std::move(other.payload); revision = std::move(other.revision); }
   return *this;
 }
-Snapshot Load() {
+Snapshot Load(Area area) {
   try {
     Context context;
-    if (!OpenContext(context, false)) return Snapshot(context.code);
+    if (!OpenContext(context, false, area)) return Snapshot(context.code);
     std::vector<unsigned char> bytes;
     std::string revision;
     const Code code = ReadContainer(context, bytes, revision);
     if (code != Code::Ok) return Snapshot(code);
-    Snapshot result = Decode(bytes);
+    Snapshot result = Decode(bytes, area);
     result.revision = std::move(revision);
     return result;
   } catch (...) { return Snapshot(Code::Failed); }
 }
-Snapshot Save(std::string payload, const std::string& expected_revision) {
+Snapshot Save(std::string payload, const std::string& expected_revision, Area area) {
   WipeString cleanup{payload};
   try {
     if (payload.size() > kMaxPayload) return Snapshot(Code::TooLarge);
     if (!RevisionValid(expected_revision)) return Snapshot(Code::Conflict);
     Context context;
-    if (!OpenContext(context, true)) return Snapshot(context.code);
+    if (!OpenContext(context, true, area)) return Snapshot(context.code);
     std::vector<unsigned char> previous;
     std::string revision;
     const Code found = ReadContainer(context, previous, revision);
     if (found != Code::Ok && found != Code::Missing) return Snapshot(found);
     if (revision != expected_revision) return Snapshot(Code::Conflict);
     if (found == Code::Ok) {
-      Snapshot valid = Decode(previous);
+      Snapshot valid = Decode(previous, area);
       if (valid.code != Code::Ok) return Snapshot(valid.code);
     }
     std::vector<unsigned char> encrypted;
-    const Code encoded = Encode(payload, encrypted);
+    const Code encoded = Encode(payload, encrypted, area);
     if (encoded != Code::Ok) return Snapshot(encoded);
     const Code written = Replace(context, encrypted);
     if (written != Code::Ok) return Snapshot(written);
@@ -280,22 +307,24 @@ Snapshot Save(std::string payload, const std::string& expected_revision) {
     return result;
   } catch (...) { return Snapshot(Code::Failed); }
 }
-Snapshot Clear(const std::string& expected_revision) {
+Snapshot Clear(const std::string& expected_revision, Area area) {
   try {
     if (!RevisionValid(expected_revision)) return Snapshot(Code::Conflict);
     Context context;
-    if (!OpenContext(context, false)) return Snapshot(context.code == Code::Missing && expected_revision.empty() ? Code::Ok : context.code);
+    if (!OpenContext(context, false, area)) return Snapshot(context.code == Code::Missing && expected_revision.empty() ? Code::Ok : context.code);
     std::vector<unsigned char> bytes;
     std::string revision;
     const Code found = ReadContainer(context, bytes, revision);
     if (found != Code::Ok && found != Code::Missing) return Snapshot(found);
     if (revision != expected_revision) return Snapshot(Code::Conflict);
-    if (found == Code::Ok && !DeleteFileW((context.directory + L"\\" + kFile).c_str())) return Snapshot(IoCode(GetLastError()));
+    const Code pending = RemoveJournalPending(context, true);
+    if (pending != Code::Ok) return Snapshot(pending);
+    if (found == Code::Ok && !DeleteFileW(File(context).c_str())) return Snapshot(IoCode(GetLastError()));
     return Snapshot(Code::Ok);
   } catch (...) { return Snapshot(Code::Failed); }
 }
 #ifdef LIWETUN_STORAGE_TEST_ONLY
 std::wstring TestDirectory() { return StoreDirectory(); }
-bool TestCanDecryptContainer(const std::vector<unsigned char>& bytes) { return Decode(bytes).code == Code::Ok; }
+bool TestCanDecryptContainer(const std::vector<unsigned char>& bytes) { return Decode(bytes, Area::Profiles).code == Code::Ok; }
 #endif
 }  // namespace liwetun::storage

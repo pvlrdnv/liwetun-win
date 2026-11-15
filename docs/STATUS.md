@@ -35,9 +35,17 @@ not qualify licenses or change the earlier network artifact. See
 
 Owner-test preparation: safe report summary v2 adds bounded Windows API build /
 application architecture and timestamped service response; failed observations
-stay unknown. Local analyze and **102 Dart tests PASS**; updated Windows channel
-check pending. [Prepared scenario](OWNER_WINDOWS_TEST.md), no installer available
+stay unknown. **102 Dart + 6 Rust + 2 actual desktop tests PASS**, analyze and
+Windows release build PASS on `ddef944`:
+[run 43753564027](https://github.com/pvlrdnv/liwetun-win/actions/runs/43753564027),
+[build evidence](evidence/windows-report-ddef944.json).
+[Prepared scenario](OWNER_WINDOWS_TEST.md), no installer available
 yet. Journal persistence/rotation remains open.
+
+Journal continuation: a separate current-user DPAPI slot is implemented in native
+storage, with a different protection purpose and fixed bounded pending file.
+New native checks cover profile/journal isolation and crash-orphan handling;
+Windows qualification is pending. It is not wired to GUI journal persistence yet.
 
 ## Current stage
 

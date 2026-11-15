@@ -57,7 +57,8 @@ bool SetAcl(const std::wstring& path, bool broad) {
   BOOL present = FALSE, defaulted = FALSE;
   const bool valid = GetSecurityDescriptorDacl(descriptor, &present, &dacl, &defaulted) && present &&
       SetNamedSecurityInfoW(const_cast<LPWSTR>(path.c_str()), SE_FILE_OBJECT,
-          DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION, nullptr, nullptr, dacl, nullptr) == ERROR_SUCCESS;
+          OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+          reinterpret_cast<TOKEN_USER*>(user.data())->User.Sid, nullptr, dacl, nullptr) == ERROR_SUCCESS;
   LocalFree(descriptor);
   return valid;
 }
@@ -143,6 +144,34 @@ void UserTests(bool cleanup) {
   Check(st::Clear(current.revision).code == st::Code::Ok, "clear_before_cross_context");
   saved = st::Save(kPayload, "");
   Check(saved.code == st::Code::Ok, "cross_context_fixture_ready");
+  const auto journal_file = directory + L"\\journal.v1.bin";
+  const auto pending_file = directory + L"\\.journal.v1.pending.bin";
+  auto journal = st::Save(kPayload + " journal", "", st::Area::Journal);
+  Check(journal.code == st::Code::Ok && st::Load(st::Area::Journal).payload == kPayload + " journal" &&
+      st::Load().revision == saved.revision, "journal_profile_storage_isolation");
+  Rewrite(journal_file, Raw(file));
+  auto swapped = st::Load(st::Area::Journal);
+  Check(swapped.code == st::Code::Corrupt && st::Save(kPayload, swapped.revision, st::Area::Journal).code == st::Code::Corrupt,
+      "journal_profile_ciphertext_not_interchangeable");
+  Check(st::Clear(swapped.revision, st::Area::Journal).code == st::Code::Ok && st::Load().revision == saved.revision,
+      "journal_clear_preserves_profiles");
+  journal = st::Save(kPayload, "", st::Area::Journal);
+  Check(journal.code == st::Code::Ok, "journal_pending_fixture_ready");
+  Rewrite(pending_file, Raw(journal_file));
+  Check(SetAcl(pending_file, false), "journal_pending_private_owner");
+  auto recovered = st::Save(kPayload + " recovered", journal.revision, st::Area::Journal);
+  Check(recovered.code == st::Code::Ok && GetFileAttributesW(pending_file.c_str()) == INVALID_FILE_ATTRIBUTES &&
+      st::Load(st::Area::Journal).payload == kPayload + " recovered", "valid_orphan_pending_recovered");
+  auto bad_pending = Raw(journal_file);
+  bad_pending.back() ^= 1;
+  Rewrite(pending_file, bad_pending);
+  Check(SetAcl(pending_file, false), "corrupt_pending_private_owner");
+  Check(st::Save(kPayload, recovered.revision, st::Area::Journal).code == st::Code::Corrupt &&
+      st::Load(st::Area::Journal).revision == recovered.revision, "corrupt_pending_preserved_without_overwrite");
+  Check(st::Clear(recovered.revision, st::Area::Journal).code == st::Code::Ok &&
+      GetFileAttributesW(pending_file.c_str()) == INVALID_FILE_ATTRIBUTES &&
+      st::Load(st::Area::Journal).code == st::Code::Missing && st::Load().revision == saved.revision,
+      "explicit_journal_clear_removes_pending_only");
   // The parent copies only these ciphertext bytes into a protected task folder.
 }
 
