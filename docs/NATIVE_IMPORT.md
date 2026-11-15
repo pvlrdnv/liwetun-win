@@ -10,7 +10,8 @@ The parser is the official crate used by TrustTunnelClient's Windows SDK:
   `48f424c0874eb6f6374ee84492c5cd55aa04dca9` (upstream tag v1.3.0-beta.2).
 - Rust 1.95.0; Cargo.lock includes all transitive registry checksums.
 
-This is an import bridge, not the complete SDK tunnel/service integration.
+This channel remains an import-only bridge. A separate authenticated service
+channel and full SDK adapter now exist; see [WINDOWS_SERVICE.md](WINDOWS_SERVICE.md).
 No random DLL is loaded, logger initialized, network request made or Windows
 service installed. The method channel has two operations: `capabilities` and
 `inspectTrustTunnel`. No generic privileged command, TOML runner or shell call.
@@ -29,8 +30,8 @@ has connection-info callbacks and optional persistent per-connection ring
 storage; these are outside the client's privacy requirements. Using the same
 official parser directly allows dropping its error without invoking that logger.
 
-Before tunnel integration, decide how to disable/filter core logs before any
-write and eliminate per-destination collection in the service path. Leaving
+The separate LiWeTun SDK profile now disables raw logs and per-destination
+instrumentation in guarded pinned-source patches, verified in service CI. Leaving
 the Dart callback unset alone does not prove collection is disabled upstream.
 The service signer check also accepts certain intact self-signed/expired chains
 for signer matching; release trust, caller identity/session ACL, service identity

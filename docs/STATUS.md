@@ -1,116 +1,83 @@
 # Development checkpoint — 2026-11-15
 
-## Service continuation — IN PROGRESS
+## Current stage
 
-Owner authorized full SDK/service work. A manual SDK qualification workflow is
-being added with pinned SDK/common/DNS source commits, Conan/bootstrap/Wintun
-versions/digests and guarded source patches for a silent, destination-free
-LiWeTun SDK profile. Build/Conan closure and service/native acceptance are not
-yet complete. These changes do not enable the connection button or install
-anything on the owner's Windows machine. Earlier verified results remain below.
+LOCAL development in independent private repository
+https://github.com/pvlrdnv/liwetun-win, branch `feat/windows-mvp`.
+LikeWeb repositories and production unchanged. No owner-machine service,
+certificate, driver, DNS or route installation in this stage.
 
-## Current native stage — verified import, partial network qualification
+CONFIRMED: official SDK built successfully on Windows CI. Signed service and
+real authenticated IPC passed security checks. Flutter start/query/stop channel
+and honest uncertain-state UI implemented in `e201352`. Joint SDK/service acceptance passed 15 checks on disposable Windows CI.
+Updated native application compilation and actual desktop-channel acceptance
+also passed on disposable Windows CI. See [service architecture](WINDOWS_SERVICE.md).
 
-Owner authorized the next native stage. Added official-parser Rust staticlib,
-bounded C ABI, Windows C++/Dart method channel and native rejection handling in
-UI. SDK/parser source revisions and Cargo.lock pinned; Apache license retained.
-Added Rust tests, desktop integration test and manual disposable-Windows CI.
-Windows build and real C++ channel integration PASS on source `4916f51`:
-6 Rust tests, 65 Dart tests, 1 desktop integration test, analyze and compilation.
-CI: https://github.com/pvlrdnv/liwetun-win/actions/runs/43717022021
-Evidence: [Windows build](evidence/windows-import-4916f51.json).
+## Implemented
 
-Separate actual Windows CLI/local-endpoint test: HTTP/2 data path and negative
-auth/custom-CA controls verified. Requested HTTP/3 delivered through HTTP/2
-fallback; native HTTP/3 network qualification remains OPEN. Harness exit 2
-means partial qualification, not a successful HTTP/3 test. This is not a mock.
-Evidence: [network POC](NATIVE_NETWORK_POC.md) and
-[raw safe result](evidence/local-network-261115.json).
-
-This bridge cannot connect a tunnel from the UI. The CLI experiment is a separate
-developer test and is not shipped or called by the application.
-See [native integration boundaries](NATIVE_IMPORT.md).
-
-Scope: LOCAL client development only. Product LiWeTun; GitHub description
-`LiWeTun — Windows connection client`. Independent private repository:
-https://github.com/pvlrdnv/liwetun-win
-
-## Implemented and locally verified
-
-- Flutter Windows runner, three-screen desktop shell with responsive navigation,
-  OS light/dark themes, native title, original SVG/code-native mark and multi-size
-  Windows ICO. No dependency on another GUI client.
-- In-memory import of TT direct/QR carriers, a restricted TLS VLESS/HY2 URI
-  subset, HTTPS subscription sources; duplicate QR/direct collapse. Input is
-  obscured. Error messages do not echo input. Windows uses the official binary
-  parser through Rust/C++ for TT import; TLS-bypass, malformed or unsupported
-  embedded-subscription links are rejected. Without a native plugin, links stay
-  explicitly unvalidated. Parsed data is not a verified working connection.
-- Proposed strict JSON subscription parser and atomic per-subscription store:
-  complete/partial, explicit denial/revocation, expiry, unknown versions, replay,
-  duplicate/conflicting IDs, type/date validation and 1MiB input limit.
-  Omitted profiles in partial snapshots keep their old expiry.
-  This model is tested in isolation; no server feed or HTTP client is wired.
-- Closed typed diagnostic events, maximum 1000 in-memory events, clear action,
-  ZIP generation and explicit export preview/file selection. No free-form
-  exception/core-output string is accepted by the journal API. No upload.
-- Counter observation classifier distinguishes unknown, idle, outgoing without
-  reply, and RX growth. It is not attached to real metrics or used to claim a
-  working tunnel. The app runs no direct-network probes; the separate developer
-  harness described above probes only its own synthetic local origin.
+- Flutter Windows shell with three screens, system themes and own SVG/ICO mark.
+- In-memory TT direct/QR import through official Rust parser and real Windows
+  C++ channel; restricted TLS VLESS/HY2 import, HTTPS subscription-source parsing.
+  TLS bypass and unsupported embedded TT subscriptions are rejected.
+- Strict proposed subscription snapshot parser/store: atomic complete/partial
+  updates, revocation, expiry, replay/version/type/size checks. No live fetch or
+  LikeWeb API changes; this store is not wired to GUI persistence.
+- Typed sanitized memory journal (1000 events), preview and ZIP export. No raw
+  core strings or destination logs. Unknown metrics remain unknown.
+- Full upstream SDK build with pinned SDK/Common/DNS revisions and guarded raw
+  logging/destination instrumentation suppression. Source and binary hashes plus
+  resolved Conan recipe lock archived; input lock enforcement and full notices
+  inventory still open. Development DLL is not a release artifact.
+- LocalSystem service with bounded authenticated IPC, owner SID/session/logon
+  lease, signer/ACL/image checks and server PID verification before transmitting
+  secrets. Original Wintun signature and pinned hash required.
+- UI service worker channel, serialized requests and bounded polling; timeouts
+  preserve uncertain state and allow stop. Old observations cannot overwrite a
+  newer stop. Tunnel-ready label does not claim working Internet.
 
 ## Actual checks
 
-Environment: Linux/WSL, Flutter 3.38.10 at
-`c6f67dede3d4aa1aa7a69dd56a3494a5cde6cc80`, Dart 3.10.9.
-Development SDK is isolated under `/tmp/liwetun-flutter-sdk`; it is not vendored.
-Rust 1.95.0 and its Cargo cache are isolated under `/tmp`; Windows CI uses a
-disposable Server 2022 runner. The local CLI test ran on Windows 10 x64 + WSL;
-this does not qualify a Windows 11 installer, TUN or service.
+- Flutter 3.38.10 / Dart 3.10.9, Rust 1.95.0 isolated under `/tmp` for local work.
+- `flutter analyze --no-pub`: PASS. `flutter test --no-pub --reporter expanded`:
+  **75 PASS**, including timeout/stop, stale observation, duplicate commands,
+  late disposal and raw-error canaries. Flutter's local test socket requires
+  running outside the filesystem sandbox.
+- Earlier real Windows import channel: **6 Rust + 65 Dart + 1 desktop test PASS**,
+  [run 43717022021](https://github.com/pvlrdnv/liwetun-win/actions/runs/43717022021).
+- Full SDK compilation PASS,
+  [run 43721746165](https://github.com/pvlrdnv/liwetun-win/actions/runs/43721746165).
+- Real signed service installation/security/uninstall: **11 checks PASS**,
+  [run 43724352857](https://github.com/pvlrdnv/liwetun-win/actions/runs/43724352857),
+  [safe evidence](evidence/service-b81ce09.json). This run had no SDK.
+- Real SDK/service: **15 checks PASS**, adapter created/removed, SDK state
+  observed and clean stop, raw logging canary denied;
+  [run 43726594305](https://github.com/pvlrdnv/liwetun-win/actions/runs/43726594305),
+  [safe evidence](evidence/service-sdk-1d727e9.json). DNS/default routes unchanged
+  in deliberately bounded no-global-routes mode. This proves no full-mode routing.
+- Updated Windows release shell and real desktop import/service worker channels
+  PASS: **6 Rust + 75 Dart + 1 desktop test**, analyze PASS;
+  [run 43726801060](https://github.com/pvlrdnv/liwetun-win/actions/runs/43726801060),
+  [safe build evidence](evidence/windows-service-channel-5adc6b6.json). The actual
+  unsigned workspace app correctly rejects query/start/stop before service side
+  effects. This is separate from the signed service/probe test, not an end-to-end
+  installed signed GUI traffic test.
+- Earlier separate Windows CLI POC verified actual HTTP/2 data and wrong-auth /
+  wrong-CA denial. Requested HTTP/3 used HTTP/2 fallback: HTTP/3 remains OPEN.
+  [Network evidence](NATIVE_NETWORK_POC.md). This developer harness is not called
+  by the app and does not establish application TUN acceptance.
 
-- `flutter analyze --no-pub`: PASS, no issues in the application/test code.
-- `flutter test --no-pub --reporter expanded`: PASS, **65 tests**, locally and
-  on Windows CI. Rust C ABI: **6 tests PASS**. Actual Windows channel: **1 PASS**.
-- Synthetic-secret canary: absent from controller error strings, all diagnostic
-  event JSON and decompressed ZIP entries. This does not yet cover native core
-  crash/stdout paths because no native core is integrated.
-- Widget checks: 1280x800 and 480x800 navigation, empty state, import and truthful
-  unavailability. Initial compact header overflow fixed and rerun passed.
-- `python3 tools/generate_icon.py`: completed with no external packages.
-- Explicit Flutter screen rendering: PASS, three actual screen PNGs saved under
-  `build/previews/` and visually inspected. These are framework renders on Linux,
-  not screenshots of a running native Windows application.
-- New files reviewed for credentials: only a deliberately synthetic test canary
-  matched the targeted token/password scan.
+## Remaining gates
 
-## Not implemented / acceptance still open
+The client is not release-ready. Unsigned workspace builds fail service admission;
+no service is installed on the owner's computer. Imported secrets disappear on
+exit. No protected storage, signed installer/updater, subscription fetch,
+recovery/tray/startup, persistent rotated journal, real metrics, route-bound
+health probes, kill switch or Hysteria2/Xray connection adapter.
 
-No signed installer, privileged service/full-core SDK bridge, TUN, DNS/routes,
-protected storage, persistent rotated journal, subscription fetch,
-scheduler/backoff, actual health probes, recovery, tray/startup, app updater,
-kill switch, Hysteria2/Xray adapter or real network metrics.
+UNKNOWN until tested: clean Windows 11 install, real service TUN Internet traffic,
+HTTP/3 without fallback, default routing/DNS/IPv6 and restoration after failures,
+non-elevated UI, cross-session/fake-server negative controls, release revocation
+policy and full license closure. CI no-global-routes mode cannot prove these.
 
-The app cannot connect yet. Imported links disappear on exit. The domain store
-is memory-only and is not wired to the GUI. Disk-full/ACL/rotation/IPC and clean
-Windows native acceptance have not run. The save dialog and actual Windows file
-write have not been exercised on Windows. Export format is unit-tested.
-
-No fabricated profile list or fake connected state. All runtime diagnostic data
-in tests is synthetic; no application/server runtime mock was installed.
-LikeWeb repositories unchanged. Production contacted: **NO**.
-Database migrations/deployment/real messages/panel calls: **0**.
-
-Git: published working branch `feat/windows-mvp`; initial source `89e0894`, native
-bridge `4916f51`. Local `main` is the initial baseline; no direct push to main.
-GitHub currently uses the first published feature branch as default. Establishing
-the remote main/review workflow remains a separate repository housekeeping step.
-
-## Next concrete stage
-
-Integrate the full official tunnel SDK/service behind the existing narrow
-Windows bridge. Pin the actual library build/Conan dependency closure and
-licenses; remove raw logs and per-destination collection before enabling it.
-Validate signer, server/caller identity and per-user/session boundary on a
-disposable Windows 11 x64 host. Prove actual QUIC traffic (no HTTP/2 fallback),
-then TUN-bound probes, DNS/IPv6, stop/crash recovery and secret paths.
-Keep server export changes deferred while LikeWeb's concurrent work continues.
+No production connections, messages, panel calls, migrations or deployment.
+`main` remains the initial local baseline; no direct push to main.

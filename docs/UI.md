@@ -19,8 +19,9 @@ LiWeTun        Главная / Серверы / Поддержка
 ```
 
 Real imported names appear only after an explicit user action. All imports
-remain in memory for this development slice. Connection CTA explains that the
-Windows module is not yet integrated. It never changes to connected.
+remain in memory for this development slice. Connection CTA dispatches start/stop to the Windows service channel. Unsigned
+workspace builds cannot access the service. Tunnel-ready is labelled separately
+from verified Internet; unknown outcomes remain uncertain and permit stop.
 
 ## Servers
 
@@ -43,5 +44,6 @@ Persistent rotated journal is a later step; limits are explicit in STATUS.
 
 Light/dark follows OS; Material controls, keyboard focus, descriptive tooltips,
 scrolling and compact navigation. Required future native states: disconnected,
-connecting, checking internet, connected, recovering, error. Only disconnected
-and unavailable are currently backed by actual behavior. No fabricated metrics.
+connecting, checking internet, connected, recovering, error. The service channel now backs disconnected, connecting, tunnel-ready, recovering
+and error; checking Internet/connected remain unavailable until route-bound
+traffic qualification exists. No fabricated metrics.

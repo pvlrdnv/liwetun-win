@@ -1,0 +1,11 @@
+{
+  "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+  "policy_version": 1,
+  "bootstrap_sha256": "7e7c23f79a5275653f899a135528190e319334dd547f3284fab58289d56dfeb2",
+  "prepare_script_sha256": "c3386068d710061e3c2870e34db34d1f775fad95cb74f6066aaaba7d838c79e1",
+  "patched_files": {
+    "platform/windows/src/trusttunnel.cpp": "18f177634cb29230b169c111a894eec8e2ad328fa8c197872c3091038f4b88c0",
+    "core/src/tunnel.cpp": "e1b829734e7c55b456501232cfaba40f9814d7fd97945c1c7231548a6b79d2ac"
+  },
+  "release_qualified": false
+}

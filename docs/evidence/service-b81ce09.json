@@ -1,0 +1,20 @@
+{
+  "release_ready": false,
+  "dns_routes": "not_changed",
+  "checks": [
+    "protocol_bounds",
+    "unsigned_service_denied",
+    "unsigned_client_denied_by_service",
+    "signed_owner_query",
+    "unknown_metrics_and_core_state_preserved",
+    "invalid_profile_denied",
+    "oversized_frame_denied",
+    "idempotent_stop",
+    "different_signer_denied_by_service",
+    "different_owner_sid_denied_even_to_admin",
+    "service_uninstalled"
+  ],
+  "signed_service_ipc": "verified",
+  "tun": "not_tested",
+  "core_runtime_ready": 0
+}

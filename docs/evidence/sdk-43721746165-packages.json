@@ -1,0 +1,214 @@
+{
+  "source_run": 43721746165,
+  "source_commit": "7a24def5ee45a1e66b8b6f20717addf7f3542e63",
+  "release_qualified": false,
+  "license_status": "Recipe metadata only; null remains unknown. Actual notice texts and distribution audit still required.",
+  "packages": [
+    {
+      "ref": "vpn-libs/None",
+      "context": "host",
+      "license": "Apache-2.0",
+      "package_id": "d9f4f8d70f37960c2a26dda78d4561dc7e2a1ea5",
+      "prev": null
+    },
+    {
+      "ref": "dns-libs/2.11.0-alpha.1-3-g3d6359be@adguard/oss#40eabd93bf727ef0e65af6cc25fdb006",
+      "context": "host",
+      "license": "Apache-2.0",
+      "package_id": "d7f37906915dec7f37678daa2bc140374d7da77c",
+      "prev": "1dd4c49f0c4e7416cf98d003f69d1fcd"
+    },
+    {
+      "ref": "cxxopts/3.1.1#b358aff6883980b4f0915734a5c8214a",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      "prev": "f4dfdc9b149c1875d795ceac4820564f"
+    },
+    {
+      "ref": "libevent/2.1.11@adguard/oss#6b82159d85d576d2572e34ebc8dd5151",
+      "context": "host",
+      "license": null,
+      "package_id": "2f5c52c07b8ffffc6ddb1ce81f34e6ba43bbd28b",
+      "prev": "07746c6b18f1cd053a78bc982ee39fc7"
+    },
+    {
+      "ref": "openssl/boring-2026-05-08@adguard/oss#c48e5d03db734e05b8b7f309f23b5089",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "3618eb47ac746e93785c2d005c528222"
+    },
+    {
+      "ref": "libsodium/1.0.18@adguard/oss#f0c5cc81972f50b6f1d187f50b37f24f",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "7eec36112ef4dd55882df0e344a5da4b"
+    },
+    {
+      "ref": "libuv/1.41.0@adguard/oss#311f317edcf383bd7aeddcc51308f380",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "c90a55e6e7e3d4206a981a5676c9f980"
+    },
+    {
+      "ref": "klib/2021-04-06@adguard/oss#2fba69658655c2972a005c1b3502cab0",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "37eb8583c7107fd5541dbd0ce65cecb8"
+    },
+    {
+      "ref": "ldns/2021-03-29@adguard/oss#ac8bb875bbc36a5afbdadbacb0e3fb7e",
+      "context": "host",
+      "license": null,
+      "package_id": "a6e84d0ecdb737345d2bb017b5d8a9187afaec32",
+      "prev": "3fb0b59cf51cc957b7436e9b3ab3f3c0"
+    },
+    {
+      "ref": "magic_enum/0.9.5#768c09bb424bda31d224304693b50fb3",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      "prev": "f9173d81294187c1cebdfcb1fcd8051c"
+    },
+    {
+      "ref": "native_libs_common/8.2.0@adguard/oss#3032d1db7281c41643e37d6a97a5d236",
+      "context": "host",
+      "license": "Apache-2.0",
+      "package_id": "c338d4fd8e9bddb50cb8a7f06e01fe8a8c25b22e",
+      "prev": "f8bc2004364af28bb3409f4d25075cb6"
+    },
+    {
+      "ref": "brotli/1.1.0#3f631ef77008f7b5eb388780116371a3",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "962ed21f3f050380ec26ad52cbae2bbab859e792",
+      "prev": "27b54eac135aa39179d5c670b9d9ab02"
+    },
+    {
+      "ref": "fmt/12.1.0#6baf0fb8351783472b94ee6e36232391",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "e58e5d944427862a94af8190d98b819a2dac2241",
+      "prev": "e4c89e09f5cbcd7884d1c1d141a8b7d6"
+    },
+    {
+      "ref": "llhttp/9.3.0@adguard/oss#d4c606ade7f77345c3bf71199c495d0e",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "2f2f80bf96f4c31ef7859db9bff595e502bdf096",
+      "prev": "1175309901d352e7351ec22c86042a32"
+    },
+    {
+      "ref": "nghttp2/1.56.0@adguard/oss#f16addbe8345a6441062c8986e120d97",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "587f2b7c95291c38d1854c2cb73db510"
+    },
+    {
+      "ref": "nghttp3/1.0.0@adguard/oss#83c5f7eadcd1a37d8bb0d535bc30a3d1",
+      "context": "host",
+      "license": null,
+      "package_id": "c425ccc19dde2b6d03235cf5b0b63adf5983c80d",
+      "prev": "b63bb5249b309fc989db66b185e09423"
+    },
+    {
+      "ref": "ngtcp2/1.22.1@adguard/oss#36d9b5ab7bae5525760e9ab0c3dec1b4",
+      "context": "host",
+      "license": null,
+      "package_id": "2f5c52c07b8ffffc6ddb1ce81f34e6ba43bbd28b",
+      "prev": "b91fff304cba271f5b6994252acd8520"
+    },
+    {
+      "ref": "pcre2/10.37@adguard/oss#e9120818270c6f02b943e6864ff8f21c",
+      "context": "host",
+      "license": "BSD-3-Clause",
+      "package_id": "4db712ccd76ef0bda5b6ef9226d9da09c23d9c01",
+      "prev": "17c9bf562d7f4c6618fd7a996e05d0b3"
+    },
+    {
+      "ref": "gtest/1.14.0#f8f0757a574a8dd747d16af62d6eb1b7",
+      "context": "host",
+      "license": "BSD-3-Clause",
+      "package_id": "34aac66723cb607d6008490c423b31338951f67e",
+      "prev": "2ef37b9de2f39b10444631f32ba4f992"
+    },
+    {
+      "ref": "tldregistry/2022-12-26@adguard/oss#a37e4c059ba30270e7f0f9888c0bd890",
+      "context": "host",
+      "license": null,
+      "package_id": "c425ccc19dde2b6d03235cf5b0b63adf5983c80d",
+      "prev": "2c29765ec6fa8113cfa5945653978f30"
+    },
+    {
+      "ref": "ada/2.7.4#e86909dd9cb9714ca39dbc12f7f41053",
+      "context": "host",
+      "license": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "d13a18de3159973bfc659166a4a9b312"
+    },
+    {
+      "ref": "cmake/3.31.12#71c3a0c80cc89cde62956db9e69550e0",
+      "context": "build",
+      "license": "BSD-3-Clause",
+      "package_id": "522dcea5982a3f8a5b624c16477e47195da2f84f",
+      "prev": "0588c712b46769fce5d28f37302d129c"
+    },
+    {
+      "ref": "detours/2021-04-14@adguard/oss#4631c1416196d39fc29ca4d32e8e8a3f",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "06c3467c249affb6906dee37071ba155"
+    },
+    {
+      "ref": "nlohmann_json/3.12.0#2d634ab0ec8d9f56353e5ccef6d6612c",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      "prev": "2ea4b814fc9da53f7cdf5b7d68052688"
+    },
+    {
+      "ref": "gtest/1.14.0#f8f0757a574a8dd747d16af62d6eb1b7",
+      "context": "host",
+      "license": "BSD-3-Clause",
+      "package_id": "34aac66723cb607d6008490c423b31338951f67e",
+      "prev": "2ef37b9de2f39b10444631f32ba4f992"
+    },
+    {
+      "ref": "http_parser/2.9.4#98d91690d6fd021e9e624218a85d9d97",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "2f2f80bf96f4c31ef7859db9bff595e502bdf096",
+      "prev": "001db2abf637a7d7eb89e7d3cdf9a12c"
+    },
+    {
+      "ref": "tomlplusplus/3.3.0#3109e968b4a517f395e638753c6faa43",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      "prev": "27e922b4e373419ae48f1f1e7e5d8a3d"
+    },
+    {
+      "ref": "zlib/1.3.1#cac0f6daea041b0ccf42934163defb20",
+      "context": "host",
+      "license": "Zlib",
+      "package_id": "2f2f80bf96f4c31ef7859db9bff595e502bdf096",
+      "prev": "58d51d64104abe8c738efd4ce6f26bee"
+    },
+    {
+      "ref": "gtest/1.14.0#f8f0757a574a8dd747d16af62d6eb1b7",
+      "context": "host",
+      "license": "BSD-3-Clause",
+      "package_id": "34aac66723cb607d6008490c423b31338951f67e",
+      "prev": "2ef37b9de2f39b10444631f32ba4f992"
+    }
+  ]
+}
