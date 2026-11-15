@@ -287,6 +287,7 @@ def main():
                     dns_after = totals()
                     dns_bytes = {key: dns_after[key] - dns_before[key] for key in dns_before}
             after = totals()
+            dns_fixture_counts = endpoint.command('stats')
             delta = {key: after[key] - before[key] for key in before}
             if name == 'ui-death':
                 session.close()  # Exact owned process; service must notice lease death.
@@ -317,6 +318,7 @@ def main():
                                     'dns_endpoint_bytes_by_transport': dns_bytes, 'https_probe_error': probe_error,
                                     'idle_endpoint_bytes_by_transport': idle_bytes,
                                     'startup_endpoint_bytes_by_transport': startup_bytes,
+                                    'dns_fixture_counts': dns_fixture_counts,
                                     'automatic_tun_default_removed': bool(info and info['automatic_default']),
                                     'bounded_bytes': bounded_bytes,
                                     'closed_interface_denies_delivery': no_direct_fallback, 'passed': passed})

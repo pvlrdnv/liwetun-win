@@ -4,14 +4,16 @@ No replacement tunnel implementation. Raw endpoint output is discarded. TLS
 material/credentials are synthetic and remain in the CI task directory.
 """
 import argparse
+import json
 from pathlib import Path
 import socket
 import subprocess
 import threading
 import time
+import sys
 
 
-def dns_server(stop):
+def dns_server(stop, counters):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.bind(('127.0.0.1', 38553))
         sock.settimeout(.2)
@@ -19,6 +21,11 @@ def dns_server(stop):
             try:
                 packet, address = sock.recvfrom(4096)
             except socket.timeout:
+                continue
+            counters['requests'] += 1
+            counters['request_bytes'] += len(packet)
+            if len(packet) < 12 or packet[2] & 0x80:
+                counters['non_questions'] += 1
                 continue
             # Exact synthetic A question only. No upstream DNS/public query.
             question = b'\x07liwetun\x07invalid\x00\x00\x01\x00\x01'
@@ -28,6 +35,17 @@ def dns_server(stop):
                 response = packet[:2] + b'\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00'
                 response += question + b'\xc0\x0c\x00\x01\x00\x01\x00\x00\x00\x00\x00\x04\xc0\x00\x02\x7b'
                 sock.sendto(response, address)
+                counters['synthetic_answers'] += 1
+            elif packet[4:6] == b'\x00\x01':
+                # Deterministically reject unrelated runner DNS instead of
+                # provoking retries. Retain only counts, never question names.
+                end = 12
+                while end < min(len(packet), 268) and 0 < packet[end] <= 63:
+                    end += packet[end] + 1
+                if end + 5 <= len(packet) and packet[end] == 0:
+                    response = packet[:2] + b'\x81\x83\x00\x01\x00\x00\x00\x00\x00\x00' + packet[12:end + 5]
+                    sock.sendto(response, address)
+                    counters['other_answers'] += 1
 
 
 def main():
@@ -63,7 +81,8 @@ def main():
     (directory / 'hosts.toml').write_text(
         '[[main_hosts]]\nhostname="localhost"\ncert_chain_path="cert.pem"\nprivate_key_path="key.pem"\n')
     stop = threading.Event()
-    worker = threading.Thread(target=dns_server, args=(stop,), daemon=True)
+    counters = {'requests': 0, 'request_bytes': 0, 'synthetic_answers': 0, 'other_answers': 0, 'non_questions': 0}
+    worker = threading.Thread(target=dns_server, args=(stop, counters), daemon=True)
     worker.start()
     endpoint = subprocess.Popen([str(args.binary.resolve()), 'vpn.toml', 'hosts.toml', '--jobs', '2'],
                                 cwd=directory, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -79,7 +98,11 @@ def main():
         else:
             raise RuntimeError('endpoint_not_ready')
         print('ready', flush=True)
-        input()  # Parent pipe EOF/quit tears down this exact fixture.
+        for command in sys.stdin:
+            if command.strip() == 'stats':
+                print(json.dumps(counters), flush=True)
+            else:
+                break
     finally:
         stop.set()
         endpoint.terminate()
