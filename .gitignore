@@ -1,0 +1,17 @@
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+build/
+coverage/
+*.log
+*.zip
+*.pem
+*.key
+.env*
+!.env.example
+local-data/
+windows/flutter/ephemeral/
+.idea/
+*.iml
+.DS_Store
