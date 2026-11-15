@@ -1,7 +1,7 @@
 """Disposable Windows CI only: real signed service -> Wintun -> real endpoint.
 
-The endpoint runs in WSL1 on this runner. A high metric on its task-created TUN
-default route prevents same-host endpoint egress looping. Every HTTPS/DNS probe
+The endpoint runs in WSL1 on this runner. Bounded task-created host routes
+prevent same-host endpoint egress looping. Every HTTPS/DNS probe
 sets IP_UNICAST_IF to the TUN index; it cannot use ordinary direct routing.
 The public HTTPS origin is example.com, with normal TLS verification. No owner
 profiles, application health status or release package are produced here.
@@ -23,6 +23,8 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 INIT_STAGE = 'arguments'
+PROBE_ERROR = None
+PHYSICAL_ROUTE = None
 
 
 def ps(script):
@@ -51,19 +53,39 @@ def tun():
     if ($adapter.Count -ne 1) { throw 'Ambiguous task adapter' }
     $index = $adapter[0].ifIndex
     $routes = @(Get-NetRoute -InterfaceIndex $index -AddressFamily IPv4 |
-      Where-Object DestinationPrefix -eq '0.0.0.0/0')
+      Where-Object DestinationPrefix -eq '198.18.0.0/15')
     $dns = @(Get-DnsClientServerAddress -InterfaceIndex $index -AddressFamily IPv4).ServerAddresses
-    @{index=$index;default_route=($routes.Count -eq 1);dns=@($dns)} | ConvertTo-Json -Compress
+    @{index=$index;fixture_route=($routes.Count -eq 1);dns=@($dns)} | ConvertTo-Json -Compress
     """)
 
 
-def prepare_tun(info):
-    if not info['default_route'] or not info['dns']:
+def prepare_tun(info, origin):
+    global PHYSICAL_ROUTE
+    if not info['fixture_route'] or not info['dns']:
         raise RuntimeError('missing_tun_routes_or_dns')
     index = int(info['index'])
-    # This is a fixture route change on the task adapter only. It is not a
-    # production default-routing qualification and never affects other adapters.
-    ps(f"Set-NetRoute -InterfaceIndex {index} -DestinationPrefix '0.0.0.0/0' -RouteMetric 5000 -Confirm:$false | Out-Null")
+    os.environ['LIWETUN_CI_ORIGIN'] = origin
+    # Preserve ordinary endpoint egress. Create an exact task-owned physical
+    # host route only when none exists; never alter/delete a pre-existing route.
+    PHYSICAL_ROUTE = ps("""
+    $prefix = $env:LIWETUN_CI_ORIGIN + '/32'
+    $existing = @(Get-NetRoute -DestinationPrefix $prefix -ErrorAction SilentlyContinue)
+    if ($existing.Count) { @{created=$false} | ConvertTo-Json -Compress; exit }
+    $physical = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -AddressFamily IPv4 |
+      Sort-Object RouteMetric | Select-Object -First 1
+    if (!$physical) { throw 'Missing physical route' }
+    New-NetRoute -DestinationPrefix $prefix -InterfaceIndex $physical.InterfaceIndex -NextHop $physical.NextHop -RouteMetric 0 -PolicyStore ActiveStore | Out-Null
+    @{created=$true;index=$physical.InterfaceIndex} | ConvertTo-Json -Compress
+    """)
+    ps(f"New-NetRoute -InterfaceIndex {index} -DestinationPrefix ($env:LIWETUN_CI_ORIGIN + '/32') -NextHop '0.0.0.0' -RouteMetric 5000 -PolicyStore ActiveStore | Out-Null")
+
+
+def remove_physical_route():
+    global PHYSICAL_ROUTE
+    if PHYSICAL_ROUTE and PHYSICAL_ROUTE['created']:
+        index = int(PHYSICAL_ROUTE['index'])
+        ps(f"Remove-NetRoute -InterfaceIndex {index} -DestinationPrefix ($env:LIWETUN_CI_ORIGIN + '/32') -RouteMetric 0 -Confirm:$false | Out-Null")
+    PHYSICAL_ROUTE = None
 
 
 class Child:
@@ -126,6 +148,8 @@ def totals():
 
 
 def https_probe(index, origin):
+    global PROBE_ERROR
+    PROBE_ERROR = None
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as raw:
             raw.settimeout(8)
@@ -141,7 +165,9 @@ def https_probe(index, origin):
                         break
                     data += chunk
         return data.startswith(b'HTTP/1.1 200') and b'Example Domain' in data
-    except (OSError, ValueError):
+    except (OSError, ValueError) as error:
+        PROBE_ERROR = {'kind': type(error).__name__, 'os_code': getattr(error, 'winerror', None),
+                       'tls_code': getattr(error, 'verify_code', None)}
         return False
 
 
@@ -202,7 +228,7 @@ def main():
     INIT_STAGE = 'preexisting_adapter_check'
     if tun() is not None:
         raise RuntimeError('preexisting_adapter')
-    result = {'release_ready': False, 'mode': 'interface_bound_ipv4_default_route_high_metric',
+    result = {'release_ready': False, 'mode': 'interface_bound_ipv4_bounded_host_route',
               'origin': 'example.com_https_normal_tls', 'cases': [], 'all_passed': False}
     endpoint = session = None
     stage = 'initialization'
@@ -224,18 +250,27 @@ def main():
             for _ in range(30):
                 state = session.command('query')
                 info = tun()
-                if info and info['default_route'] and (state['state'] == 2 or name.startswith('wrong-')):
+                if info and info['fixture_route'] and (state['state'] == 2 or name.startswith('wrong-')):
                     break
                 if state['state'] == 4:
                     break
                 time.sleep(.2)
             delivered = dns = False
+            probe_error = None
+            dns_bytes = {key: 0 for key in before}
             index = int(info['index']) if info else 0
-            if info and info['default_route']:
-                prepare_tun(info)
+            if info and info['fixture_route']:
+                prepare_tun(info, origin)
                 delivered = https_probe(index, origin)
+                probe_error = PROBE_ERROR
                 if not name.startswith('wrong-'):
-                    dns = dns_probe(info)
+                    dns_before = totals()
+                    try:
+                        dns = dns_probe(info)
+                    except OSError:
+                        dns = False
+                    dns_after = totals()
+                    dns_bytes = {key: dns_after[key] - dns_before[key] for key in dns_before}
             after = totals()
             delta = {key: after[key] - before[key] for key in before}
             if name == 'ui-death':
@@ -253,15 +288,19 @@ def main():
             else:
                 session.close('stop')
             session = None
+            remove_physical_route()
             cleaned = wait_clean(baseline)
             no_direct_fallback = not https_probe(index, origin) if index else not delivered
             positive = not name.startswith('wrong-')
             transport = delta[protocol] > 0 and all(delta[key] == 0 for key in delta if key != protocol)
             passed = cleaned and no_direct_fallback and (
-                (delivered and dns and transport) if positive else (not delivered and sum(delta.values()) == 0))
+                (delivered and dns and transport and dns_bytes[protocol] > 0) if positive
+                else (not delivered and sum(delta.values()) == 0))
             result['cases'].append({'case': name, 'tls_https_delivered': delivered, 'dns_fixture_answer': dns,
                                     'endpoint_bytes_by_transport': delta, 'routes_dns_adapter_restored': cleaned,
+                                    'dns_endpoint_bytes_by_transport': dns_bytes, 'https_probe_error': probe_error,
                                     'closed_interface_denies_delivery': no_direct_fallback, 'passed': passed})
+            print('network_case:' + name + (':passed' if passed else ':failed'), flush=True)
             endpoint.close('quit')
             endpoint = None
             if not cleaned:
@@ -269,13 +308,15 @@ def main():
             if name == 'service-crash':
                 ps('Start-Service LiWeTun')
         result['all_passed'] = all(case['passed'] for case in result['cases'])
-    except Exception:
+    except Exception as error:
         result['failed_stage'] = stage  # Closed enum; never a raw exception.
+        result['error_type'] = type(error).__name__
     finally:
         if session:
             session.close('stop')
         if endpoint:
             endpoint.close('quit')
+        remove_physical_route()
         result['final_network_restored'] = wait_clean(baseline)
         destination = ROOT / 'build/service-evidence/network.json'
         destination.parent.mkdir(exist_ok=True, parents=True)

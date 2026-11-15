@@ -132,10 +132,10 @@ void Backend::Run() {
 #ifdef LIWETUN_TEST_NO_GLOBAL_ROUTES
           config += "included_routes=[]\nexcluded_routes=[]\nchange_system_dns=false\n";
 #elif defined(LIWETUN_TEST_TUN_NETWORK)
-          // Disposable same-host endpoint fixture only. The harness raises this
-          // route's metric so ordinary endpoint egress keeps its physical route;
-          // the probe explicitly binds IP_UNICAST_IF to this TUN interface.
-          config += "included_routes=[\"0.0.0.0/0\"]\nexcluded_routes=[]\nchange_system_dns=true\n";
+          // Same-host CI only: never capture ambient runner/endpoint egress.
+          // The harness adds one high-metric origin host route to this adapter;
+          // probe sockets explicitly bind IP_UNICAST_IF to it.
+          config += "included_routes=[\"198.18.0.0/15\"]\nexcluded_routes=[]\nchange_system_dns=true\n";
 #else
           config += "change_system_dns=true\n";
 #endif
