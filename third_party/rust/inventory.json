@@ -1,0 +1,222 @@
+{
+  "lock_sha256": "966e47d38ab4dcaa00474ef444047a1c23e6f5cca716a382865e9db958f5bd30",
+  "release_qualified": false,
+  "license_review": "pending; includes build/procedural-macro dependencies conservatively",
+  "missing_notice_packages": 0,
+  "packages": [
+    {
+      "name": "base64",
+      "version": "0.21.7",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "source_checksum": "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567",
+      "declared_license": "MIT OR Apache-2.0",
+      "notices": [
+        {
+          "file": "base64-0.21.7/00.txt",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "bytes": 10847
+        },
+        {
+          "file": "base64-0.21.7/01.txt",
+          "sha256": "0dd882e53de11566d50f8e8e2d5a651bcf3fabee4987d70f306233cf39094ba7",
+          "bytes": 1076
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "name": "hex",
+      "version": "0.4.3",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "source_checksum": "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70",
+      "declared_license": "MIT OR Apache-2.0",
+      "notices": [
+        {
+          "file": "hex-0.4.3/00.txt",
+          "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+          "bytes": 11358
+        },
+        {
+          "file": "hex-0.4.3/01.txt",
+          "sha256": "f7bdb3426d045cd50efd4953026e3eb5a83d0199f458a075602611b9344da5b9",
+          "bytes": 1125
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "name": "proc-macro2",
+      "version": "1.0.107",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "source_checksum": "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9",
+      "declared_license": "MIT OR Apache-2.0",
+      "notices": [
+        {
+          "file": "proc-macro2-1.0.107/00.txt",
+          "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+          "bytes": 9723
+        },
+        {
+          "file": "proc-macro2-1.0.107/01.txt",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "bytes": 1023
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "name": "quote",
+      "version": "1.0.47",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "source_checksum": "1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001",
+      "declared_license": "MIT OR Apache-2.0",
+      "notices": [
+        {
+          "file": "quote-1.0.47/00.txt",
+          "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+          "bytes": 9723
+        },
+        {
+          "file": "quote-1.0.47/01.txt",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "bytes": 1023
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "name": "rustls-pemfile",
+      "version": "1.0.4",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "source_checksum": "1c74cae0a4cf6ccbbf5f359f08efdf8ee7e1dc532573bf0db71968cb56b1448c",
+      "declared_license": "Apache-2.0 OR ISC OR MIT",
+      "notices": [
+        {
+          "file": "rustls-pemfile-1.0.4/00.txt",
+          "sha256": "c5dae4585d8520d1bc3d435dc5dd813be63046ebccc3c4eb866044eff304f0f0",
+          "bytes": 294
+        },
+        {
+          "file": "rustls-pemfile-1.0.4/01.txt",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "bytes": 10847
+        },
+        {
+          "file": "rustls-pemfile-1.0.4/02.txt",
+          "sha256": "7cfafc877eccc46c0e346ccbaa5c51bb6b894d2b818e617d970211e232785ad4",
+          "bytes": 775
+        },
+        {
+          "file": "rustls-pemfile-1.0.4/03.txt",
+          "sha256": "709e3175b4212f7b13aa93971c9f62ff8c69ec45ad8c6532a7e0c41d7a7d6f8c",
+          "bytes": 1082
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "name": "syn",
+      "version": "2.0.119",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "source_checksum": "872831b642d1a07999a962a351ed35b955ea2cfc8f3862091e2a240a84f17297",
+      "declared_license": "MIT OR Apache-2.0",
+      "notices": [
+        {
+          "file": "syn-2.0.119/00.txt",
+          "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+          "bytes": 9723
+        },
+        {
+          "file": "syn-2.0.119/01.txt",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "bytes": 1023
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "name": "thiserror",
+      "version": "1.0.69",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "source_checksum": "b6aaf5339b578ea85b50e080feb250a3e8ae8cfcdff9a461c9ec2904bc923f52",
+      "declared_license": "MIT OR Apache-2.0",
+      "notices": [
+        {
+          "file": "thiserror-1.0.69/00.txt",
+          "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+          "bytes": 9723
+        },
+        {
+          "file": "thiserror-1.0.69/01.txt",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "bytes": 1023
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "name": "thiserror-impl",
+      "version": "1.0.69",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "source_checksum": "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1",
+      "declared_license": "MIT OR Apache-2.0",
+      "notices": [
+        {
+          "file": "thiserror-impl-1.0.69/00.txt",
+          "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+          "bytes": 9723
+        },
+        {
+          "file": "thiserror-impl-1.0.69/01.txt",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "bytes": 1023
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "name": "trusttunnel-deeplink",
+      "version": "0.1.0",
+      "source": "git+https://github.com/TrustTunnel/TrustTunnel?rev=48f424c0874eb6f6374ee84492c5cd55aa04dca9#48f424c0874eb6f6374ee84492c5cd55aa04dca9",
+      "source_checksum": "48f424c0874eb6f6374ee84492c5cd55aa04dca9",
+      "declared_license": null,
+      "notices": [
+        {
+          "file": "trusttunnel-deeplink-0.1.0/00.txt",
+          "sha256": "cd994f29faba128fa963ccab364cdee0b51cdb399f98432c4bb6c7a6d017d3df",
+          "bytes": 10796
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "name": "unicode-ident",
+      "version": "1.0.27",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "source_checksum": "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563",
+      "declared_license": "(MIT OR Apache-2.0) AND Unicode-3.0",
+      "notices": [
+        {
+          "file": "unicode-ident-1.0.27/00.txt",
+          "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+          "bytes": 9723
+        },
+        {
+          "file": "unicode-ident-1.0.27/01.txt",
+          "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+          "bytes": 1023
+        },
+        {
+          "file": "unicode-ident-1.0.27/02.txt",
+          "sha256": "f7db81051789b729fea528a63ec4c938fdcb93d9d61d97dc8cc2e9df6d47f2a1",
+          "bytes": 1995
+        }
+      ],
+      "notice_status": "collected_for_review"
+    }
+  ],
+  "source_run": 43753020825,
+  "source_commit": "463c69045552a7dd978698a38a23b5194c1fea7b",
+  "lock_hash_normalization": "windows_checkout_crlf",
+  "lock_canonical_lf_sha256": "79a3ed7e93b25bad7e7cae8874cb9a0b7dcddd483aca300878d120dc73caa931"
+}

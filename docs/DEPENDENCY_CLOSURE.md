@@ -29,7 +29,10 @@ and copies package/workspace license texts into a separate inventory. Local
 collection found notice files for all ten external crates, including the pinned
 TrustTunnel workspace license and Unicode data license. Build/procedural-macro
 dependencies are included conservatively; declaration metadata is not used to
-invent a missing license. Windows collection remains pending.
+invent a missing license. Windows collection passed on `463c690`,
+[run 43753020825](https://github.com/pvlrdnv/liwetun-win/actions/runs/43753020825),
+alongside the actual app/channel checks. All 22 original notice files and the
+hash inventory are archived in [third_party/rust](../third_party/rust/README.md).
 
 The release inventory must also include Flutter/engine/Dart packages, Wintun and distribution tools/runtime
 components as applicable. Upstream SDK/Wintun notices already accompany the

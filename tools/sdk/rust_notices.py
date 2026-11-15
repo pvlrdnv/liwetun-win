@@ -72,7 +72,8 @@ def collect(metadata, cargo_home, output):
             record['notices'].append({'file': target.as_posix(), 'sha256': hashlib.sha256(data).hexdigest(), 'bytes': len(data)})
         record['notice_status'] = 'collected_for_review' if record['notices'] else 'missing'
         records.append(record)
-    report = {'lock_sha256': hashlib.sha256((ROOT / 'native/trusttunnel_bridge/Cargo.lock').read_bytes()).hexdigest(),
+    report = {'lock_sha256': hashlib.sha256((ROOT / 'native/trusttunnel_bridge/Cargo.lock').read_bytes().replace(b'\r\n', b'\n')).hexdigest(),
+              'lock_hash_normalization': 'lf',
               'release_qualified': False, 'license_review': 'pending; includes build/procedural-macro dependencies conservatively',
               'missing_notice_packages': sum(not record['notices'] for record in records), 'packages': records}
     (output / 'inventory.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
