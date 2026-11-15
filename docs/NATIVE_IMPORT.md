@@ -38,6 +38,15 @@ verification and installer directory ACL require separate qualification.
 
 ## Verification
 
+Completed run:
+https://github.com/pvlrdnv/liwetun-win/actions/runs/43717022021
+
+Source `4916f5139972e174ea2c97659833cce643070401`: 6 Rust tests, 65 Dart tests,
+Flutter analyze, Windows release compilation and 1 actual desktop integration
+test all PASS. The tested shell executable SHA256 is
+`8e96e7f40a369aab8e81b7c8e0f9d8f15240360d21e71be9d63d915814b1cc13`.
+The CI evidence JSON is retained in docs/evidence/windows-import-4916f51.json.
+
 The manual GitHub workflow `Windows native import check` runs on a disposable
 Windows Server 2022 runner with Visual Studio tooling. It pins Flutter and Rust,
 runs Rust C-ABI tests, Dart tests, compiles the real Windows shell and runs a
@@ -59,5 +68,10 @@ flutter test integration_test/native_bridge_test.dart -d windows --no-pub --dart
 ```
 
 The owner's accessible host is Windows 10 x64 with no detected Flutter or Visual
-Studio toolchain. Read-only preflight only: no host tools were installed, no
-certificate store, network settings, drivers or services were changed.
+Studio toolchain. A subsequent isolated CLI/network POC is recorded in
+[NATIVE_NETWORK_POC.md](NATIVE_NETWORK_POC.md). No host development tools were
+installed; no certificate store, network settings, drivers or services changed.
+The persistent PowerShell policy was verified as RemoteSigned before/after.
+The final harness directly executes the verified exe; it runs no .ps1 and uses
+no policy override. Synthetic credentials and certificates stay in a temporary
+task directory, not the repository or diagnostic journal.
