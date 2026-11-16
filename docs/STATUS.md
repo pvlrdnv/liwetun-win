@@ -223,6 +223,15 @@ test modes were OFF, no tunnel was started, network snapshots and cleanup passed
 CI in-use rejection, not desktop acceptance, loader/antivirus sharing-race recovery,
 a transactional uninstall, or Windows 10/11 qualification.
 
+Production-routing continuation: optional service qualification now builds with
+both network test modes OFF and exercises only a synthetic refused loopback
+endpoint. It verifies exact original DNS/all-route/adapter restoration, observes
+only its own adapter prefix-length categories and uses an independent 30-second
+deadline that can stop only this job's image-verified service process. SDK source
+run/commit and original DLL digests are enforced before CI signing. This new
+fixture is pending Windows proof and explicitly does not test Internet delivery,
+successful global routing, IPv6 traffic or a live server.
+
 ## Current stage
 
 LOCAL development in independent private repository
