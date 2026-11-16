@@ -19,6 +19,7 @@ def main():
     report.parent.mkdir(parents=True, exist_ok=True)
     result = dict(passed=False, mode='linux_endpoint_only_two_udp_flows_no_sdk_no_tun',
                   endpoint_version=os.environ['LIWETUN_ENDPOINT_VERSION'], release_ready=False)
+    result['diagnostic_source_fix'] = os.environ.get('LIWETUN_ENDPOINT_SOURCE_FIX') == 'true'
     endpoint = None
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as route:

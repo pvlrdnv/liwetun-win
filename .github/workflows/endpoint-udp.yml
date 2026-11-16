@@ -2,6 +2,11 @@ name: Official endpoint UDP isolation
 on:
   workflow_dispatch:
     inputs:
+      source_fix:
+        description: Build pinned diagnostic endpoint with nonblocking SOCKS5 UDP fix
+        required: false
+        default: false
+        type: boolean
       endpoint_version:
         required: true
         default: v1.1.0
@@ -14,9 +19,10 @@ permissions:
 jobs:
   endpoint:
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 35
     env:
       LIWETUN_ENDPOINT_VERSION: ${{ inputs.endpoint_version }}
+      LIWETUN_ENDPOINT_SOURCE_FIX: ${{ inputs.source_fix }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -25,6 +31,7 @@ jobs:
         with:
           python-version: '3.12.10'
       - name: Verify exact official endpoint binary
+        if: ${{ !inputs.source_fix }}
         run: |
           python3 - <<'PY'
           import hashlib, os, pathlib, subprocess
@@ -44,6 +51,32 @@ jobs:
               raise SystemExit('Endpoint digest mismatch')
           subprocess.run(['tar', '-xf', str(archive), '-C', str(directory), '--strip-components=1'], check=True)
           PY
+      - name: Build hash-checked diagnostic source fix
+        if: ${{ inputs.source_fix }}
+        run: |
+          test "$LIWETUN_ENDPOINT_VERSION" = 'v1.1.0'
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang libclang-dev cmake ninja-build pkg-config
+          rustup toolchain install 1.95.0 --profile minimal
+          python3 - <<'PY'
+          import hashlib, json, pathlib, subprocess
+          pin = json.loads(pathlib.Path('tools/service/endpoint-source.json').read_text())
+          archive = pathlib.Path('build/endpoint-source.tar.gz')
+          archive.parent.mkdir(exist_ok=True)
+          subprocess.run(['curl', '--fail', '--location', '--silent', '--show-error', '--max-time', '120',
+                          '--output', str(archive), 'https://codeload.github.com/TrustTunnel/TrustTunnel/tar.gz/' + pin['source_commit']], check=True)
+          if hashlib.sha256(archive.read_bytes()).hexdigest() != pin['source_archive_sha256']:
+              raise SystemExit('Source archive digest mismatch')
+          source = pathlib.Path('build/endpoint-source')
+          source.mkdir()
+          subprocess.run(['tar', '-xf', str(archive), '-C', str(source), '--strip-components=1'], check=True)
+          PY
+          python3 tools/service/prepare_endpoint.py prepare
+          cargo +1.95.0 build --manifest-path build/endpoint-source/Cargo.toml --locked --release --package trusttunnel_endpoint --jobs 2
+          mkdir -p build/endpoint
+          cp build/endpoint-source/target/release/trusttunnel_endpoint build/endpoint/
+          strip --strip-debug build/endpoint/trusttunnel_endpoint
+          python3 tools/service/prepare_endpoint.py record
       - name: Endpoint-only authenticated UDP wire control
         run: python3 tools/service/endpoint_udp_isolation.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -53,3 +86,10 @@ jobs:
           path: build/endpoint-evidence/
           retention-days: 7
           if-no-files-found: warn
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: ${{ success() && inputs.source_fix }}
+        with:
+          name: diagnostic-endpoint-not-for-release
+          path: build/endpoint/
+          retention-days: 14
+          if-no-files-found: error

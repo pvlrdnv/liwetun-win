@@ -356,6 +356,19 @@ the direct forwarder's nonblocking try_recv/WouldBlock path; stale readiness
 could stall other associations behind an idle socket. Added a two-source-port
 wire control on one TLS stream to test this without SDK/TUN. Not confirmed yet;
 syntax/diff checks PASS, native Linux CI pending.
+Two-flow reproduction on `86d516f`
+[43879797921](https://github.com/pvlrdnv/liwetun-win/actions/runs/43879797921)
+**FAIL** independently of Windows/SDK/TUN: first flow returned correctly, second
+timed out, although both synthetic answers were sent by the relay. This confirms
+the endpoint SOCKS5 path's multi-flow failure in the fixture; the precise
+nonblocking-read hypothesis is pending a source-fix comparison.
+Prepared a minimal two-file patch against endpoint commit
+`fab5b8353a19332f935fa30869307d37d4a898d1`: use try_recv and return to polling on
+WouldBlock rather than awaiting another datagram on an idle association.
+Source archive, patch, input and resulting file digests are pinned. Local exact
+patch/digest and Python syntax/diff checks PASS. Compilation and two-flow check
+are pending on disposable Linux CI. This modified diagnostic server is not an
+official released endpoint or application release, and changes no production.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

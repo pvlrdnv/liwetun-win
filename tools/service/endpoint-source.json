@@ -1,0 +1,14 @@
+{
+  "source_commit": "fab5b8353a19332f935fa30869307d37d4a898d1",
+  "source_archive_sha256": "24be5fd781329445d9341d53f8159a3f7dfbfd8cd5d45cdbe3ee63447c68360d",
+  "patch_sha256": "2d63ccf32860e6c0263722456cbf6b7fc20a5647ceb4c9cac1a6ebbc85ee6baf",
+  "input_files": {
+    "lib/src/socks5_client.rs": "00fd3f6aae9a2cbbbc49d01e93cb3c42ed4582544195f493290d3454d144e5bf",
+    "lib/src/socks5_forwarder.rs": "aaa16faf062ae0bc8c24f4bee4c25adac1ef8a46c357b9628b236b96e8981bdf"
+  },
+  "patched_files": {
+    "lib/src/socks5_client.rs": "0a6b8b7753abf96f855d1178762c300a825e6b1c7ea34afe20310547b6485801",
+    "lib/src/socks5_forwarder.rs": "fe25377f5860f1eb120470583a3d09892248df9dc8c523a3d06e059a8e369df9"
+  },
+  "release_ready": false
+}
