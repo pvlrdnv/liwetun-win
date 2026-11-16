@@ -109,14 +109,22 @@ Native Windows compilation and that crash case **PASS** on `383dfcb`,
 traffic preceded verified original-process termination; its dynamic WFP session
 returned to baseline and all network state restored without watchdog action.
 
-Pending startup negatives use `production_profile=wrong-auth` or `wrong-ca`,
+Startup negatives use `production_profile=wrong-auth` or `wrong-ca`,
 only H2 with normal Stop. They require a healthy endpoint wire preflight,
 typed CoreFailure/Error, zero endpoint data/TCP egress and complete cleanup.
 After refusal they make no ordinary direct HTTPS request and do not claim a
 kill switch. Registry credential rejection can precede SOCKS5 authentication;
 no SOCKS rejection count is invented as a server observation.
+Both **PASS** on `e096b0d`: [wrong auth](evidence/production-refusal-43884507628.json),
+[wrong CA](evidence/production-refusal-43884514904.json). They observed terminal
+CoreFailure/Error and absent adapter, zero endpoint payload/TCP egress, and full
+network/WFP restoration without watchdog action.
 
-Remaining gates: full ordinary-mode fault matrix, effective DNS leak prevention,
+The [six-case receipt](evidence/production-basic-matrix.json) links both ordinary
+positive transports, H2 lease death/service crash and both H2 startup refusals.
+It deliberately keeps complete fault/IPv6/desktop/release qualification false.
+
+Remaining gates: wider ordinary-mode fault matrix, effective DNS leak prevention,
 IPv6 payload delivery, crash/network-
 change/suspend recovery and installed Windows 10/11 desktop acceptance. These
 route/sample observations cannot establish any of those. Existing H2/H3/DNS

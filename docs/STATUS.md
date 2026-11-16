@@ -1,5 +1,20 @@
 # Development checkpoint — 2026-11-16
 
+## Latest checkpoint — six basic ordinary IPv4 CI cases PASS
+
+With both application network-test flags OFF and no client host routes, ordinary
+unbound HTTPS/DNS passed over H2 and H3, with exact per-probe DNS transport proof.
+H2 forced lease-client death, owned-service crash, wrong-auth and wrong-CA startup
+refusal also passed, including complete route/DNS/adapter/WFP restoration without
+watchdog action. [Six-case receipt](evidence/production-basic-matrix.json),
+[method and remaining gates](PRODUCTION_ROUTING.md).
+The DNS blocker was an endpoint SOCKS5 idle-socket read bug, reproduced on Linux
+without SDK/TUN and repaired only in a pinned diagnostic CI server. No application
+SDK or production endpoint change. [Diagnosis](ENDPOINT_UDP_FIXTURE.md).
+This is Server 2022 CI, not installed Windows 10/11 desktop qualification.
+IPv6 payload, network-change/sleep recovery, signing/distribution and desktop
+acceptance remain open. The owner corporate device and LikeWeb remain untouched.
+
 ## TUN network stage — bounded CI PASS
 
 Full signed-service/network matrix passed on both pinned endpoint versions:
@@ -429,6 +444,14 @@ network restoration. No ordinary direct HTTPS request is made after refusal;
 this does not claim a kill switch. Endpoint registry may reject credentials
 before SOCKS5, so SOCKS auth counters are not used as proof. Python/YAML/diff
 checks PASS; actual negative Windows cases pending.
+Ordinary negative startup cases **PASS** on `e096b0d`:
+[wrong auth 43884507628](https://github.com/pvlrdnv/liwetun-win/actions/runs/43884507628),
+[wrong CA 43884514904](https://github.com/pvlrdnv/liwetun-win/actions/runs/43884514904).
+Both observed terminal CoreFailure/Error, absent adapter at refusal, zero endpoint
+payload/TCP egress, and complete network/WFP restoration without watchdog action.
+No post-refusal ordinary HTTPS probe was attempted; no kill-switch claim.
+All six basic IPv4 scenarios now have explicit evidence; this does not qualify
+the complete fault/IPv6/desktop/release matrix.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

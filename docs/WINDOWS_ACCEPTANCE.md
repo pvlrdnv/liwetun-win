@@ -16,6 +16,11 @@ endpoint, auth/CA denial and stop/client-death/service-crash restoration on two
 pinned endpoint versions. Idle bytes/resources passed after multicast policy
 correction. [Actual method/evidence](TUN_NETWORK_ACCEPTANCE.md). Desktop OS gates
 below remain open; this does not qualify normal global routing or IPv6.
+Separate ordinary IPv4 CI cases now passed unbound H2/H3 HTTPS/DNS, H2 lease
+death/service crash and wrong-auth/CA refusal with both test flags OFF. They use
+a pinned modified diagnostic endpoint and restore all network/WFP state.
+[Method and six-case evidence](PRODUCTION_ROUTING.md). Installed Windows 10/11,
+IPv6 payload and wider recovery remain separate gates.
 
 - [ ] Pin TrustTunnel SDK version, SHA256 and all distributed licenses.
 - [ ] Verify app/service/adapter embedded signatures, common signer, Program

@@ -1,0 +1,49 @@
+{
+  "scope": "six_basic_ipv4_cases_disposable_server2022",
+  "cases": [
+    {
+      "case": "http2_stop",
+      "source_run": "43882488976",
+      "evidence": "production-traffic-43882488976.json",
+      "passed": true
+    },
+    {
+      "case": "http3_stop",
+      "source_run": "43882496493",
+      "evidence": "production-traffic-43882496493.json",
+      "passed": true
+    },
+    {
+      "case": "http2_lease_death",
+      "source_run": "43883087034",
+      "evidence": "production-lease-death-43883087034.json",
+      "passed": true
+    },
+    {
+      "case": "http2_service_crash",
+      "source_run": "43883716213",
+      "evidence": "production-service-crash-43883716213.json",
+      "passed": true
+    },
+    {
+      "case": "wrong_auth",
+      "source_run": "43884507628",
+      "evidence": "production-refusal-43884507628.json",
+      "passed": true
+    },
+    {
+      "case": "wrong_ca",
+      "source_run": "43884514904",
+      "evidence": "production-refusal-43884514904.json",
+      "passed": true
+    }
+  ],
+  "all_six_passed": true,
+  "sdk_runtime_source_run": 43752644532,
+  "diagnostic_endpoint_source_run": "43880327333",
+  "windows10_qualified": false,
+  "windows11_qualified": false,
+  "ipv6_payload_qualified": false,
+  "full_fault_matrix_qualified": false,
+  "release_ready": false
+}
