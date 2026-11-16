@@ -346,6 +346,16 @@ wire probe, binary hash and synthetic relay/DNS fixture. It starts no SDK/TUN,
 changes no routes and cannot establish Windows readiness. Comparing native Linux
 with WSL1 should isolate a server/fixture problem from Windows SDK behavior.
 Python syntax/diff checks PASS; actual CI execution pending.
+Single-flow endpoint wire controls **PASS** on native Ubuntu
+[43879172234](https://github.com/pvlrdnv/liwetun-win/actions/runs/43879172234)
+and WSL1 before SDK start in
+[43878904033](https://github.com/pvlrdnv/liwetun-win/actions/runs/43878904033).
+The latter ordinary SDK DNS case still failed, with HTTPS/cleanup passing.
+Source hypothesis: SOCKS5's datagram source awaits recv after readiness, unlike
+the direct forwarder's nonblocking try_recv/WouldBlock path; stale readiness
+could stall other associations behind an idle socket. Added a two-source-port
+wire control on one TLS stream to test this without SDK/TUN. Not confirmed yet;
+syntax/diff checks PASS, native Linux CI pending.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

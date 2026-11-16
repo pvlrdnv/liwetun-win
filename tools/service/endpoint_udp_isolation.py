@@ -17,7 +17,7 @@ def main():
     directory.mkdir(parents=True)
     report = ROOT / 'build/endpoint-evidence/udp-isolation.json'
     report.parent.mkdir(parents=True, exist_ok=True)
-    result = dict(passed=False, mode='linux_endpoint_only_no_sdk_no_tun',
+    result = dict(passed=False, mode='linux_endpoint_only_two_udp_flows_no_sdk_no_tun',
                   endpoint_version=os.environ['LIWETUN_ENDPOINT_VERSION'], release_ready=False)
     endpoint = None
     try:
@@ -37,7 +37,7 @@ def main():
         endpoint = Child(command + ['http2'])
         if endpoint.receive() != 'ready':
             raise RuntimeError('endpoint_not_ready')
-        result['wire_probe'] = probe(directory)
+        result['wire_probe'] = probe(directory, sources=(40000, 40001))
         result['fixture_counts'] = endpoint.command('stats')
         result['passed'] = result['wire_probe']['passed']
     except Exception:
