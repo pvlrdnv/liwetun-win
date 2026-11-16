@@ -501,6 +501,14 @@ IPv6 DNS transport/leak policy and desktop acceptance remain open.
 Added a separate SDK modification notice documenting the existing privacy/build
 changes; the 60 original upstream notice bodies and generated UI bundle remain
 unchanged. Integrity check PASS; this does not approve final distribution rights.
+The pinned SDK's default adapter DNS list contains IPv4 resolver addresses even
+for IPv6-capable profiles; this does not prevent IPv6 AAAA resolution. Added an
+exact synthetic AAAA reply and separate per-query relay/transport proof to the
+IPv6 cases, through that ordinary IPv4 DNS path. Require exact IPv6 answer,
+TUN source, one marked exchange and at least 94 transport bytes. IPv6 DNS wire
+transport remains unqualified. Seven local protocol checks and direct synthetic
+DNS wire checks (A 49-byte / AAAA 61-byte responses) PASS; Python/diff checks PASS.
+Actual updated H2/H3 IPv6+AAAA Windows cases pending.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

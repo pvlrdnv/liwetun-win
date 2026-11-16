@@ -144,9 +144,15 @@ That client packet experiment **PASS** on `4ffe672`,
 sources/routes selected TUN, one exact IPv6 echo request/reply and 54 transport
 bytes, existing IPv4 DNS proof and complete network/WFP restoration without the
 watchdog. The reports retain native IPv6 egress qualification false.
+The next strengthened IPv6 case additionally requires an exact synthetic AAAA
+answer through the SDK's ordinary IPv4 DNS path, TUN source, distinct AAAA
+request/reply markers and at least 94 selected-transport bytes. The pinned SDK
+default adapter DNS list is IPv4; an AAAA record does not imply IPv6 DNS wire
+transport. Local DNS packet checks passed (49-byte A / 61-byte AAAA replies);
+actual Windows AAAA qualification is pending.
 
 Remaining gates: wider ordinary-mode fault matrix, effective DNS leak prevention,
-IPv6 payload delivery, crash/network-
+native IPv6 egress / DNS wire policy, crash/network-
 change/suspend recovery and installed Windows 10/11 desktop acceptance. These
 route/sample observations cannot establish any of those. Existing H2/H3/DNS
 payload acceptance uses bounded, explicitly interface-bound sockets and is

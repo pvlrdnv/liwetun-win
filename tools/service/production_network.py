@@ -56,7 +56,7 @@ def ordinary_https(origin, addresses, family=socket.AF_INET):
         return False, source_matches
 
 
-def ordinary_dns(target, addresses):
+def ordinary_dns(target, addresses, aaaa=False):
     source_matches = False
     observation = dict(reply_received=False, id_matches=False, one_answer=False, payload_matches=False)
     try:
@@ -64,13 +64,14 @@ def ordinary_dns(target, addresses):
             raw.settimeout(5)
             raw.connect((target, 53))  # Ordinary Windows route/source selection.
             source_matches = source_is_tun(raw, addresses)
-            question = b'\x07liwetun\x07invalid\x00\x00\x01\x00\x01'
+            question = b'\x07liwetun\x07invalid\x00' + (b'\x00\x1c' if aaaa else b'\x00\x01') + b'\x00\x01'
             packet = b'\x37\x19\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00' + question
             raw.send(packet)
             answer = raw.recv(4096)
             observation.update(reply_received=True, id_matches=answer[:2] == packet[:2],
                                one_answer=answer[6:8] == b'\x00\x01',
-                               payload_matches=answer.endswith(b'\xc0\x00\x02\x7b'))
+                               payload_matches=answer.endswith(ipaddress.IPv6Address(SYNTHETIC_IPV6).packed
+                                                               if aaaa else b'\xc0\x00\x02\x7b'))
             return all(observation.values()), source_matches, observation
     except OSError as error:
         observation['os_code'] = error.errno
@@ -283,6 +284,26 @@ def main():
                 result.update(ipv6_udp_echo_delivered=echo, ipv6_udp_source_is_tun=echo_source,
                               ipv6_udp_observation=echo_observation, ipv6_echo_forwarder_delta=echo_delta,
                               ipv6_echo_transport_bytes=echo_transport)
+                stage = 'ordinary_aaaa_dns'
+                aaaa_marker_before = endpoint.command('stats')['local_forwarder_counts']
+                aaaa_before = totals()
+                aaaa, aaaa_source, aaaa_observation = ordinary_dns(info['dns'][0], addresses, aaaa=True)
+                aaaa_after = totals()
+                for _ in range(10):
+                    if aaaa_after[protocol] - aaaa_before[protocol] >= 94:
+                        break
+                    time.sleep(.1)
+                    aaaa_after = totals()
+                aaaa_marker_after = endpoint.command('stats')['local_forwarder_counts']
+                aaaa_delta = {key: aaaa_marker_after[key] - aaaa_marker_before[key]
+                              for key in ['synthetic_aaaa_requests', 'synthetic_aaaa_replies']}
+                aaaa_transport = {key: aaaa_after[key] - aaaa_before[key] for key in aaaa_before}
+                ipv6_ok = (ipv6_ok and aaaa and aaaa_source and all(value > 0 for value in aaaa_delta.values())
+                           and aaaa_transport[protocol] >= 94
+                           and all(value == 0 for key, value in aaaa_transport.items() if key != protocol))
+                result.update(ipv6_aaaa_answer_delivered=aaaa, aaaa_dns_socket_source_is_tun=aaaa_source,
+                              aaaa_dns_observation=aaaa_observation, aaaa_forwarder_delta=aaaa_delta,
+                              aaaa_transport_bytes=aaaa_transport)
             stage = 'ordinary_dns'
             marker_before = endpoint.command('stats')['local_forwarder_counts']
             dns_before = totals()

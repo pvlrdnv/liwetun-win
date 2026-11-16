@@ -15,7 +15,7 @@ import ipaddress
 import re
 
 from endpoint_forwarder import EndpointForwarder, local_socket
-from physical_forwarder import SYNTHETIC_IPV6_PAYLOAD, SYNTHETIC_IPV6_UDP_PORT
+from physical_forwarder import SYNTHETIC_IPV6, SYNTHETIC_IPV6_PAYLOAD, SYNTHETIC_IPV6_UDP_PORT
 
 
 def echo_server(stop, counters, sock):
@@ -80,13 +80,21 @@ def dns_server(stop, counters, sock):
                 continue
             # Exact synthetic A question only. No upstream DNS/public query.
             question = b'\x07liwetun\x07invalid\x00\x00\x01\x00\x01'
+            aaaa_question = b'\x07liwetun\x07invalid\x00\x00\x1c\x00\x01'
             # DnsLibs may append EDNS records. Match the single exact question;
             # optional additional records do not change this fixture's answer.
-            if packet[4:6] == b'\x00\x01' and packet[12:12 + len(question)] == question:
+            known_question = packet[12:12 + len(question)]
+            if packet[4:6] == b'\x00\x01' and known_question in [question, aaaa_question]:
+                is_aaaa = known_question == aaaa_question
+                answer_type = b'\x00\x1c' if is_aaaa else b'\x00\x01'
+                payload = ipaddress.IPv6Address(SYNTHETIC_IPV6).packed if is_aaaa else b'\xc0\x00\x02\x7b'
                 response = packet[:2] + b'\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00'
-                response += question + b'\xc0\x0c\x00\x01\x00\x01\x00\x00\x00\x00\x00\x04\xc0\x00\x02\x7b'
+                response += (known_question + b'\xc0\x0c' + answer_type + b'\x00\x01\x00\x00\x00\x00'
+                             + len(payload).to_bytes(2, 'big') + payload)
                 sock.sendto(response, address)
                 counters['synthetic_answers'] += 1
+                if is_aaaa:
+                    counters['synthetic_aaaa_answers'] += 1
             elif packet[4:6] == b'\x00\x01':
                 # Deterministically reject unrelated runner DNS instead of
                 # provoking retries. Retain only counts, never question names.
@@ -149,7 +157,8 @@ def main():
     (directory / 'hosts.toml').write_text(
         '[[main_hosts]]\nhostname="localhost"\ncert_chain_path="cert.pem"\nprivate_key_path="key.pem"\n')
     stop = threading.Event()
-    counters = {'requests': 0, 'request_bytes': 0, 'synthetic_answers': 0, 'other_answers': 0, 'non_questions': 0}
+    counters = {'requests': 0, 'request_bytes': 0, 'synthetic_answers': 0, 'synthetic_aaaa_answers': 0,
+                'other_answers': 0, 'non_questions': 0}
     if synthetic_ipv6:
         counters.update(synthetic_ipv6_echo_requests=0, synthetic_ipv6_echo_replies=0)
     dns_host = '127.0.0.1'

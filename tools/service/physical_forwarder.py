@@ -60,6 +60,7 @@ class Forwarder:
         self.counts = dict.fromkeys(['auth_rejected', 'destination_denied', 'tcp_connected',
                                      'tcp_bytes', 'udp_forwarded', 'udp_replies', 'errors', 'active',
                                      'synthetic_dns_requests', 'synthetic_dns_replies',
+                                     'synthetic_aaaa_requests', 'synthetic_aaaa_replies',
                                      'tcp_ipv6_destination_connected', 'synthetic_ipv6_echo_requests',
                                      'synthetic_ipv6_echo_replies'], 0)
 
@@ -177,8 +178,13 @@ class Forwarder:
                 question = b'\x07liwetun\x07invalid\x00\x00\x01\x00\x01'
                 synthetic = (payload[4:6] == b'\x00\x01'
                              and payload[12:12 + len(question)] == question)
+                aaaa_question = b'\x07liwetun\x07invalid\x00\x00\x1c\x00\x01'
+                synthetic_aaaa = (payload[4:6] == b'\x00\x01'
+                                  and payload[12:12 + len(aaaa_question)] == aaaa_question)
                 if synthetic:
                     self.count('synthetic_dns_requests')
+                if synthetic_aaaa:
+                    self.count('synthetic_aaaa_requests')
                 answer, address = upstream.recvfrom(4096)
                 if address == target:
                     relay.sendto(packet[:header_size] + answer, sender)
@@ -188,6 +194,9 @@ class Forwarder:
                     if (synthetic and answer[:2] == payload[:2] and answer[6:8] == b'\x00\x01'
                             and answer.endswith(b'\xc0\x00\x02\x7b')):
                         self.count('synthetic_dns_replies')
+                    if (synthetic_aaaa and answer[:2] == payload[:2] and answer[6:8] == b'\x00\x01'
+                            and answer.endswith(socket.inet_pton(socket.AF_INET6, SYNTHETIC_IPV6))):
+                        self.count('synthetic_aaaa_replies')
 
     def handle(self, client):
         self.count('active')
