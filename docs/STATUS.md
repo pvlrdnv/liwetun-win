@@ -1,5 +1,26 @@
 # Development checkpoint — 2026-11-16
 
+## Paused at owner's request
+
+Work is paused. Latest H2/H3 synthetic IPv6 + AAAA runs completed successfully;
+the updated notice-aware installer also passed. No CI job remains active at this
+checkpoint. LikeWeb, production and the owner's network/trust configuration
+remain unchanged. No owner-installable release has been produced.
+
+Resume with SDK dependency source pinning / release composition. Research only
+has begun: libevent's recipe downloads a tag archive without a checksum;
+libsodium, nghttp2 1.56.0 and nghttp3 1.0.0 check out tags. Candidate exact commits
+are recorded in the archived SDK notice provenance. No recipe, Conan lock or
+runtime pin has been changed for this stage; no new SDK build was started.
+The previously pinned bootstrap was downloaded/hash-checked under `/tmp` for
+inspection; it contains the Conan provider/profiles, not dependency recipes.
+Recipes belong to the pinned Common tree (including versioned recipe folders).
+
+On resumption, verify pinned SDK/GUI/diagnostic-endpoint artifact availability;
+temporary local tools/caches and CI artifacts can expire. Preserve all digest /
+source-run checks; rebuild and requalify if needed. Trusted release signing,
+Windows 10/11 desktop acceptance and final distribution audit remain open.
+
 ## Latest checkpoint — six basic ordinary IPv4 CI cases PASS
 
 With both application network-test flags OFF and no client host routes, ordinary
@@ -509,6 +530,15 @@ TUN source, one marked exchange and at least 94 transport bytes. IPv6 DNS wire
 transport remains unqualified. Seven local protocol checks and direct synthetic
 DNS wire checks (A 49-byte / AAAA 61-byte responses) PASS; Python/diff checks PASS.
 Actual updated H2/H3 IPv6+AAAA Windows cases pending.
+Strengthened IPv6 + AAAA cases **PASS** on `a430ac9`:
+[H2 43900021100](https://github.com/pvlrdnv/liwetun-win/actions/runs/43900021100),
+[H3 43900031136](https://github.com/pvlrdnv/liwetun-win/actions/runs/43900031136).
+Both delivered IPv6 HTTPS/UDP plus the exact AAAA answer through the ordinary
+IPv4 DNS path; one marked AAAA request/reply and exactly 94 selected-transport
+bytes, with complete network/WFP restoration and no watchdog intervention.
+[H2 evidence](evidence/synthetic-aaaa-43900021100.json),
+[H3 evidence](evidence/synthetic-aaaa-43900031136.json). Native IPv6 egress / DNS
+wire transport and Windows 10/11 desktop qualification remain open.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

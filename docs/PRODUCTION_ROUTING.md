@@ -150,6 +150,12 @@ request/reply markers and at least 94 selected-transport bytes. The pinned SDK
 default adapter DNS list is IPv4; an AAAA record does not imply IPv6 DNS wire
 transport. Local DNS packet checks passed (49-byte A / 61-byte AAAA replies);
 actual Windows AAAA qualification is pending.
+That strengthened case **PASS** on `a430ac9`:
+[H2 evidence](evidence/synthetic-aaaa-43900021100.json),
+[H3 evidence](evidence/synthetic-aaaa-43900031136.json). Each recorded one exact
+AAAA request/reply, 94 selected-transport bytes, working IPv6 TCP/UDP, and complete
+network/WFP restoration without watchdog intervention. DNS wire transport remains
+IPv4; native IPv6 Internet egress and desktop qualification stay open.
 
 Remaining gates: wider ordinary-mode fault matrix, effective DNS leak prevention,
 native IPv6 egress / DNS wire policy, crash/network-
