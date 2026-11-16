@@ -54,8 +54,8 @@ can be influenced by compatibility mode; it is diagnostic metadata, not a featur
 gate or proof of desktop qualification. Compare it to the owner's `winver` build
 when accepting the package. Missing/malformed native results remain unknown.
 
-Protected journal persistence and seven-day/1000-event retention are implemented;
-actual Windows GUI roundtrip is pending. In-flight events can be lost on a hard
+Protected journal persistence and seven-day/1000-event retention passed actual
+Windows GUI roundtrip. In-flight events can be lost on a hard
 crash, and a failed write leaves new events in memory. See JOURNAL_STORAGE.md.
 The report does not yet replace all manual
 observations. No arbitrary shell scripts or corporate software modifications

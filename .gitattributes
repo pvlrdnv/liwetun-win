@@ -1,5 +1,5 @@
 * text=auto eol=lf
 # Preserve upstream notice bytes and their recorded digests on every checkout.
-third_party/**/*.txt -text whitespace=-blank-at-eof
+third_party/**/*.txt -text -whitespace
 *.ico binary
 *.png binary

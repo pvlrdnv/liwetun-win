@@ -32,7 +32,11 @@ checks and bounded packaged-notice collection implemented; five local tests and
 fresh-source preparation passed. Updated SDK build **PASS** on `37519a8`,
 [run 43752644532](https://github.com/pvlrdnv/liwetun-win/actions/runs/43752644532).
 Its downloaded DLL hashes are pinned in `native/sdk/runtime.json`; network
-requalification of this new binary is pending. Notice collection found 13 missing
+requalification **PASS** with service `dd566d9`,
+[1.1 run 43814467138](https://github.com/pvlrdnv/liwetun-win/actions/runs/43814467138),
+[1.3 run 43814471604](https://github.com/pvlrdnv/liwetun-win/actions/runs/43814471604):
+18 service/security/transport checks + 6 real network cases each.
+Notice collection found 13 missing
 package notice sets out of 28 graph nodes, retained as explicit release blockers.
 This does not qualify licenses or change the earlier network artifact. See
 [dependency closure](DEPENDENCY_CLOSURE.md).
@@ -61,7 +65,10 @@ the other run passed H2/H3/DNS and auth/CA negatives before failing at UI-death.
 These runs do not establish complete new-SDK qualification. A server-side pipe
 race was found: disconnect after completed write can discard unread reply bytes.
 Bounded/cancellable peer-close waiting and a deliberately delayed-reader
-regression check are implemented; updated Windows service/network checks pending.
+regression check passed in both updated Windows runs above. Source notice
+supplements now cover all 13 missing package sets; 38 SDK/Wintun/related files
+and 22 Rust files have integrity/dependency checks. Final distribution audit and
+Windows notice-check workflow remain pending.
 
 ## Current stage
 
@@ -85,12 +92,13 @@ also passed on disposable Windows CI. See [service architecture](WINDOWS_SERVICE
 - Strict proposed subscription snapshot parser/store: atomic complete/partial
   updates, revocation, expiry, replay/version/type/size checks. No live fetch or
   LikeWeb API changes; this store is not wired to GUI persistence.
-- Typed sanitized memory journal (1000 events), preview and ZIP export. No raw
+- Typed sanitized protected journal (seven days/1000 events), preview and ZIP export. No raw
   core strings or destination logs. Unknown metrics remain unknown.
 - Full upstream SDK build with pinned SDK/Common/DNS revisions and guarded raw
   logging/destination instrumentation suppression. Source and binary hashes plus
-  resolved Conan recipe lock archived; input lock enforcement and full notices
-  inventory still open. Development DLL is not a release artifact.
+  resolved Conan recipe lock enforced and archived; notice candidates collected
+  and source supplements pinned. Final notices audit remains open. Development
+  DLL is not a release artifact.
 - LocalSystem service with bounded authenticated IPC, owner SID/session/logon
   lease, signer/ACL/image checks and server PID verification before transmitting
   secrets. Original Wintun signature and pinned hash required.
@@ -138,7 +146,7 @@ The client is not release-ready. Unsigned workspace builds fail service admissio
 no service is installed on the owner's computer. Protected storage and actual
 GUI integration passed disposable Windows CI. No signed
 installer/updater, subscription fetch,
-recovery/tray/startup, persistent rotated journal, real metrics, route-bound
+recovery/tray/startup, real metrics, route-bound
 health probes, kill switch or Hysteria2/Xray connection adapter.
 
 UNKNOWN until tested: clean Windows 10/11 installed GUI and ordinary-mode traffic,

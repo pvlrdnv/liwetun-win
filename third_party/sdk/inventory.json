@@ -1,0 +1,702 @@
+{
+  "sdk_source_run": 43752644532,
+  "sdk_source_commit": "37519a8500d0834660268e434f9aedaaff8b9c82",
+  "release_qualified": false,
+  "license_review": "pending; candidate texts only; nested notices and source-tag provenance still require final audit",
+  "original_missing_package_sets": 13,
+  "candidate_missing_package_sets": 0,
+  "packages": [
+    {
+      "ref": "dns-libs/2.11.0-alpha.1-3-g3d6359be@adguard/oss#40eabd93bf727ef0e65af6cc25fdb006",
+      "context": "host",
+      "license": "Apache-2.0",
+      "package_id": "d7f37906915dec7f37678daa2bc140374d7da77c",
+      "prev": "e78ca5bcc9bd0ab1e92ffedcdeace35c",
+      "notices": [
+        {
+          "file": "sources/dns-libs/00.txt",
+          "sha256": "f576132490344857ff2cff83c4559e0765b5a7c7bcd66aa9ed47659a1b843a84",
+          "bytes": 11351,
+          "provenance": {
+            "kind": "pinned_source_tree",
+            "repository": "AdguardTeam/DnsLibs",
+            "commit": "3d6359be7b99e2eccbfe905e970dd08a7f1d9108",
+            "path": "LICENSE.md",
+            "source_relation": "recipe_pinned_tree"
+          }
+        },
+        {
+          "file": "sources/dns-libs/01.txt",
+          "sha256": "8fb15ebdb19eb669e1d37fcd8e57a44c477fcc0e93a9ab0d181760965f94d5ed",
+          "bytes": 1611,
+          "provenance": {
+            "kind": "pinned_source_tree",
+            "repository": "AdguardTeam/DnsLibs",
+            "commit": "3d6359be7b99e2eccbfe905e970dd08a7f1d9108",
+            "path": "third-party/lwip/lwip/COPYING",
+            "source_relation": "recipe_pinned_tree"
+          }
+        }
+      ],
+      "notice_status": "source_supplement_for_review"
+    },
+    {
+      "ref": "cxxopts/3.1.1#b358aff6883980b4f0915734a5c8214a",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      "prev": "f4dfdc9b149c1875d795ceac4820564f",
+      "notices": [
+        {
+          "file": "packaged/001/000.txt",
+          "sha256": "aa324fbe633a96546bebca975fbbab65caa175894bd00cfa13d7335e7363400c",
+          "bytes": 1055,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "libevent/2.1.11@adguard/oss#6b82159d85d576d2572e34ebc8dd5151",
+      "context": "host",
+      "license": null,
+      "package_id": "2f5c52c07b8ffffc6ddb1ce81f34e6ba43bbd28b",
+      "prev": "cd6205d4766e62d4c3c7334dcc7067fb",
+      "notices": [
+        {
+          "file": "sources/libevent/LICENSE.txt",
+          "sha256": "ff02effc9b331edcdac387d198691bfa3e575e7d244ad10cb826aa51ef085670",
+          "bytes": 4528,
+          "provenance": {
+            "kind": "upstream_git_blob",
+            "repository": "libevent/libevent",
+            "commit": "4c908dde58ef780eeefcc9df4db3063ca62ea862",
+            "path": "LICENSE",
+            "git_blob_sha1": "402ca50896cd094f020f5d6b2b1b0178bead627c",
+            "source_relation": "recipe_tag_resolved_after_build"
+          }
+        }
+      ],
+      "notice_status": "source_supplement_for_review"
+    },
+    {
+      "ref": "openssl/boring-2026-05-08@adguard/oss#c48e5d03db734e05b8b7f309f23b5089",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "19b9f76e89001f501f28b4d3b3e83df2",
+      "notices": [
+        {
+          "file": "sources/openssl/LICENSE.txt",
+          "sha256": "827c8d8fc207c2392794eef9e00fe246f9f61fdcc132556c275be3dd8c3cd97f",
+          "bytes": 13115,
+          "provenance": {
+            "kind": "upstream_git_blob",
+            "repository": "google/boringssl",
+            "commit": "d589045a772678d5ca131f4c8087d001b9258380",
+            "path": "LICENSE",
+            "git_blob_sha1": "37a5b7439bf6d245179326da069fa561e20067ef",
+            "source_relation": "recipe_pinned_commit"
+          }
+        }
+      ],
+      "notice_status": "source_supplement_for_review"
+    },
+    {
+      "ref": "libsodium/1.0.18@adguard/oss#f0c5cc81972f50b6f1d187f50b37f24f",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "cb37cb85ad74fdd5017d70c8df1730a3",
+      "notices": [
+        {
+          "file": "sources/libsodium/LICENSE.txt",
+          "sha256": "dea1855c9809f3faf22aa4a1fba20ec8af5a5587f23115012e5b98279cedc4af",
+          "bytes": 823,
+          "provenance": {
+            "kind": "upstream_git_blob",
+            "repository": "jedisct1/libsodium",
+            "commit": "45b09a607d596e40adbff9ab812e47d85175c053",
+            "path": "LICENSE",
+            "git_blob_sha1": "62510f35e28a5fb42fdd499b804e9176b6cf5522",
+            "source_relation": "recipe_tag_resolved_after_build"
+          }
+        }
+      ],
+      "notice_status": "source_supplement_for_review"
+    },
+    {
+      "ref": "libuv/1.41.0@adguard/oss#311f317edcf383bd7aeddcc51308f380",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "78f038cfa79070f646a0e937ac797d2a",
+      "notices": [
+        {
+          "file": "packaged/005/000.txt",
+          "sha256": "6d20216ae022fbeed23916f48508fd807ece3d8464992330643b0e64e5c0c24b",
+          "bytes": 3143,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "klib/2021-04-06@adguard/oss#2fba69658655c2972a005c1b3502cab0",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "37eb8583c7107fd5541dbd0ce65cecb8",
+      "notices": [
+        {
+          "file": "sources/klib/LICENSE.txt",
+          "sha256": "1f56e6ecc3595dfc8b1b919d5cef257aecedd7117ee3c0a8019586b56518e941",
+          "bytes": 1105,
+          "provenance": {
+            "kind": "upstream_git_blob",
+            "repository": "attractivechaos/klib",
+            "commit": "e1b2a40de8e2a46c05cc5dac9c6e5e8d15ae722c",
+            "path": "LICENSE.txt",
+            "git_blob_sha1": "0a996fae3360fb8445ac2e050c6fa267eba97451",
+            "source_relation": "recipe_pinned_commit"
+          }
+        }
+      ],
+      "notice_status": "source_supplement_for_review"
+    },
+    {
+      "ref": "ldns/2021-03-29@adguard/oss#ac8bb875bbc36a5afbdadbacb0e3fb7e",
+      "context": "host",
+      "license": null,
+      "package_id": "a6e84d0ecdb737345d2bb017b5d8a9187afaec32",
+      "prev": "a8ce0186f80a1752187b6d9ded848380",
+      "notices": [
+        {
+          "file": "sources/ldns/LICENSE.txt",
+          "sha256": "9e0b1505c358d1a7c79555ee8bd1acbe2985dbc74dd81f3697cebf2161e922e6",
+          "bytes": 1510,
+          "provenance": {
+            "kind": "upstream_git_blob",
+            "repository": "NLnetLabs/ldns",
+            "commit": "7128ef56649e0737f236bc5d5d640de38ff0036d",
+            "path": "LICENSE",
+            "git_blob_sha1": "6d4c6be0966954c06b14c2d3797e812889033e7d",
+            "source_relation": "recipe_pinned_commit"
+          }
+        }
+      ],
+      "notice_status": "source_supplement_for_review"
+    },
+    {
+      "ref": "magic_enum/0.9.5#768c09bb424bda31d224304693b50fb3",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      "prev": "f9173d81294187c1cebdfcb1fcd8051c",
+      "notices": [
+        {
+          "file": "packaged/008/000.txt",
+          "sha256": "cf451c612ef409b7692b51aa74eeb2b8df1ec9be38e6f7f72b8740f489ca1387",
+          "bytes": 1080,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "native_libs_common/8.2.0@adguard/oss#3032d1db7281c41643e37d6a97a5d236",
+      "context": "host",
+      "license": "Apache-2.0",
+      "package_id": "c338d4fd8e9bddb50cb8a7f06e01fe8a8c25b22e",
+      "prev": "109b0786daaa64677857a7ced9b8b90b",
+      "notices": [
+        {
+          "file": "sources/native_libs_common/00.txt",
+          "sha256": "f576132490344857ff2cff83c4559e0765b5a7c7bcd66aa9ed47659a1b843a84",
+          "bytes": 11351,
+          "provenance": {
+            "kind": "pinned_source_tree",
+            "repository": "AdguardTeam/NativeLibsCommon",
+            "commit": "c546b329360642576cea25f10bdcbf41d52163df",
+            "path": "LICENSE.md",
+            "source_relation": "recipe_pinned_tree"
+          }
+        }
+      ],
+      "notice_status": "source_supplement_for_review"
+    },
+    {
+      "ref": "brotli/1.1.0#3f631ef77008f7b5eb388780116371a3",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "962ed21f3f050380ec26ad52cbae2bbab859e792",
+      "prev": "13804b6489345271e0cb9cc96116f85e",
+      "notices": [
+        {
+          "file": "packaged/010/000.txt",
+          "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94",
+          "bytes": 1084,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "fmt/12.1.0#6baf0fb8351783472b94ee6e36232391",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "e58e5d944427862a94af8190d98b819a2dac2241",
+      "prev": "3b7567fbed7a3ff97f3587214c3a53e1",
+      "notices": [
+        {
+          "file": "packaged/011/000.txt",
+          "sha256": "07580f2a3b35709ce703d523f447b242f6dfec7582a8c0df102c7fa2849375f8",
+          "bytes": 1431,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "llhttp/9.3.0@adguard/oss#d4c606ade7f77345c3bf71199c495d0e",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "2f2f80bf96f4c31ef7859db9bff595e502bdf096",
+      "prev": "ae51984c018c40ff92404bbd31b5f444",
+      "notices": [
+        {
+          "file": "packaged/012/000.txt",
+          "sha256": "ebca854e0134cd256d673627c20499f42577eb74bacf08b9f25b626a73c91277",
+          "bytes": 1105,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "nghttp2/1.56.0@adguard/oss#f16addbe8345a6441062c8986e120d97",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "a338e234cfcd6d9c11030f825066ae90",
+      "notices": [
+        {
+          "file": "sources/nghttp2/LICENSE.txt",
+          "sha256": "6b94f3abc1aabd0c72a7c7d92a77f79dda7c8a0cb3df839a97890b4116a2de2a",
+          "bytes": 1156,
+          "provenance": {
+            "kind": "upstream_git_blob",
+            "repository": "nghttp2/nghttp2",
+            "commit": "80d05fe917e428923e0ab654d18f958e49b3db0a",
+            "path": "COPYING",
+            "git_blob_sha1": "80201792ec7234674ea584ef1303d5f428558ae9",
+            "source_relation": "recipe_tag_resolved_after_build"
+          }
+        }
+      ],
+      "notice_status": "source_supplement_for_review"
+    },
+    {
+      "ref": "nghttp3/1.0.0@adguard/oss#83c5f7eadcd1a37d8bb0d535bc30a3d1",
+      "context": "host",
+      "license": null,
+      "package_id": "c425ccc19dde2b6d03235cf5b0b63adf5983c80d",
+      "prev": "85d8d37b61fbd6bf1869045e92680c88",
+      "notices": [
+        {
+          "file": "sources/nghttp3/LICENSE.txt",
+          "sha256": "58cc3fc8c6d6cb2485ab35eb5918e849b5bf1e56522974e106d7a39a88d61dcd",
+          "bytes": 1081,
+          "provenance": {
+            "kind": "upstream_git_blob",
+            "repository": "ngtcp2/nghttp3",
+            "commit": "7df838fcab8f4beef9c4aa7c109c18384b801b01",
+            "path": "COPYING",
+            "git_blob_sha1": "37562ea58cd74c8ff3ccf200379e950f28c214a3",
+            "source_relation": "recipe_tag_resolved_after_build"
+          }
+        }
+      ],
+      "notice_status": "source_supplement_for_review"
+    },
+    {
+      "ref": "ngtcp2/1.22.1@adguard/oss#36d9b5ab7bae5525760e9ab0c3dec1b4",
+      "context": "host",
+      "license": null,
+      "package_id": "2f5c52c07b8ffffc6ddb1ce81f34e6ba43bbd28b",
+      "prev": "345bb360be1c9318151c36b5d7d85d19",
+      "notices": [
+        {
+          "file": "sources/ngtcp2/00.txt",
+          "sha256": "542dd526d2ea23565f0571cc68df6f05ed11248a90ff0f32de19d8ba589db513",
+          "bytes": 1080,
+          "provenance": {
+            "kind": "recipe_verified_source_archive",
+            "url": "https://github.com/ngtcp2/ngtcp2/releases/download/v1.22.1/ngtcp2-1.22.1.tar.gz",
+            "archive_sha256": "063d80531acac0ddbbc1b9d12829a824edc2abe8dba2e632fd1ce15cfd5632f9",
+            "path": "ngtcp2-1.22.1/COPYING"
+          }
+        }
+      ],
+      "notice_status": "source_supplement_for_review"
+    },
+    {
+      "ref": "pcre2/10.37@adguard/oss#e9120818270c6f02b943e6864ff8f21c",
+      "context": "host",
+      "license": "BSD-3-Clause",
+      "package_id": "4db712ccd76ef0bda5b6ef9226d9da09c23d9c01",
+      "prev": "120de759c19eafe6fb29bbe1fe794180",
+      "notices": [
+        {
+          "file": "sources/pcre2/00.txt",
+          "sha256": "9c9488256e3612ec5ea40fd12abe7ec55a58f23bd36e6f465116c2b3cbffba02",
+          "bytes": 3464,
+          "provenance": {
+            "kind": "recipe_verified_source_archive",
+            "url": "https://github.com/PhilipHazel/pcre2/releases/download/pcre2-10.37/pcre2-10.37.tar.gz",
+            "archive_sha256": "04e214c0c40a97b8a5c2b4ae88a3aa8a93e6f2e45c6b3534ddac351f26548577",
+            "path": "pcre2-10.37/LICENCE"
+          }
+        },
+        {
+          "file": "sources/pcre2/01.txt",
+          "sha256": "99272c55f3dcfa07a8a7e15a5c1a33096e4727de74241d65fa049fccfdd59507",
+          "bytes": 97,
+          "provenance": {
+            "kind": "recipe_verified_source_archive",
+            "url": "https://github.com/PhilipHazel/pcre2/releases/download/pcre2-10.37/pcre2-10.37.tar.gz",
+            "archive_sha256": "04e214c0c40a97b8a5c2b4ae88a3aa8a93e6f2e45c6b3534ddac351f26548577",
+            "path": "pcre2-10.37/COPYING"
+          }
+        }
+      ],
+      "notice_status": "source_supplement_for_review"
+    },
+    {
+      "ref": "gtest/1.14.0#f8f0757a574a8dd747d16af62d6eb1b7",
+      "context": "host",
+      "license": "BSD-3-Clause",
+      "package_id": "34aac66723cb607d6008490c423b31338951f67e",
+      "prev": "5cc0ef9b12269254b4f60bde5667073a",
+      "notices": [
+        {
+          "file": "packaged/017/000.txt",
+          "sha256": "9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138",
+          "bytes": 1475,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "tldregistry/2022-12-26@adguard/oss#a37e4c059ba30270e7f0f9888c0bd890",
+      "context": "host",
+      "license": null,
+      "package_id": "c425ccc19dde2b6d03235cf5b0b63adf5983c80d",
+      "prev": "68770f661894d95c17783b488cd17853",
+      "notices": [
+        {
+          "file": "sources/tldregistry/00.txt",
+          "sha256": "f576132490344857ff2cff83c4559e0765b5a7c7bcd66aa9ed47659a1b843a84",
+          "bytes": 11351,
+          "provenance": {
+            "kind": "pinned_source_tree",
+            "repository": "AdguardTeam/NativeLibsCommon",
+            "commit": "c546b329360642576cea25f10bdcbf41d52163df",
+            "path": "LICENSE.md",
+            "source_relation": "recipe_pinned_tree"
+          }
+        },
+        {
+          "file": "sources/tldregistry/01.txt",
+          "sha256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b",
+          "bytes": 1536,
+          "provenance": {
+            "kind": "pinned_source_tree",
+            "repository": "AdguardTeam/NativeLibsCommon",
+            "commit": "c546b329360642576cea25f10bdcbf41d52163df",
+            "path": "conan/recipes/tldregistry/chromium/LICENSE",
+            "source_relation": "recipe_pinned_tree"
+          }
+        }
+      ],
+      "notice_status": "source_supplement_for_review"
+    },
+    {
+      "ref": "ada/2.7.4#e86909dd9cb9714ca39dbc12f7f41053",
+      "context": "host",
+      "license": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "7a1c3acbce054ad409fa760ffb209ada",
+      "notices": [
+        {
+          "file": "packaged/019/000.txt",
+          "sha256": "508d4676d4083e874df706f302d9d42e5e7f9aed3f5a7ea614dc6d2b2252a22f",
+          "bytes": 11342,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        },
+        {
+          "file": "packaged/019/001.txt",
+          "sha256": "af0d7d2cef91fc243cf4ad98570b03d1f26f5e0227cad0f5f4a7376e2feb3160",
+          "bytes": 1071,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "cmake/3.31.12#71c3a0c80cc89cde62956db9e69550e0",
+      "context": "build",
+      "license": "BSD-3-Clause",
+      "package_id": "522dcea5982a3f8a5b624c16477e47195da2f84f",
+      "prev": "0588c712b46769fce5d28f37302d129c",
+      "notices": [
+        {
+          "file": "packaged/020/000.txt",
+          "sha256": "1fdeb38075c36e6c6f14c7c625a6e3b1bc111f08da58c0b7ae85084906eadd8e",
+          "bytes": 5613,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "detours/2021-04-14@adguard/oss#4631c1416196d39fc29ca4d32e8e8a3f",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "d50512d457599b11a2199a66ca6fbd3a",
+      "notices": [
+        {
+          "file": "sources/detours/LICENSE.txt",
+          "sha256": "b301808b732cfaa60df2b4b422d78cd97d2a15058b207e7e33f0535ba5170dd6",
+          "bytes": 1099,
+          "provenance": {
+            "kind": "upstream_git_blob",
+            "repository": "microsoft/Detours",
+            "commit": "fe7216c037c898b1f65330eda85e6146b6e3cb85",
+            "path": "LICENSE.md",
+            "git_blob_sha1": "e6a4c563056daedce20576a96a4d77b02a7dc8b6",
+            "source_relation": "recipe_pinned_commit"
+          }
+        }
+      ],
+      "notice_status": "source_supplement_for_review"
+    },
+    {
+      "ref": "nlohmann_json/3.12.0#2d634ab0ec8d9f56353e5ccef6d6612c",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      "prev": "2ea4b814fc9da53f7cdf5b7d68052688",
+      "notices": [
+        {
+          "file": "packaged/022/000.txt",
+          "sha256": "46a65cffd1ea955132d95a8dd921640714a8d6b537d2e4e482d31145ae95b603",
+          "bytes": 1076,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        },
+        {
+          "file": "packaged/022/001.txt",
+          "sha256": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff",
+          "bytes": 10280,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        },
+        {
+          "file": "packaged/022/002.txt",
+          "sha256": "5a93d5831e1297ab10fe643e1a631e83be392896da14ee2951285a79012df69d",
+          "bytes": 1460,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        },
+        {
+          "file": "packaged/022/003.txt",
+          "sha256": "b6a8bf63ae2c95b0aa256ee774680d7bd18f21f457da75466f7610b3b16acc4e",
+          "bytes": 34670,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        },
+        {
+          "file": "packaged/022/004.txt",
+          "sha256": "b85dcd3e453d05982552c52b5fc9e0bdd6d23c6f8e844b984a88af32570b0cc0",
+          "bytes": 1078,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "gtest/1.14.0#f8f0757a574a8dd747d16af62d6eb1b7",
+      "context": "host",
+      "license": "BSD-3-Clause",
+      "package_id": "34aac66723cb607d6008490c423b31338951f67e",
+      "prev": "5cc0ef9b12269254b4f60bde5667073a",
+      "notices": [
+        {
+          "file": "packaged/023/000.txt",
+          "sha256": "9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138",
+          "bytes": 1475,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "http_parser/2.9.4#98d91690d6fd021e9e624218a85d9d97",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "2f2f80bf96f4c31ef7859db9bff595e502bdf096",
+      "prev": "093312d1d7243e70d62022b0642c33f0",
+      "notices": [
+        {
+          "file": "packaged/024/000.txt",
+          "sha256": "79e6ba8b687cb54786207342b9b6fcee0ac10218453ed9009b84d949b2233cc0",
+          "bytes": 1077,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "tomlplusplus/3.3.0#3109e968b4a517f395e638753c6faa43",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      "prev": "27e922b4e373419ae48f1f1e7e5d8a3d",
+      "notices": [
+        {
+          "file": "packaged/025/000.txt",
+          "sha256": "529bc3900a9571e49db285b0df432397e70b881cc3bf48de6667ae74ff4b06d8",
+          "bytes": 1094,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "zlib/1.3.1#cac0f6daea041b0ccf42934163defb20",
+      "context": "host",
+      "license": "Zlib",
+      "package_id": "2f2f80bf96f4c31ef7859db9bff595e502bdf096",
+      "prev": "d273bda6a03489b7e3d6f9dfadc4165c",
+      "notices": [
+        {
+          "file": "packaged/026/000.txt",
+          "sha256": "cd71bb78391bd288dfcce9b381e3bd847eaa18ecff0fe93aff33510e21c4b65d",
+          "bytes": 1323,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "gtest/1.14.0#f8f0757a574a8dd747d16af62d6eb1b7",
+      "context": "host",
+      "license": "BSD-3-Clause",
+      "package_id": "34aac66723cb607d6008490c423b31338951f67e",
+      "prev": "5cc0ef9b12269254b4f60bde5667073a",
+      "notices": [
+        {
+          "file": "packaged/027/000.txt",
+          "sha256": "9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138",
+          "bytes": 1475,
+          "provenance": {
+            "kind": "qualified_build_package",
+            "run_id": 43752644532
+          }
+        }
+      ],
+      "notice_status": "collected_for_review"
+    }
+  ],
+  "components": [
+    {
+      "component": "trusttunnel_sdk",
+      "notices": [
+        {
+          "file": "components/trusttunnel_sdk/LICENSE.txt",
+          "sha256": "cb054bf99c1720adf58023342446d08d44b620068073463622bcaadc004cd335",
+          "bytes": 10998,
+          "provenance": {
+            "kind": "qualified_runtime_notice",
+            "run_id": 43752644532,
+            "source_file": "TrustTunnel-Apache-2.0.txt"
+          }
+        }
+      ]
+    },
+    {
+      "component": "wintun",
+      "notices": [
+        {
+          "file": "components/wintun/LICENSE.txt",
+          "sha256": "183adac21e7d96c508c8fd34d394b7b6708bc81564ad1bad61ab66143a008cd2",
+          "bytes": 5431,
+          "provenance": {
+            "kind": "qualified_runtime_notice",
+            "run_id": 43752644532,
+            "source_file": "WINTUN_LICENSE.txt"
+          }
+        }
+      ]
+    }
+  ]
+}

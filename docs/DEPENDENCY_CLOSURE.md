@@ -39,6 +39,15 @@ components as applicable. Upstream SDK/Wintun notices already accompany the
 development SDK artifact. A full redistribution review remains open.
 
 Local validation: five closure/drift/collection/path-escape tests passed; actual
-prepare script passed on a fresh pinned SDK tree and bootstrap. A Windows SDK
-rebuild with enforced input lock and notice collection is pending. Existing
-network results use the earlier qualified SDK artifact, not this pending build.
+prepare script passed on a fresh pinned SDK tree and bootstrap. Windows SDK
+rebuild with enforced input lock and notice collection passed on `37519a8`,
+run `43752644532`. The downloaded runtime digest is pinned and passed both full
+bounded endpoint network matrices with service `dd566d9`; see TUN_NETWORK_ACCEPTANCE.md.
+
+Actual packaging omitted 13 notice sets. Supplements from exact recipe source
+commits, checked source archives and explicitly labeled post-build tag resolution
+now cover those sets. [third_party/sdk](../third_party/sdk/README.md) archives
+38 original files and provenance. `verify_notices.py` checks all SDK/Rust notice
+bytes against receipts and exact dependency locks, with tamper/path/membership
+guards. Local tests passed; the Windows integrity workflow remains pending.
+Coverage is not approval of nested attributions or complete release composition.

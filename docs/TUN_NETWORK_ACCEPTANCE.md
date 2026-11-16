@@ -5,6 +5,26 @@ Targets for later installed-client acceptance: Windows 10 x64 and Windows 11 x64
 
 ## Confirmed results
 
+Current locked SDK runtime (source run `43752644532`, DLL SHA256 in
+`native/sdk/runtime.json`) passed with service source
+`dd566d9e8b8a025aa89ada095ec6611a1805038a`:
+
+| Official endpoint | Run | Result |
+| --- | --- | --- |
+| 1.1.0 | [43814467138](https://github.com/pvlrdnv/liwetun-win/actions/runs/43814467138) | 18 service/security/transport checks and all 6 network cases PASS |
+| 1.3.0-beta.2 | [43814471604](https://github.com/pvlrdnv/liwetun-win/actions/runs/43814471604) | 18 service/security/transport checks and all 6 network cases PASS |
+
+[1.1 network](evidence/network-43814467138.json),
+[1.1 service](evidence/qualification-43814467138.json),
+[1.3 network](evidence/network-43814471604.json),
+[1.3 service](evidence/qualification-43814471604.json).
+Both also passed an old-disconnect data-loss reproducer and an actual signed
+client delaying its reply read. The service now preserves replies until bounded
+peer completion. Earlier new-runtime runs failed before this fix and remain
+archived as failures; the successful runs above supersede those diagnostics.
+
+### Earlier runtime baseline
+
 Actual signed service, pinned SDK DLL and original Wintun on Windows Server 2022:
 
 | Official endpoint | Run | Result |

@@ -1,0 +1,383 @@
+{
+  "release_ready": false,
+  "mode": "interface_bound_ipv4_bounded_host_route",
+  "diagnostic_only": false,
+  "endpoint_version": "v1.3.0-beta.2",
+  "origin": "example.com_https_normal_tls",
+  "cases": [
+    {
+      "case": "http2",
+      "tls_https_delivered": true,
+      "dns_fixture_answer": true,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 6188,
+        "http3": 0
+      },
+      "routes_dns_adapter_restored": true,
+      "dns_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 82,
+        "http3": 0
+      },
+      "https_probe_error": null,
+      "idle_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "idle_before_fixture_routes": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "idle_endpoint_sockets": {
+        "tcp": 0,
+        "udp": 3
+      },
+      "endpoint_direction_totals_before_fixture_routes": {
+        "inbound": {
+          "http1": 0,
+          "http2": 129,
+          "http3": 0
+        },
+        "outbound": {
+          "http1": 0,
+          "http2": 129,
+          "http3": 0
+        }
+      },
+      "task_adapter_route_prefix_lengths": {
+        "v6/8": 1,
+        "v6/64": 1,
+        "v4/32": 5,
+        "v6/128": 2,
+        "v4/15": 1,
+        "v4/4": 1
+      },
+      "startup_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 718,
+        "http3": 0
+      },
+      "dns_fixture_counts": {
+        "requests": 8,
+        "request_bytes": 392,
+        "synthetic_answers": 1,
+        "other_answers": 7,
+        "non_questions": 0
+      },
+      "automatic_tun_default_removed": false,
+      "bounded_bytes": true,
+      "bounded_resources": true,
+      "idle_service_cpu_fraction": 0.0,
+      "closed_interface_denies_delivery": true,
+      "passed": true
+    },
+    {
+      "case": "http3",
+      "tls_https_delivered": true,
+      "dns_fixture_answer": true,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 6187
+      },
+      "routes_dns_adapter_restored": true,
+      "dns_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 82
+      },
+      "https_probe_error": null,
+      "idle_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "idle_before_fixture_routes": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "idle_endpoint_sockets": {
+        "tcp": 0,
+        "udp": 1
+      },
+      "endpoint_direction_totals_before_fixture_routes": {
+        "inbound": {
+          "http1": 0,
+          "http2": 0,
+          "http3": 31
+        },
+        "outbound": {
+          "http1": 0,
+          "http2": 0,
+          "http3": 31
+        }
+      },
+      "task_adapter_route_prefix_lengths": {
+        "v4/4": 1,
+        "v4/32": 5,
+        "v6/64": 1,
+        "v6/128": 2,
+        "v6/8": 1,
+        "v4/15": 1
+      },
+      "startup_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 62
+      },
+      "dns_fixture_counts": {
+        "requests": 2,
+        "request_bytes": 64,
+        "synthetic_answers": 1,
+        "other_answers": 1,
+        "non_questions": 0
+      },
+      "automatic_tun_default_removed": false,
+      "bounded_bytes": true,
+      "bounded_resources": true,
+      "idle_service_cpu_fraction": 0.0,
+      "closed_interface_denies_delivery": true,
+      "passed": true
+    },
+    {
+      "case": "wrong-auth",
+      "tls_https_delivered": false,
+      "dns_fixture_answer": false,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "routes_dns_adapter_restored": true,
+      "dns_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "https_probe_error": null,
+      "idle_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "idle_before_fixture_routes": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "idle_endpoint_sockets": null,
+      "endpoint_direction_totals_before_fixture_routes": null,
+      "task_adapter_route_prefix_lengths": null,
+      "startup_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "dns_fixture_counts": {
+        "requests": 0,
+        "request_bytes": 0,
+        "synthetic_answers": 0,
+        "other_answers": 0,
+        "non_questions": 0
+      },
+      "automatic_tun_default_removed": false,
+      "bounded_bytes": true,
+      "bounded_resources": false,
+      "idle_service_cpu_fraction": null,
+      "closed_interface_denies_delivery": true,
+      "passed": true
+    },
+    {
+      "case": "wrong-ca",
+      "tls_https_delivered": false,
+      "dns_fixture_answer": false,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "routes_dns_adapter_restored": true,
+      "dns_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "https_probe_error": null,
+      "idle_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "idle_before_fixture_routes": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "idle_endpoint_sockets": null,
+      "endpoint_direction_totals_before_fixture_routes": null,
+      "task_adapter_route_prefix_lengths": null,
+      "startup_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "dns_fixture_counts": {
+        "requests": 0,
+        "request_bytes": 0,
+        "synthetic_answers": 0,
+        "other_answers": 0,
+        "non_questions": 0
+      },
+      "automatic_tun_default_removed": false,
+      "bounded_bytes": true,
+      "bounded_resources": false,
+      "idle_service_cpu_fraction": null,
+      "closed_interface_denies_delivery": true,
+      "passed": true
+    },
+    {
+      "case": "ui-death",
+      "tls_https_delivered": true,
+      "dns_fixture_answer": true,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 6189,
+        "http3": 0
+      },
+      "routes_dns_adapter_restored": true,
+      "dns_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 82,
+        "http3": 0
+      },
+      "https_probe_error": null,
+      "idle_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "idle_before_fixture_routes": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "idle_endpoint_sockets": {
+        "tcp": 0,
+        "udp": 1
+      },
+      "endpoint_direction_totals_before_fixture_routes": {
+        "inbound": {
+          "http1": 0,
+          "http2": 31,
+          "http3": 0
+        },
+        "outbound": {
+          "http1": 0,
+          "http2": 31,
+          "http3": 0
+        }
+      },
+      "task_adapter_route_prefix_lengths": {
+        "v6/64": 1,
+        "v4/4": 1,
+        "v4/15": 1,
+        "v6/8": 1,
+        "v4/32": 5,
+        "v6/128": 2
+      },
+      "startup_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 378,
+        "http3": 0
+      },
+      "dns_fixture_counts": {
+        "requests": 4,
+        "request_bytes": 222,
+        "synthetic_answers": 1,
+        "other_answers": 3,
+        "non_questions": 0
+      },
+      "automatic_tun_default_removed": false,
+      "bounded_bytes": true,
+      "bounded_resources": true,
+      "idle_service_cpu_fraction": 0.0,
+      "closed_interface_denies_delivery": true,
+      "passed": true
+    },
+    {
+      "case": "service-crash",
+      "tls_https_delivered": true,
+      "dns_fixture_answer": true,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 6187,
+        "http3": 0
+      },
+      "routes_dns_adapter_restored": true,
+      "dns_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 82,
+        "http3": 0
+      },
+      "https_probe_error": null,
+      "idle_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "idle_before_fixture_routes": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "idle_endpoint_sockets": {
+        "tcp": 0,
+        "udp": 1
+      },
+      "endpoint_direction_totals_before_fixture_routes": {
+        "inbound": {
+          "http1": 0,
+          "http2": 31,
+          "http3": 0
+        },
+        "outbound": {
+          "http1": 0,
+          "http2": 31,
+          "http3": 0
+        }
+      },
+      "task_adapter_route_prefix_lengths": {
+        "v6/8": 1,
+        "v4/4": 1,
+        "v6/128": 2,
+        "v4/15": 1,
+        "v4/32": 5,
+        "v6/64": 1
+      },
+      "startup_endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 378,
+        "http3": 0
+      },
+      "dns_fixture_counts": {
+        "requests": 4,
+        "request_bytes": 222,
+        "synthetic_answers": 1,
+        "other_answers": 3,
+        "non_questions": 0
+      },
+      "automatic_tun_default_removed": false,
+      "bounded_bytes": true,
+      "bounded_resources": true,
+      "idle_service_cpu_fraction": 0.0,
+      "closed_interface_denies_delivery": true,
+      "passed": true
+    }
+  ],
+  "all_passed": true,
+  "final_network_restored": true
+}

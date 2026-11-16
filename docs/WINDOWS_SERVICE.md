@@ -13,7 +13,11 @@ the reply, using the existing bounded/cancellable overlapped read. No unbounded
 flush or duplicate request retry is introduced. A CI-only local reproducer
 demonstrates old unread-data loss; an authenticated client deliberately delays
 reading by 350 ms to verify the actual service preserves its response. Updated
-Windows qualification of this fix is pending.
+Windows qualification passed on `dd566d9` in both endpoint runs:
+[43814467138](https://github.com/pvlrdnv/liwetun-win/actions/runs/43814467138),
+[43814471604](https://github.com/pvlrdnv/liwetun-win/actions/runs/43814471604).
+Each passed 18 checks including the delayed-reader test, plus all 6 real network
+cases with the newly locked SDK artifact.
 
 ## Implemented
 
@@ -39,7 +43,8 @@ offline/cache-only; release revocation freshness policy remains open.
 The service validates TT links with the Rust parser, decodes in memory using the
 SDK and constructs its own fixed TUN configuration. It clears owned secret
 buffers and never accepts arbitrary configuration over IPC. There is no promise
-that every allocator/SDK internal copy is erased. Profiles remain memory-only.
+that every allocator/SDK internal copy is erased. The service never persists
+credentials; the GUI uses its separate current-user DPAPI cache (PROFILE_STORAGE.md).
 
 The SDK build applies guarded source patches to the pinned upstream revision:
 drop raw logger output, disable raw file logging/export, and suppress generation
