@@ -5,6 +5,7 @@
 #include "flutter_window.h"
 #include "utils.h"
 #include "status_cli.h"
+#include "security.h"
 
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
@@ -12,6 +13,23 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   if (command_line_arguments.size() == 1 && command_line_arguments.front() == "--service-status") {
     return PrintServiceStatus();
   }
+  // Serialize GUI admission with setup before publishing lifetime presence.
+  // Setup holds its gate through removal, preventing a new GUI after its check.
+  SetLastError(ERROR_SUCCESS);
+  liwetun::Handle setup_gate(CreateMutexExW(nullptr, L"Global\\LiWeTun.Setup", 0, SYNCHRONIZE));
+  const DWORD setup_error = GetLastError();
+  if (!setup_gate || setup_error == ERROR_ALREADY_EXISTS) {
+    MessageBoxW(nullptr, L"Дождитесь завершения установки или удаления LiWeTun и повторите запуск.",
+        L"LiWeTun", MB_OK | MB_ICONINFORMATION);
+    return 12;
+  }
+  liwetun::Handle presence(CreateMutexExW(nullptr, L"Global\\LiWeTun.AppPresence.v1", 0, SYNCHRONIZE));
+  if (!presence) {
+    MessageBoxW(nullptr, L"Не удалось подготовить запуск LiWeTun. Повторите запуск приложения.",
+        L"LiWeTun", MB_OK | MB_ICONERROR);
+    return 12;
+  }
+  setup_gate.reset();
   // Attach to console when present (e.g., 'flutter run') or create a
   // new console when running with a debugger.
   if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()) {

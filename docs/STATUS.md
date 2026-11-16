@@ -191,6 +191,15 @@ selection/alternate-admin UAC, in-use UI removal, upgrades/recovery and Win10/11
 desktop acceptance remain open. Temporary CI signing is not release signing;
 no installer was uploaded for owner use.
 
+In-use removal continuation: GUI startup now briefly claims the existing global
+setup gate before publishing a lifetime-only presence object. Uninstall holds
+that gate, fails closed on any presence/unknown-probe result before mutations,
+and asks to close the GUI. A subsequent GUI cannot pass startup while removal
+holds the gate. Read-only status CLI bypasses UI presence and remains unchanged.
+Namespace objects contain no secrets/commands and do not replace service IPC
+authentication; name squatting can deny availability. Updated GUI compilation
+and real installed-window medium-integrity qualification are pending.
+
 ## Current stage
 
 LOCAL development in independent private repository

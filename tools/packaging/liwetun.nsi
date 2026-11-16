@@ -50,6 +50,7 @@ Var ServiceAttempted
     SetErrorLevel 20
     Quit
   ${EndIf}
+  System::Call 'kernel32::SetLastError(i 0)'
   System::Call 'kernel32::CreateMutexW(p 0, i 0, w "Global\LiWeTun.Setup") p .r0 ?e'
   Pop $1
   StrCpy $SetupMutex $0
@@ -218,6 +219,19 @@ Function un.onInit
     SetErrorLevel 42
     Quit
   ${EndIf}
+  System::Call 'kernel32::OpenMutexW(i 0x100000, i 0, w "Global\LiWeTun.AppPresence.v1") p .r0 ?e'
+  Pop $1
+  ${If} $0 != 0
+    System::Call 'kernel32::CloseHandle(p r0)'
+    Goto gui_busy
+  ${ElseIf} $1 != 2
+    Goto gui_busy
+  ${EndIf}
+  Return
+gui_busy:
+  MessageBox MB_OK|MB_ICONINFORMATION "Закройте LiWeTun во всех сеансах Windows и повторите удаление." /SD IDOK
+  SetErrorLevel 43
+  Quit
 FunctionEnd
 
 Section "Uninstall"
