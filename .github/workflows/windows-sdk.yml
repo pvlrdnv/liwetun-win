@@ -1,6 +1,11 @@
 name: Windows SDK qualification
 on:
   workflow_dispatch:
+    inputs:
+      source_pins:
+        description: Build the isolated immutable-source candidate
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -9,6 +14,7 @@ jobs:
     timeout-minutes: 80
     env:
       RUSTUP_TOOLCHAIN: 1.95.0
+      SOURCE_PINNED: ${{ inputs.source_pins }}
     defaults:
       run:
         shell: pwsh
@@ -48,13 +54,23 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Rust installation failed' }
           choco install nasm strawberryperl --yes --no-progress
           if ($LASTEXITCODE -ne 0) { throw 'Assembly tool installation failed' }
+      - name: Verify and export immutable-source candidate recipes
+        if: inputs.source_pins
+        run: |
+          $commonActual = (git -C build/vendor/common rev-parse HEAD).Trim()
+          $dnsActual = (git -C build/vendor/dns rev-parse HEAD).Trim()
+          if ($commonActual -ne 'c546b329360642576cea25f10bdcbf41d52163df' -or $dnsActual -ne '3d6359be7b99e2eccbfe905e970dd08a7f1d9108') { throw 'Dependency source revision mismatch' }
+          python tools/sdk/pin_sources.py --source build/vendor/common --dns-source build/vendor/dns --output build/source-pin-evidence --verify-recorded
+          if ($LASTEXITCODE -ne 0) { throw 'Candidate source revision qualification failed' }
       - name: Prepare pinned SDK privacy profile
         run: |
           $lock = Get-Content native/sdk/inputs.json -Raw | ConvertFrom-Json
           Invoke-WebRequest $lock.bootstrap.url -OutFile build/conanfiles.tar.gz
           Invoke-WebRequest $lock.wintun.url -OutFile build/wintun.zip
           if ((Get-FileHash build/wintun.zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne $lock.wintun.sha256) { throw 'Wintun digest mismatch' }
-          python tools/sdk/prepare.py --source build/vendor/sdk --bootstrap build/conanfiles.tar.gz --output build/sdk-evidence
+          $profileArgs = @()
+          if ($env:SOURCE_PINNED -eq 'true') { $profileArgs += '--source-pinned' }
+          python tools/sdk/prepare.py @profileArgs --source build/vendor/sdk --bootstrap build/conanfiles.tar.gz --output build/sdk-evidence
           if ($LASTEXITCODE -ne 0) { throw 'SDK source verification failed' }
           python -m pip freeze | Set-Content build/sdk-evidence/python-build-packages.txt
       - name: Export pinned local dependency recipes
@@ -71,7 +87,9 @@ jobs:
         run: |
           cmake -S build/vendor/sdk/platform/windows -B build/sdk-build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DTT_CLIENT_VERSION=1.1.12-liwetun.1
           if ($LASTEXITCODE -ne 0) { throw 'SDK configure failed' }
-          python tools/sdk/closure.py --actual-lock build/sdk-build/liwetun-conan.lock
+          $profileArgs = @()
+          if ($env:SOURCE_PINNED -eq 'true') { $profileArgs += '--source-pinned' }
+          python tools/sdk/closure.py @profileArgs --actual-lock build/sdk-build/liwetun-conan.lock
           if ($LASTEXITCODE -ne 0) { throw 'SDK dependency lock drift' }
           cmake --build build/sdk-build --target trusttunnel_windows --parallel 2
           if ($LASTEXITCODE -ne 0) { throw 'SDK build failed' }
@@ -79,9 +97,15 @@ jobs:
         run: |
           $cache = (conan config home).Trim()
           if ($LASTEXITCODE -ne 0) { throw 'Conan cache unavailable' }
-          python tools/sdk/closure.py --actual-lock build/sdk-build/liwetun-conan.lock --graph build/sdk-build/liwetun-conan-graph.json --cache $cache --output build/sdk-notices
+          $profileArgs = @()
+          if ($env:SOURCE_PINNED -eq 'true') { $profileArgs += '--source-pinned' }
+          python tools/sdk/closure.py @profileArgs --actual-lock build/sdk-build/liwetun-conan.lock --graph build/sdk-build/liwetun-conan-graph.json --cache $cache --output build/sdk-notices
           if ($LASTEXITCODE -ne 0) { throw 'SDK notice collection failed' }
           Copy-Item build/sdk-notices/inventory.json build/sdk-evidence/notice-inventory.json
+          if ($env:SOURCE_PINNED -eq 'true') {
+            Copy-Item build/source-pin-evidence/recipe-revisions.json build/sdk-evidence/source-pin-revisions.json
+            Copy-Item native/sdk/source-pins.json build/sdk-evidence/source-pin-inputs.json
+          }
       - name: Stage private development SDK and evidence
         run: |
           New-Item -ItemType Directory -Force build/sdk-runtime | Out-Null
@@ -100,14 +124,14 @@ jobs:
         with:
           name: sdk-build-evidence
           path: build/sdk-evidence/
-          retention-days: 7
+          retention-days: 14
           if-no-files-found: warn
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: sdk-notice-candidates-not-release-qualified
           path: build/sdk-notices/
-          retention-days: 7
+          retention-days: 14
           if-no-files-found: warn
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

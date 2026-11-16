@@ -31,7 +31,9 @@ reason codes and bounded reference metadata, without cache paths or raw output.
 
 The initial four recipe exports passed on Windows:
 [run 43913812035](https://github.com/pvlrdnv/liwetun-win/actions/runs/43913812035).
-The expanded seven-recipe export is pending. Both root recipes are exported with
+The expanded seven-recipe export also passed:
+[run 43915706506](https://github.com/pvlrdnv/liwetun-win/actions/runs/43915706506),
+[receipt](evidence/sdk-source-pins-538fe45.json). Both root recipes are exported with
 explicit original versions. All Common and DNS inputs validate before either
 vendor tree is changed. Overrides preserve their structure and only follow
 reviewed recipe substitutions.
@@ -51,3 +53,12 @@ and diff checks PASS. Export success alone
 will not qualify an SDK: the successor needs a complete DLL build, source/notice
 receipts, service/network requalification and package validation. Desktop,
 trusted signing and distribution rights remain separate release gates.
+
+The reviewed candidate lock is `native/sdk/conan-sources.lock`. The SDK workflow
+accepts `source_pins=true`, revalidates/reexports original and modified recipes
+on its fresh runner, and compares the result to that recorded lock before
+compilation. Privacy preparation and closure/notice collection use the selected
+lock; the source profile records its SHA256 and candidate manifest SHA256.
+The default still uses the original lock. Both local preparation paths and nine
+source-pin/closure tests passed. Candidate DLL compilation is pending; the active
+runtime receipt still refers exclusively to the earlier qualified DLL.

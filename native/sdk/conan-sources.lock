@@ -1,0 +1,41 @@
+{
+  "version": "0.5",
+  "requires": [
+    "zlib/1.3.1#cac0f6daea041b0ccf42934163defb20%1765284699.337",
+    "tomlplusplus/3.3.0#3109e968b4a517f395e638753c6faa43%1718732131.039",
+    "tldregistry/2022-12-26@adguard/oss#a37e4c059ba30270e7f0f9888c0bd890%1794751160.3980274",
+    "pcre2/10.37@adguard/oss#e9120818270c6f02b943e6864ff8f21c%1794751159.5233254",
+    "openssl/boring-2026-05-08@adguard/oss#dc61007e1b1896c5e090819d5be50df0",
+    "nlohmann_json/3.12.0#2d634ab0ec8d9f56353e5ccef6d6612c%1744735883.94",
+    "ngtcp2/1.22.1@adguard/oss#36d9b5ab7bae5525760e9ab0c3dec1b4%1794751158.6155787",
+    "nghttp3/1.0.0@adguard/oss#0a49dc3df4c0ec9e1db87dd356dfc7af",
+    "nghttp2/1.56.0@adguard/oss#efa70b7e694cebdb09c96a2a3a75255f",
+    "native_libs_common/8.2.0@adguard/oss#6b7b1cebaf95d4e77e19f9ed4f803094",
+    "magic_enum/0.9.5#768c09bb424bda31d224304693b50fb3%1727191751.162",
+    "llhttp/9.3.0@adguard/oss#d4c606ade7f77345c3bf71199c495d0e%1794751155.9081233",
+    "libuv/1.41.0@adguard/oss#311f317edcf383bd7aeddcc51308f380%1794751155.4699883",
+    "libsodium/1.0.18@adguard/oss#e7aeedcb8077c3d577a27c97f943b947",
+    "libevent/2.1.11@adguard/oss#bf271768bbb619d0ec612716df6be80d",
+    "ldns/2021-03-29@adguard/oss#ac8bb875bbc36a5afbdadbacb0e3fb7e%1794751154.1091824",
+    "klib/2021-04-06@adguard/oss#2fba69658655c2972a005c1b3502cab0%1794751153.6558702",
+    "http_parser/2.9.4#98d91690d6fd021e9e624218a85d9d97%1743410856.678",
+    "gtest/1.14.0#f8f0757a574a8dd747d16af62d6eb1b7%1743410807.169",
+    "fmt/12.1.0#6baf0fb8351783472b94ee6e36232391%1785754553.994",
+    "dns-libs/2.11.0-alpha.1-3-g3d6359be@adguard/oss#814dd3dce603926a25fe382f4f9f1370",
+    "detours/2021-04-14@adguard/oss#4631c1416196d39fc29ca4d32e8e8a3f%1794751153.217341",
+    "cxxopts/3.1.1#b358aff6883980b4f0915734a5c8214a%1701173290.847",
+    "brotli/1.1.0#3f631ef77008f7b5eb388780116371a3%1764862343.045",
+    "ada/2.7.4#e86909dd9cb9714ca39dbc12f7f41053%1700559832.331"
+  ],
+  "build_requires": [
+    "cmake/3.31.12#71c3a0c80cc89cde62956db9e69550e0%1793881533.662"
+  ],
+  "python_requires": [],
+  "overrides": {
+    "openssl/boring-2026-05-08@adguard/oss#dc61007e1b1896c5e090819d5be50df0": [
+      null,
+      "openssl/boring-2026-05-08@adguard/oss#dc61007e1b1896c5e090819d5be50df0"
+    ]
+  },
+  "config_requires": []
+}

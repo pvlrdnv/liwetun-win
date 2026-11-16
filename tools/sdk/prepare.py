@@ -20,7 +20,8 @@ def replace_once(text, old, new):
     return text.replace(old, new, 1)
 
 
-def prepare(source, bootstrap, output):
+def prepare(source, bootstrap, output, source_pinned=False):
+    conan_lock = ROOT / 'native/sdk' / ('conan-sources.lock' if source_pinned else 'conan.lock')
     lock = json.loads((ROOT / 'native/sdk/inputs.json').read_text())
     if hashlib.sha256(bootstrap.read_bytes()).hexdigest() != lock['bootstrap']['sha256']:
         raise ValueError('bootstrap_digest_mismatch')
@@ -48,7 +49,7 @@ def prepare(source, bootstrap, output):
         'file(WRITE "${CMAKE_BINARY_DIR}/liwetun-conan-graph.json" "${conan_stdout}")\n'
         '        string(JSON CONAN_GENERATORS_FOLDER GET ${conan_stdout} graph nodes 0 generators_folder)')
     (source / 'cmake/conan_provider.cmake').write_text(text)
-    shutil.copyfile(ROOT / 'native/sdk/conan.lock', source / 'cmake/liwetun-conan-input.lock')
+    shutil.copyfile(conan_lock, source / 'cmake/liwetun-conan-input.lock')
     provider.unlink()
 
     cpp = source / 'platform/windows/src/trusttunnel.cpp'
@@ -93,7 +94,9 @@ static void report_connection_info(const Tunnel *self, VpnConnection *conn, cons
     report = {
         'sdk_commit': lock['sdk_commit'], 'policy_version': 1,
         'bootstrap_sha256': lock['bootstrap']['sha256'],
-        'conan_input_lock_sha256': hashlib.sha256((ROOT / 'native/sdk/conan.lock').read_bytes()).hexdigest(),
+        'conan_input_lock_sha256': hashlib.sha256(conan_lock.read_bytes()).hexdigest(),
+        'source_pinned_candidate': source_pinned,
+        'source_pin_manifest_sha256': hashlib.sha256((ROOT / 'native/sdk/source-pins.json').read_bytes()).hexdigest() if source_pinned else None,
         'prepare_script_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         'patched_files': {name: hashlib.sha256((source / name).read_bytes()).hexdigest()
                           for name in lock['patched_inputs']},
@@ -104,8 +107,9 @@ static void report_connection_info(const Tunnel *self, VpnConnection *conn, cons
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--source-pinned', action='store_true')
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--bootstrap', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    prepare(args.source, args.bootstrap, args.output)
+    prepare(args.source, args.bootstrap, args.output, source_pinned=args.source_pinned)

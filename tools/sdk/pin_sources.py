@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import subprocess
 
-from closure import ROOT, normalized_lock, reference, redirected
+from closure import ROOT, check_lock, normalized_lock, reference, redirected
 
 PIN = ROOT / 'native/sdk/source-pins.json'
 
@@ -88,6 +88,7 @@ def export(source, version=None):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--verify-recorded', action='store_true')
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--dns-source', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
@@ -123,6 +124,8 @@ def main():
     replacements = {recipe['old_reference']: export_recipe(recipe)
                     for recipe in pin['recipes']}
     candidate = candidate_lock(active, replacements)
+    if args.verify_recorded:
+        check_lock(json.loads((ROOT / 'native/sdk/conan-sources.lock').read_text()), candidate)
     (args.output / 'conan-sources.lock').write_text(json.dumps(candidate, indent=2) + '\n')
     result = dict(common_commit=pin['common_commit'], dns_commit=pin['dns_commit'], conan_version=pin['conan_version'],
                   source_pin_manifest_sha256=hashlib.sha256(PIN.read_bytes()).hexdigest(),
@@ -136,7 +139,7 @@ if __name__ == '__main__':
     try:
         main()
     except (OSError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired) as error:
-        allowed = {'missing_recipe_source', 'disposable_ci_required', 'fixed_candidate_paths_required', 'conan_version_mismatch',
+        allowed = {'dependency_lock_drift', 'missing_recipe_source', 'disposable_ci_required', 'fixed_candidate_paths_required', 'conan_version_mismatch',
                    'unreviewed_original_recipe', 'original_recipe_revision_drift', 'recipe_export_failed',
                    'recipe_input_digest_mismatch', 'recipe_output_digest_mismatch', 'recipe_anchor_mismatch',
                    'unsafe_recipe_path', 'redirected_recipe_path', 'unexpected_recipe_identity',

@@ -149,13 +149,15 @@ def collect(graph, lock, cache, output):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--source-pinned', action='store_true')
     parser.add_argument('--actual-lock', type=Path, required=True)
     parser.add_argument('--graph', type=Path)
     parser.add_argument('--cache', type=Path)
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
     try:
-        lock = check_lock(json.loads((ROOT / 'native/sdk/conan.lock').read_text()), json.loads(args.actual_lock.read_text()))
+        expected = ROOT / 'native/sdk' / ('conan-sources.lock' if args.source_pinned else 'conan.lock')
+        lock = check_lock(json.loads(expected.read_text()), json.loads(args.actual_lock.read_text()))
         if any((args.graph, args.cache, args.output)):
             if not all((args.graph, args.cache, args.output)):
                 raise ValueError('incomplete_collection_arguments')

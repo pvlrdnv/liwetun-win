@@ -20,8 +20,15 @@ root DnsLibs replaces an abbreviated checkout with its full commit, and BoringSS
 uses its exact official GitHub mirror archive with SHA256. Two original Gitiles
 archives had changing tar metadata but identical 8582 file contents; the mirror
 has the identical file set and bodies. Four local tests and all seven exact
-upstream input/output digest checks PASS. Expanded Windows exports pending;
-no new SDK build yet. See [source pin scope](SDK_SOURCE_PINS.md).
+upstream input/output digest checks PASS. Expanded Windows exports **PASS** on
+[43915706506](https://github.com/pvlrdnv/liwetun-win/actions/runs/43915706506);
+[receipt](evidence/sdk-source-pins-538fe45.json). Separate
+`native/sdk/conan-sources.lock` records only the seven replacements and matching
+BoringSSL override. Added optional candidate SDK build with fresh recipe export /
+recorded-lock verification. Both fresh-source preparation profiles and nine local
+source-pin/closure tests PASS; Python/YAML/diff checks PASS. Full candidate DLL
+compilation and subsequent service/network/package qualification pending.
+See [source pin scope](SDK_SOURCE_PINS.md).
 The active Conan lock and qualified DLL/runtime pins remain unchanged.
 
 Pinned SDK/GUI/diagnostic endpoint artifacts were checked and remain available.
