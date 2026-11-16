@@ -7,6 +7,11 @@ on:
         required: true
         default: '43752644532'
         type: string
+      endpoint_fixture_run:
+        description: Optional pinned successful diagnostic endpoint build (empty selects official release)
+        required: false
+        default: ''
+        type: string
       diagnostic_only:
         description: H2 diagnostic only (never a complete qualification)
         required: false
@@ -46,6 +51,7 @@ jobs:
       LIWETUN_CI_DISTRO: LiWeTunCI${{ github.run_id }}
       LIWETUN_NETWORK_DIAGNOSTIC: ${{ inputs.diagnostic_only }}
       LIWETUN_ENDPOINT_VERSION: ${{ inputs.endpoint_version }}
+      LIWETUN_ENDPOINT_FIXTURE_RUN: ${{ inputs.endpoint_fixture_run }}
       LIWETUN_PRODUCTION_PROBE: ${{ inputs.production_probe }}
       LIWETUN_PRODUCTION_TRANSPORT: ${{ inputs.production_transport }}
     defaults:
@@ -96,11 +102,27 @@ jobs:
           } elseif ($env:LIWETUN_ENDPOINT_VERSION -eq 'v1.3.0-beta.2') {
             $endpointDigest = '496a27ff72014b883438efab55ffd237183b5ff95d9c341cc0de9d18342a9b11'
           } else { throw 'Unpinned endpoint version' }
-          Invoke-WebRequest "https://github.com/TrustTunnel/TrustTunnel/releases/download/${env:LIWETUN_ENDPOINT_VERSION}/trusttunnel-${env:LIWETUN_ENDPOINT_VERSION}-linux-x86_64.tar.gz" -OutFile build/endpoint.tar.gz
-          if ((Get-FileHash build/endpoint.tar.gz -Algorithm SHA256).Hash.ToLowerInvariant() -ne $endpointDigest) { throw 'Endpoint digest mismatch' }
-          New-Item -ItemType Directory -Force build/endpoint | Out-Null
-          tar -xf build/endpoint.tar.gz -C build/endpoint --strip-components=1
-          if ($LASTEXITCODE -ne 0) { throw 'Endpoint extraction failed' }
+          if ($env:LIWETUN_ENDPOINT_FIXTURE_RUN) {
+            if ($env:LIWETUN_ENDPOINT_FIXTURE_RUN -notmatch '^[0-9]{1,20}$' -or $env:LIWETUN_ENDPOINT_VERSION -ne 'v1.1.0' -or $env:LIWETUN_PRODUCTION_PROBE -ne 'true') { throw 'Invalid diagnostic endpoint request' }
+            $receipt = Get-Content tools/service/endpoint-runtime.json -Raw | ConvertFrom-Json
+            $sourcePin = Get-Content tools/service/endpoint-source.json -Raw | ConvertFrom-Json
+            if ($env:LIWETUN_ENDPOINT_FIXTURE_RUN -ne [string]$receipt.source_run) { throw 'Unreviewed diagnostic endpoint run' }
+            $run = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:LIWETUN_ENDPOINT_FIXTURE_RUN" | ConvertFrom-Json
+            if ($LASTEXITCODE -ne 0 -or $run.name -ne 'Official endpoint UDP isolation' -or $run.conclusion -ne 'success' -or $run.head_sha -ne $receipt.workflow_commit) { throw 'Diagnostic endpoint run not qualified' }
+            gh run download $env:LIWETUN_ENDPOINT_FIXTURE_RUN --repo $env:GITHUB_REPOSITORY --name diagnostic-endpoint-not-for-release --dir build/endpoint
+            if ($LASTEXITCODE -ne 0) { throw 'Diagnostic endpoint download failed' }
+            $files = @(Get-ChildItem build/endpoint -Force)
+            if ($files.Count -ne 2 -or @($files | Where-Object { $_.PSIsContainer -or $_.Name -notin @('trusttunnel_endpoint','fixture-provenance.json') -or ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) }).Count) { throw 'Unexpected diagnostic endpoint files' }
+            $provenance = Get-Content build/endpoint/fixture-provenance.json -Raw | ConvertFrom-Json
+            $actual = (Get-FileHash build/endpoint/trusttunnel_endpoint -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($receipt.binary_sha256 -notmatch '^[0-9a-f]{64}$' -or $actual -ne $receipt.binary_sha256 -or $actual -ne $provenance.binary_sha256 -or $provenance.source_commit -ne $sourcePin.source_commit -or $provenance.patch_sha256 -ne $sourcePin.patch_sha256 -or $provenance.source_archive_sha256 -ne $sourcePin.source_archive_sha256 -or $provenance.diagnostic_source_fix -ne $true -or $provenance.release_ready -ne $false) { throw 'Diagnostic endpoint provenance mismatch' }
+          } else {
+            Invoke-WebRequest "https://github.com/TrustTunnel/TrustTunnel/releases/download/${env:LIWETUN_ENDPOINT_VERSION}/trusttunnel-${env:LIWETUN_ENDPOINT_VERSION}-linux-x86_64.tar.gz" -OutFile build/endpoint.tar.gz
+            if ((Get-FileHash build/endpoint.tar.gz -Algorithm SHA256).Hash.ToLowerInvariant() -ne $endpointDigest) { throw 'Endpoint digest mismatch' }
+            New-Item -ItemType Directory -Force build/endpoint | Out-Null
+            tar -xf build/endpoint.tar.gz -C build/endpoint --strip-components=1
+            if ($LASTEXITCODE -ne 0) { throw 'Endpoint extraction failed' }
+          }
           $install = Join-Path $env:RUNNER_TEMP $env:LIWETUN_CI_DISTRO
           wsl --import $env:LIWETUN_CI_DISTRO $install build/ubuntu-base.tar.gz --version 1
           if ($LASTEXITCODE -ne 0) { throw 'Task WSL1 import failed' }

@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "mode": "linux_endpoint_only_no_sdk_no_tun",
+  "endpoint_version": "v1.1.0",
+  "release_ready": false,
+  "wire_probe": {
+    "tls_verified": true,
+    "connect_accepted": true,
+    "frame_received": true,
+    "metadata_matches": true,
+    "synthetic_answer": true,
+    "passed": true
+  },
+  "fixture_counts": {
+    "requests": 1,
+    "request_bytes": 33,
+    "synthetic_answers": 1,
+    "other_answers": 0,
+    "non_questions": 0,
+    "owned_endpoint_udp_queues": {
+      "available": false,
+      "sockets": null,
+      "rx_kernel_bytes": null
+    },
+    "local_forwarder_counts": {
+      "auth_rejected": 0,
+      "destination_denied": 0,
+      "tcp_connected": 0,
+      "tcp_bytes": 0,
+      "udp_forwarded": 1,
+      "udp_replies": 1,
+      "errors": 0,
+      "active": 0
+    }
+  }
+}

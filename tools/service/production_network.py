@@ -94,6 +94,7 @@ def main():
               'network_test_modes_enabled': False, 'client_host_routes_added': False,
               'server_https_egress_bound_physical': True,
               'endpoint_udp_relay': 'wsl_local',
+              'endpoint_diagnostic_source_fix': bool(os.environ.get('LIWETUN_ENDPOINT_FIXTURE_RUN')),
               'full_matrix_qualified': False, 'release_ready': False}
     directory = ROOT / 'build/network-fixture'
     directory.mkdir(exist_ok=True, parents=True)
@@ -153,7 +154,7 @@ def main():
             raise RuntimeError('udp_preflight_failed')
         stage = 'endpoint_udp_preflight'
         from endpoint_udp_probe import probe as endpoint_udp_probe
-        result['endpoint_udp_preflight'] = endpoint_udp_probe(directory)
+        result['endpoint_udp_preflight'] = endpoint_udp_probe(directory, sources=(40000, 40001))
         if result['endpoint_udp_preflight'].get('passed') is not True:
             result['dns_fixture_counts'] = endpoint.command('stats')
             raise RuntimeError('endpoint_udp_preflight_failed')

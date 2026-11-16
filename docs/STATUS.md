@@ -369,6 +369,15 @@ Source archive, patch, input and resulting file digests are pinned. Local exact
 patch/digest and Python syntax/diff checks PASS. Compilation and two-flow check
 are pending on disposable Linux CI. This modified diagnostic server is not an
 official released endpoint or application release, and changes no production.
+Diagnostic endpoint source fix **PASS** on `646618e`,
+[43880327333](https://github.com/pvlrdnv/liwetun-win/actions/runs/43880327333):
+Rust compilation and both exact UDP-flow replies passed. This confirms the
+stale-readiness/awaited-receive cause in the fixture's SOCKS5 path.
+[Diagnosis and comparison](ENDPOINT_UDP_FIXTURE.md).
+Downloaded binary and source/patch provenance verified; run/commit/SHA256 pinned
+for optional Windows consumption. Original default bounded endpoint stays
+unchanged. Windows ordinary-mode H2/H3 runs with the fixed diagnostic server and
+two-flow preflight are pending. No application SDK or production server changed.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),
