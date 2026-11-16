@@ -9,6 +9,7 @@ import hashlib
 import io
 import json
 from pathlib import Path
+import zlib
 
 from verify_notices import ROOT, verify_sdk, verify_rust
 
@@ -105,5 +106,5 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except (OSError, ValueError, KeyError, TypeError):
+    except (OSError, ValueError, KeyError, TypeError, EOFError, zlib.error):
         raise SystemExit('client_notice_verification_failed') from None

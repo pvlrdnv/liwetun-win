@@ -1,0 +1,19 @@
+{
+  "native_notice_files": {
+    "sdk": 38,
+    "rust": 22
+  },
+  "native_bundle_sha256": "bc00e0ab2903e036940bfe202be2ff47fad646f4ed285025b8d3d9808ee118b1",
+  "native_bundle_bytes": 287721,
+  "license_approval": false,
+  "release_ready": false,
+  "application_bundle": {
+    "compressed_sha256": "62b0d2f107eaaa84363ce6f8192ecf14fc1143fe150e0783ba9bbd4b943af06d",
+    "expanded_sha256": "ea473c3a4f850e4696df936783b929318126ac3e3a2930f13642787bb334f6ac",
+    "expanded_bytes": 1644153,
+    "native_notice_bytes_preserved": true,
+    "engine_notice_sha256": "66f37204b91a314563d3261efdd4b1858a49684ed99c267e0ee4ad5f00f74ea0",
+    "engine_sections": 1594,
+    "engine_notice_bodies_preserved": true
+  }
+}

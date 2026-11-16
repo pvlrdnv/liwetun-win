@@ -74,3 +74,10 @@ without native notices is correctly rejected. This is local evidence only;
 updated actual Windows build/package qualification is pending. These are byte
 coverage checks, not a declaration of complete redistribution rights or closure
 of the remaining source/nested-attribution/CRT/modified-SDK review gates.
+
+Actual updated Windows qualification **PASS** on `eefbcf7`,
+[run 43887262100](https://github.com/pvlrdnv/liwetun-win/actions/runs/43887262100):
+analyze, 118 Dart + 6 Rust + 3 real desktop-channel tests, release build/staging,
+and complete native/engine notice byte checks.
+[Windows notice receipt](evidence/notice-bytes-eefbcf7.json).
+Package/installer validation using that updated GUI remains pending.

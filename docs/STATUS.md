@@ -461,6 +461,17 @@ tray/startup/autoconnect remain explicitly unavailable. Local analyze and 118
 Dart tests PASS, generated bundle and all 1594 pinned engine license bodies
 verified, old GUI without native notices rejected. Actual updated Windows GUI
 and package checks pending. Byte integrity is not legal/release approval.
+Updated actual Windows GUI qualification **PASS** on `eefbcf7`,
+[43887262100](https://github.com/pvlrdnv/liwetun-win/actions/runs/43887262100):
+analyze, 118 Dart + 6 Rust + 3 desktop channel tests, release build/runtime staging,
+all 60 native notice bodies and 1594 pinned engine sections present unchanged.
+[Build evidence](evidence/windows-offline-notices-eefbcf7.json),
+[notice byte receipt](evidence/notice-bytes-eefbcf7.json).
+Truncated compressed notices also reject with a fixed error rather than a raw
+traceback. Updated installer/package qualification with this GUI is pending.
+Positive ordinary-mode regression after the refusal-branch extraction **PASS**
+on `7ed30cd`, [43886214455](https://github.com/pvlrdnv/liwetun-win/actions/runs/43886214455):
+exact DNS marker/transport and full network/WFP restoration retained.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),
