@@ -12,6 +12,7 @@ New-Item -ItemType Directory $output | Out-Null
 $passed = $false
 $stage = 'compiler_inputs'
 $checks = [Collections.Generic.List[string]]::new()
+$invocations = [Collections.Generic.List[object]]::new()
 $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 function InvokeInstaller([string]$Executable, [string]$Arguments) {
     $process = [Diagnostics.Process]::new()
@@ -20,6 +21,7 @@ function InvokeInstaller([string]$Executable, [string]$Arguments) {
     try {
         if (!$process.Start()) { throw 'Installer launch failed' }
         if (!$process.WaitForExit(120000)) { $process.Kill(); $process.WaitForExit(); throw 'Installer timeout' }
+        $invocations.Add(@{stage=$stage; exit_code=$process.ExitCode})
         return $process.ExitCode
     } finally { $process.Dispose() }
 }
@@ -61,7 +63,7 @@ try {
     $installer = Join-Path $output 'LiWeTun-0.1.0-preview-ci-only.exe'
     $compiler = Join-Path $env:LIWETUN_NSIS_ROOT 'makensis.exe'
     $icon = (Resolve-Path windows/runner/resources/app_icon.ico).Path
-    & $compiler /NOCONFIG /V2 "/DPAYLOAD=$payload" "/DDELETE_INCLUDE=$include" "/DOUTPUT_EXE=$installer" "/DICON_FILE=$icon" "/DSIGN_THUMBPRINT=$CertificateThumbprint" tools/packaging/liwetun.nsi
+    & $compiler /NOCONFIG /WX /V2 "/DPAYLOAD=$payload" "/DDELETE_INCLUDE=$include" "/DOUTPUT_EXE=$installer" "/DICON_FILE=$icon" "/DSIGN_THUMBPRINT=$CertificateThumbprint" tools/packaging/liwetun.nsi
     if ($LASTEXITCODE -ne 0) { throw 'Pinned installer compile failed' }
     signtool sign /q /fd SHA256 /sm /s My /sha1 $CertificateThumbprint $installer
     if ($LASTEXITCODE -ne 0) { throw 'Installer CI signature failed' }
@@ -138,6 +140,7 @@ try {
     @{installer_sha256=(Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant(); source_commit=$env:GITHUB_SHA; signing='ephemeral_ci_only'; release_ready=$false} |
         ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $evidence 'installer-digest.json')
 } finally {
+    $beforeCleanup = @{directory=[bool](Test-Path $root); registration=[bool](Test-Path $registry); shortcut=[bool](Test-Path $shortcut)}
     # This entire fixture is guarded before claiming any fixed path/name.
     # Remove only this invocation's fresh disposable installation/registration.
     $cleanup = $true
@@ -157,7 +160,7 @@ try {
         if (Test-Path $shortcut) { Remove-Item $shortcut }
         VerifyAbsent
     } catch { $cleanup = $false }
-    @{passed=($passed -and $cleanup); stage=$stage; checks=$checks.ToArray(); cleanup_passed=$cleanup; signing='ephemeral_ci_only'; tunnel_started=$false; desktop_owner_selection_tested=$false; release_ready=$false} |
-        ConvertTo-Json -Depth 3 | Set-Content -Encoding utf8 (Join-Path $evidence 'installer-qualification.json')
+    @{passed=($passed -and $cleanup); stage=$stage; checks=$checks.ToArray(); invocations=$invocations.ToArray(); before_fixture_cleanup=$beforeCleanup; cleanup_passed=$cleanup; signing='ephemeral_ci_only'; tunnel_started=$false; desktop_owner_selection_tested=$false; release_ready=$false} |
+        ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $evidence 'installer-qualification.json')
     if (!$cleanup) { throw 'Installer fixture cleanup failed' }
 }

@@ -174,8 +174,8 @@ Section "LiWeTun"
   ClearErrors
   WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayName" "LiWeTun"
   WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayVersion" "0.1.0-preview"
-  WriteRegStr HKLM "${UNINSTALL_KEY}" "UninstallString" '$"$INSTDIR\Uninstall.exe$"'
-  WriteRegStr HKLM "${UNINSTALL_KEY}" "QuietUninstallString" '$"$INSTDIR\Uninstall.exe$" /S'
+  WriteRegStr HKLM "${UNINSTALL_KEY}" "UninstallString" '"$INSTDIR\Uninstall.exe"'
+  WriteRegStr HKLM "${UNINSTALL_KEY}" "QuietUninstallString" '"$INSTDIR\Uninstall.exe" /S'
   WriteRegStr HKLM "${UNINSTALL_KEY}" "InstallLocation" "$INSTDIR"
   WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoModify" 1
   WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoRepair" 1
@@ -186,7 +186,8 @@ Section "LiWeTun"
 metadata_failed:
   SetErrorLevel 32
 install_failed:
-  Abort
+  Call Rollback
+  Quit
 install_done:
 SectionEnd
 
@@ -208,7 +209,7 @@ Section "Uninstall"
   ${EndIf}
   ${If} $0 != 0
     SetErrorLevel 40
-    Abort
+    Quit
   ${EndIf}
   !insertmacro RemovePayload uninstall_failed
   ; Preserve unknown files and retain the recovery uninstaller/registration.
@@ -240,6 +241,6 @@ uninstall_empty:
 uninstall_failed:
   MessageBox MB_OK|MB_ICONSTOP "Не удалось полностью удалить LiWeTun. Закройте приложение и сохраните дополнительные файлы из его папки, затем повторите удаление." /SD IDOK
   SetErrorLevel 41
-  Abort
+  Quit
 uninstall_done:
 SectionEnd

@@ -156,6 +156,13 @@ local curl download independently matched the original pinned SHA256 and ZIP
 size 2363925. CI fetch now uses bounded curl and official SourceForge mirror
 fallbacks with the same mandatory digest; only numeric/hash attempt evidence is
 retained. Qualification is still pending; the pin was not replaced.
+Run 43845193769 fetched the exact pinned NSIS archive and built/signed setup.
+Existing-directory preservation passed; invalid-owner rollback did not return
+the expected closed exit code, so the matrix stopped and fixture cleanup passed.
+Fixed registry command quoting, made explicit failure exits run rollback before
+Quit, and enabled compiler warnings-as-errors. Closed invocation exit codes and
+pre-cleanup presence facts now accompany failures. Installer qualification remains
+pending, including normal uninstall and desktop owner selection.
 
 ## Current stage
 
