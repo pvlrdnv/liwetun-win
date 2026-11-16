@@ -67,9 +67,24 @@ direct UDP destination is the private same-host synthetic DNS fixture. Its
 ordinary route must select the original physical interface, verified after TUN
 start. Client probes still require TUN sources and actual HTTPS/DNS replies.
 The endpoint binary and application routing are unchanged. Local five protocol
-checks passed, including chained authenticated TCP; Windows proof is pending.
+checks passed, including chained authenticated TCP. The two-source-flow control
+isolated an idle-socket blocking defect in the endpoint's SOCKS5 path. A pinned
+minimal diagnostic-server source fix passed that control; see
+[endpoint diagnosis](ENDPOINT_UDP_FIXTURE.md). No application SDK or production
+server changed.
 
-Remaining gates: ordinary-mode DNS and H3 traffic, effective DNS leak prevention,
+Ordinary IPv4 positive cases **PASS** on `fe9ba3d` with the repaired diagnostic
+endpoint: [H2 run 43881857485](https://github.com/pvlrdnv/liwetun-win/actions/runs/43881857485),
+[H3 run 43881865435](https://github.com/pvlrdnv/liwetun-win/actions/runs/43881865435).
+Unbound sockets selected TUN sources; normal-TLS HTTPS and exact DNS responses
+arrived, with 82 DNS transport bytes on the selected protocol and zero on the
+others. Two-flow endpoint preflight passed before routing; full route/DNS/adapter
+and WFP session restoration passed without watchdog intervention. No test host
+routes; both app network-test flags OFF. H3 has no H2 listener, so fallback cannot
+pass. Per-synthetic-question relay counters are added for a stronger rerun;
+unrelated runner DNS cannot satisfy those counters.
+
+Remaining gates: full ordinary-mode fault matrix, effective DNS leak prevention,
 IPv6 payload delivery, crash/network-
 change/suspend recovery and installed Windows 10/11 desktop acceptance. These
 route/sample observations cannot establish any of those. Existing H2/H3/DNS

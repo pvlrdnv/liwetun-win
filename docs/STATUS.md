@@ -378,6 +378,18 @@ Downloaded binary and source/patch provenance verified; run/commit/SHA256 pinned
 for optional Windows consumption. Original default bounded endpoint stays
 unchanged. Windows ordinary-mode H2/H3 runs with the fixed diagnostic server and
 two-flow preflight are pending. No application SDK or production server changed.
+Ordinary IPv4 traffic **PASS** on `fe9ba3d` with that repaired diagnostic fixture:
+[H2 43881857485](https://github.com/pvlrdnv/liwetun-win/actions/runs/43881857485),
+[H3 43881865435](https://github.com/pvlrdnv/liwetun-win/actions/runs/43881865435).
+Both passed unbound normal-TLS HTTPS, exact synthetic DNS answer, TUN source /
+route selection, two-flow endpoint preflight, exact 82 DNS transport bytes, and
+full route/DNS/adapter/WFP restoration without watchdog intervention. Test network
+modes OFF; no client host routes added. These are single positive Server 2022
+cases using the modified CI endpoint, not desktop/full-fault/IPv6 qualification.
+Added exact synthetic-question request/reply counters at the endpoint relay and
+per-probe deltas to exclude unrelated runner DNS from transport proof; require at
+least 82 transport bytes. Five local protocol tests and syntax/diff checks PASS;
+Windows reruns with these strengthened observations pending.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

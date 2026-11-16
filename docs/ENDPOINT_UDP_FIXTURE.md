@@ -47,8 +47,13 @@ That build and two-flow check passed on `646618e`,
 [run 43880327333](https://github.com/pvlrdnv/liwetun-win/actions/runs/43880327333),
 [safe evidence](evidence/endpoint-udp-fixed-43880327333.json).
 `tools/service/endpoint-runtime.json` pins that run, workflow commit and the
-downloaded binary digest. Windows ordinary-traffic reruns are pending; they must
-pass the same two-flow preflight before SDK routing begins. The original released
+downloaded binary digest. Windows ordinary-traffic reruns passed the same two-flow
+preflight, then unbound HTTPS/DNS over H2 and H3 with exact 82-byte DNS exchanges:
+[H2](evidence/production-traffic-43881857485.json),
+[H3](evidence/production-traffic-43881865435.json).
+All route/DNS/adapter/WFP baselines restored without watchdog action. These are
+single positive CI cases, not desktop or full failure-matrix qualification.
+The original released
 endpoint remains available to the default bounded workflow and is not relabelled
 as fixed. [CI source notice](../third_party/endpoint/README.md).
 

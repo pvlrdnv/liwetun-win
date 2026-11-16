@@ -51,7 +51,8 @@ class Forwarder:
         self.slots = threading.BoundedSemaphore(32)
         self.lock = threading.Lock()
         self.counts = dict.fromkeys(['auth_rejected', 'destination_denied', 'tcp_connected',
-                                     'tcp_bytes', 'udp_forwarded', 'udp_replies', 'errors', 'active'], 0)
+                                     'tcp_bytes', 'udp_forwarded', 'udp_replies', 'errors', 'active',
+                                     'synthetic_dns_requests', 'synthetic_dns_replies'], 0)
 
     def count(self, name, amount=1):
         with self.lock:
@@ -140,10 +141,19 @@ class Forwarder:
                     continue
                 upstream.sendto(packet[10:], destination)
                 self.count('udp_forwarded')
+                payload = packet[10:]
+                question = b'\x07liwetun\x07invalid\x00\x00\x01\x00\x01'
+                synthetic = (payload[4:6] == b'\x00\x01'
+                             and payload[12:12 + len(question)] == question)
+                if synthetic:
+                    self.count('synthetic_dns_requests')
                 answer, address = upstream.recvfrom(4096)
                 if address == self.dns:
                     relay.sendto(packet[:10] + answer, sender)
                     self.count('udp_replies')
+                    if (synthetic and answer[:2] == payload[:2] and answer[6:8] == b'\x00\x01'
+                            and answer.endswith(b'\xc0\x00\x02\x7b')):
+                        self.count('synthetic_dns_replies')
 
     def handle(self, client):
         self.count('active')

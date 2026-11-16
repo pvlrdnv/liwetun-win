@@ -199,6 +199,7 @@ def main():
         stage = 'wsl_udp_active_sdk'
         result['wsl_udp_active_sdk'] = udp_boundary()
         stage = 'ordinary_dns'
+        marker_before = endpoint.command('stats')['local_forwarder_counts']
         dns_before = totals()
         dns, dns_source, dns_observation = ordinary_dns(info['dns'][0], addresses)
         dns_after = totals()
@@ -212,8 +213,12 @@ def main():
         dns_delta = {key: dns_after[key] - dns_before[key] for key in before}
         proxy = forwarder.command('stats')
         endpoint_observation = endpoint.command('stats')
+        marker_after = endpoint_observation['local_forwarder_counts']
+        marker_delta = {key: marker_after[key] - marker_before[key]
+                        for key in ['synthetic_dns_requests', 'synthetic_dns_replies']}
         result.update(dns_fixture_answer=dns, dns_socket_source_is_tun=dns_source,
                       dns_observation=dns_observation,
+                      synthetic_dns_forwarder_delta=marker_delta,
                       endpoint_bytes_by_transport=delta, dns_endpoint_bytes_by_transport=dns_delta,
                       forwarder_counts=proxy, dns_fixture_counts=endpoint_observation)
         stage = 'stop_and_restore'
@@ -225,7 +230,8 @@ def main():
                         wfp_after['sdk_dynamic_sessions'] == wfp_before['sdk_dynamic_sessions'])
         result['sdk_wfp_sessions_restored'] = wfp_restored
         result['passed'] = (delivered and source and dns and dns_source and restored and wfp_restored
-                            and delta[protocol] > 0 and dns_delta[protocol] > 0
+                            and delta[protocol] > 0 and dns_delta[protocol] >= 82
+                            and all(value > 0 for value in marker_delta.values())
                             and all(delta[key] == 0 for key in delta if key != protocol)
                             and proxy['tcp_connected'] > 0
                             and endpoint_observation['local_forwarder_counts']['udp_replies'] > 0)
