@@ -13,14 +13,18 @@ from closure import ROOT, normalized_lock, reference, redirected
 PIN = ROOT / 'native/sdk/source-pins.json'
 
 
-def prepare(source, pin, write=True):
-    if redirected(source):
-        raise ValueError('redirected_recipe_path')
-    source = source.resolve(strict=True)
+def prepare(source, pin, write=True, dns_source=None):
+    sources = {'common': source, 'dns': dns_source}
     changes = []
     for recipe in pin['recipes']:
+        source = sources.get(recipe.get('repository', 'common'))
+        if source is None:
+            raise ValueError('missing_recipe_source')
+        if redirected(source):
+            raise ValueError('redirected_recipe_path')
+        source = source.resolve(strict=True)
         name = recipe['path']
-        if not re.fullmatch(r'conan/recipes/[A-Za-z0-9_.+-]+/conanfile\.py', name):
+        if name != 'conanfile.py' and not re.fullmatch(r'conan/recipes/[A-Za-z0-9_.+-]+/conanfile\.py', name):
             raise ValueError('unsafe_recipe_path')
         path = source / name
         for parent in [path, *path.parents]:
@@ -60,16 +64,22 @@ def candidate_lock(active, replacements):
             found.add(old)
     if found != set(replacements):
         raise ValueError('candidate_recipe_membership_mismatch')
+    overrides = original['overrides']
+    candidate['overrides'] = {replacements.get(key, key):
+                              [None if value is None else replacements.get(value, value) for value in values]
+                              for key, values in overrides.items()}
     checked = normalized_lock(candidate)
-    for group in ['build_requires', 'python_requires', 'config_requires', 'overrides']:
+    for group in ['build_requires', 'python_requires', 'config_requires']:
         if checked[group] != original[group]:
             raise ValueError('unrelated_lock_change')
     return candidate
 
 
-def export(source):
-    process = subprocess.run(['conan', 'export', str(source), '--user', 'adguard', '--channel', 'oss',
-                              '--format=json'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+def export(source, version=None):
+    command = ['conan', 'export', str(source), '--user', 'adguard', '--channel', 'oss', '--format=json']
+    if version:
+        command += ['--version', version]
+    process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                              text=True, timeout=60)
     if process.returncode or len(process.stdout) > 131072:
         raise ValueError('recipe_export_failed')
@@ -79,11 +89,13 @@ def export(source):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', type=Path, required=True)
+    parser.add_argument('--dns-source', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     if os.environ.get('GITHUB_ACTIONS') != 'true':
         raise ValueError('disposable_ci_required')
     if (args.source.resolve() != (ROOT / 'build/vendor/common').resolve()
+            or args.dns_source.resolve() != (ROOT / 'build/vendor/dns').resolve()
             or args.output.resolve() != (ROOT / 'build/source-pin-evidence').resolve()):
         raise ValueError('fixed_candidate_paths_required')
     pin = json.loads(PIN.read_text())
@@ -92,23 +104,27 @@ def main():
         raise ValueError('conan_version_mismatch')
     active = json.loads((ROOT / 'native/sdk/conan.lock').read_text())
     allowed = set(normalized_lock(active)['requires'])
-    prepare(args.source, pin, write=False)
+    prepare(args.source, pin, write=False, dns_source=args.dns_source)
     args.output.mkdir(parents=True, exist_ok=False)
+    sources = {'common': args.source, 'dns': args.dns_source}
+    def export_recipe(recipe):
+        return export(sources[recipe.get('repository', 'common')] / Path(recipe['path']).parent,
+                      recipe.get('version'))
     original_refs = []
     for recipe in pin['recipes']:
         if recipe['old_reference'] not in allowed:
             raise ValueError('unreviewed_original_recipe')
-        observed = export(args.source / Path(recipe['path']).parent)
+        observed = export_recipe(recipe)
         original_refs.append(dict(expected=recipe['old_reference'], observed=observed))
         (args.output / 'original-references.json').write_text(json.dumps(original_refs, indent=2) + '\n')
         if observed != recipe['old_reference']:
             raise ValueError('original_recipe_revision_drift')
-    prepare(args.source, pin)
-    replacements = {recipe['old_reference']: export(args.source / Path(recipe['path']).parent)
+    prepare(args.source, pin, dns_source=args.dns_source)
+    replacements = {recipe['old_reference']: export_recipe(recipe)
                     for recipe in pin['recipes']}
     candidate = candidate_lock(active, replacements)
     (args.output / 'conan-sources.lock').write_text(json.dumps(candidate, indent=2) + '\n')
-    result = dict(common_commit=pin['common_commit'], conan_version=pin['conan_version'],
+    result = dict(common_commit=pin['common_commit'], dns_commit=pin['dns_commit'], conan_version=pin['conan_version'],
                   source_pin_manifest_sha256=hashlib.sha256(PIN.read_bytes()).hexdigest(),
                   candidate_references=replacements, active_runtime_unchanged=True,
                   compiled_or_network_qualified=False, release_qualified=False)
@@ -120,7 +136,7 @@ if __name__ == '__main__':
     try:
         main()
     except (OSError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired) as error:
-        allowed = {'disposable_ci_required', 'fixed_candidate_paths_required', 'conan_version_mismatch',
+        allowed = {'missing_recipe_source', 'disposable_ci_required', 'fixed_candidate_paths_required', 'conan_version_mismatch',
                    'unreviewed_original_recipe', 'original_recipe_revision_drift', 'recipe_export_failed',
                    'recipe_input_digest_mismatch', 'recipe_output_digest_mismatch', 'recipe_anchor_mismatch',
                    'unsafe_recipe_path', 'redirected_recipe_path', 'unexpected_recipe_identity',

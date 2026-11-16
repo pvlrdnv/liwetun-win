@@ -13,7 +13,15 @@ Git commits from archived notice provenance. Input/output recipe digests are
 pinned, all inputs validate before writes, and each changed file is labelled.
 Three local tamper/path/lock-isolation tests and exact preparation against all
 four upstream recipe files PASS. Python/YAML/diff checks PASS. Windows Conan
-original/candidate export verification is pending; no new SDK build yet.
+original/candidate export verification PASS on
+[43913812035](https://github.com/pvlrdnv/liwetun-win/actions/runs/43913812035).
+Extended the candidate to seven recipes: root Common now pins its full commit,
+root DnsLibs replaces an abbreviated checkout with its full commit, and BoringSSL
+uses its exact official GitHub mirror archive with SHA256. Two original Gitiles
+archives had changing tar metadata but identical 8582 file contents; the mirror
+has the identical file set and bodies. Four local tests and all seven exact
+upstream input/output digest checks PASS. Expanded Windows exports pending;
+no new SDK build yet. See [source pin scope](SDK_SOURCE_PINS.md).
 The active Conan lock and qualified DLL/runtime pins remain unchanged.
 
 Pinned SDK/GUI/diagnostic endpoint artifacts were checked and remain available.

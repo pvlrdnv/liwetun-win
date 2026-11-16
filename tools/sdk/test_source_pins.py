@@ -49,6 +49,24 @@ class SourcePinTests(unittest.TestCase):
                 prepare(root, pin)
             self.assertEqual(target.read_bytes(), b'unrelated synthetic file')
 
+    def test_dns_failure_leaves_common_root_recipe_unchanged(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            common, dns = root / 'common', root / 'dns'
+            common.mkdir()
+            dns.mkdir()
+            pin = self.fixture(common)
+            row = pin['recipes'][0]
+            (common / 'conanfile.py').write_bytes(b'synthetic_tag_source\n')
+            row['path'] = 'conanfile.py'
+            second = pin['recipes'][1]
+            second['repository'] = 'dns'
+            (dns / 'conanfile.py').write_bytes(b'tampered synthetic input')
+            second['path'] = 'conanfile.py'
+            with self.assertRaisesRegex(ValueError, 'recipe_input_digest_mismatch'):
+                prepare(common, pin, dns_source=dns)
+            self.assertEqual((common / 'conanfile.py').read_bytes(), b'synthetic_tag_source\n')
+
     def test_candidate_changes_only_reviewed_refs_and_active_lock_still_refuses_it(self):
         active = json.loads((ROOT / 'native/sdk/conan.lock').read_text())
         pin = json.loads((ROOT / 'native/sdk/source-pins.json').read_text())
@@ -58,6 +76,9 @@ class SourcePinTests(unittest.TestCase):
         candidate = candidate_lock(active, replacements)
         self.assertEqual(active, snapshot)
         self.assertEqual(set(candidate['requires']) - set(active['requires']), set(replacements.values()))
+        for old, values in active['overrides'].items():
+            self.assertEqual(candidate['overrides'][replacements.get(old, old)],
+                             [None if value is None else replacements.get(value, value) for value in values])
         with self.assertRaisesRegex(ValueError, 'dependency_lock_drift'):
             check_lock(active, candidate)
 

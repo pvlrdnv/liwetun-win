@@ -4,7 +4,7 @@ The active SDK remains the qualified development build pinned in
 `native/sdk/runtime.json`, with the original `native/sdk/conan.lock`.
 This stage prepares an isolated successor build input; no runtime is promoted.
 
-Four Common recipes need stronger source inputs:
+Seven recipes need stronger source inputs:
 
 | Recipe | Candidate source input |
 | --- | --- |
@@ -12,6 +12,9 @@ Four Common recipes need stronger source inputs:
 | libsodium 1.0.18 | Exact Git commit |
 | nghttp2 1.56.0 | Exact Git commit |
 | nghttp3 1.0.0 | Exact Git commit |
+| NativeLibsCommon 8.2.0 | Full Git commit instead of release tag |
+| DnsLibs snapshot | Full Git commit instead of abbreviated revision |
+| BoringSSL 2026-05-08 | Exact official mirror commit archive and SHA256 |
 
 The selected commits already appear in archived notice provenance. This does
 not retroactively prove the earlier build's tag checkout. The new profile uses
@@ -22,13 +25,29 @@ do not change upstream library versions, algorithms or recipe build options.
 `tools/sdk/pin_sources.py` validates every source before mutation. The disposable
 Windows export job first verifies each original Conan 2.12.2 recipe revision
 against the active lock, then prepares/exports the candidate and writes a
-separate candidate lock. Only the four reviewed references may change; active
+separate candidate lock. Only the seven reviewed references and their matching override references may change; active
 runtime/lock files are never overwritten by this tool. Failures use closed
 reason codes and bounded reference metadata, without cache paths or raw output.
 
-Local checks: three atomic-tamper/path/active-lock-isolation tests PASS; exact
-patching of all four pinned upstream recipe files PASS; Python and workflow YAML
-syntax PASS. Actual Windows recipe exports are pending. Export success alone
+The initial four recipe exports passed on Windows:
+[run 43913812035](https://github.com/pvlrdnv/liwetun-win/actions/runs/43913812035).
+The expanded seven-recipe export is pending. Both root recipes are exported with
+explicit original versions. All Common and DNS inputs validate before either
+vendor tree is changed. Overrides preserve their structure and only follow
+reviewed recipe substitutions.
+
+BoringSSL Gitiles produced different tarball hashes on two downloads, while all
+8582 regular file bodies matched. The official google/boringssl GitHub archive
+of the identical commit has exactly the same file set and contents. The
+candidate uses that archive with SHA256 and removes its single root directory;
+upstream patch files remain unchanged. This is a download/recipe change, not a
+library code upgrade. tldregistry exports its sources from the pinned Common
+checkout; libuv and pcre2 downloads already carry recipe checksums.
+
+Local checks: four atomic-tamper/path/active-lock-isolation tests PASS, including
+cross-repository atomic validation and BoringSSL override substitution; exact
+validation of all seven pinned upstream recipes PASS; Python/workflow syntax
+and diff checks PASS. Export success alone
 will not qualify an SDK: the successor needs a complete DLL build, source/notice
 receipts, service/network requalification and package validation. Desktop,
 trusted signing and distribution rights remain separate release gates.

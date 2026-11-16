@@ -34,7 +34,37 @@
       "patched_sha256": "7caf9f9cefcabe5efd12c821287b366689d1b076efaafcbc97ae24c716452657",
       "before": "self.run(f\"cd source_subfolder && git checkout v{self.version}\")",
       "after": "self.run(\"cd source_subfolder && git checkout --detach 7df838fcab8f4beef9c4aa7c109c18384b801b01\")"
+    },
+    {
+      "repository": "common",
+      "path": "conanfile.py",
+      "old_reference": "native_libs_common/8.2.0@adguard/oss#3032d1db7281c41643e37d6a97a5d236",
+      "input_sha256": "c5299bad209d4ee8654b18f6ddce5526f28e30674722140841c72184187facca",
+      "patched_sha256": "4aede7b910bbca65807abb3a393229ef6785bbcb439edb266af5904d60b53e27",
+      "before": "git.checkout(ref)",
+      "after": "git.checkout(\"c546b329360642576cea25f10bdcbf41d52163df\")",
+      "version": "8.2.0"
+    },
+    {
+      "repository": "dns",
+      "path": "conanfile.py",
+      "old_reference": "dns-libs/2.11.0-alpha.1-3-g3d6359be@adguard/oss#40eabd93bf727ef0e65af6cc25fdb006",
+      "input_sha256": "1f81dcc802c6e7b0bec12c87b326a823f4fe935255f79c60f33df5e6465c77a0",
+      "patched_sha256": "26827cbdb1d87bc097d712dd0a4bd7b80c1c230e0cfe5ae37a32c4cf479c2f2f",
+      "before": "git.checkout(described.group(1))",
+      "after": "git.checkout(\"3d6359be7b99e2eccbfe905e970dd08a7f1d9108\")",
+      "version": "2.11.0-alpha.1-3-g3d6359be"
+    },
+    {
+      "repository": "common",
+      "path": "conan/recipes/boringssl/conanfile.py",
+      "old_reference": "openssl/boring-2026-05-08@adguard/oss#c48e5d03db734e05b8b7f309f23b5089",
+      "input_sha256": "6c4c727483c83a77062f7df2a03c06ec2c815bb344d83c0d7f5f6469e883cccf",
+      "patched_sha256": "8981cb9556fc046a41455f038c67d9be93f79db53a7da25b235a5f023e69fc4c",
+      "before": "url=\"https://boringssl.googlesource.com/boringssl/+archive/d589045a772678d5ca131f4c8087d001b9258380.tar.gz\",\n            destination=\"source_subfolder\")",
+      "after": "url=\"https://codeload.github.com/google/boringssl/tar.gz/d589045a772678d5ca131f4c8087d001b9258380\",\n            sha256=\"159ea5cd44bc581c5cd2e063074984294cd39999ba7c5d7eaec54c278a49c297\",\n            destination=\"source_subfolder\", strip_root=True)"
     }
   ],
-  "release_qualified": false
+  "release_qualified": false,
+  "dns_commit": "3d6359be7b99e2eccbfe905e970dd08a7f1d9108"
 }
