@@ -296,6 +296,11 @@ UDP relay now advertises/binds the same-host private address and admits only
 loopback or that exact host as source. No public relay, test client host routes,
 TLS relaxation or app routing changes. Local four protocol tests PASS with a
 connected UDP client; Python compilation PASS. Windows rerun pending.
+Added a separate WSL1 connected-UDP boundary preflight before SDK start: exact
+synthetic DNS answer through authenticated Windows SOCKS5, with only closed
+booleans/numeric OS errors exported. A failure stops before the SDK can change
+routes. This additional preflight has only passed syntax checking locally;
+actual WSL1/Windows execution remains pending.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

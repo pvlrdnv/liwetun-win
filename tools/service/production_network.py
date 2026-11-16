@@ -136,6 +136,14 @@ def main():
         endpoint = Child(wsl + ['python3', fixture, folder, binary, protocol])
         if endpoint.receive() != 'ready':
             raise RuntimeError('endpoint_not_ready')
+        stage = 'wsl_udp_preflight'
+        preflight = subprocess.run(wsl + ['python3', linux(ROOT / 'tools/service/udp_fixture_probe.py'), folder],
+                                   capture_output=True, text=True, timeout=15)
+        if len(preflight.stdout) > 2048:
+            raise RuntimeError('udp_preflight_failed')
+        result['wsl_udp_preflight'] = json.loads(preflight.stdout)
+        if preflight.returncode or result['wsl_udp_preflight'].get('passed') is not True:
+            raise RuntimeError('udp_preflight_failed')
         stage = 'armed_deadline'
         watchdog = Child(['pwsh', '-NoProfile', '-NonInteractive', '-File',
                           str(ROOT / 'tools/service/general-watchdog.ps1'), '-DeadlineSeconds', '60'])
