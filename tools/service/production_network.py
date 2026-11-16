@@ -121,6 +121,16 @@ def main():
         def linux(path):
             return subprocess.check_output(wsl + ['wslpath', '-u', path.as_posix()],
                                            text=True, stderr=subprocess.DEVNULL, timeout=10).strip()
+        def udp_boundary():
+            preflight = subprocess.run(wsl + ['python3', linux(ROOT / 'tools/service/udp_fixture_probe.py'),
+                                              linux(directory)],
+                                       capture_output=True, text=True, timeout=15)
+            if len(preflight.stdout) > 2048:
+                raise RuntimeError('udp_preflight_failed')
+            observation = json.loads(preflight.stdout)
+            if preflight.returncode not in [0, 2] or not isinstance(observation, dict):
+                raise RuntimeError('udp_preflight_failed')
+            return observation
         fixture = linux(ROOT / 'tools/service/endpoint_fixture.py')
         folder = linux(directory)
         binary = linux(ROOT / 'build/endpoint/trusttunnel_endpoint')
@@ -137,12 +147,8 @@ def main():
         if endpoint.receive() != 'ready':
             raise RuntimeError('endpoint_not_ready')
         stage = 'wsl_udp_preflight'
-        preflight = subprocess.run(wsl + ['python3', linux(ROOT / 'tools/service/udp_fixture_probe.py'), folder],
-                                   capture_output=True, text=True, timeout=15)
-        if len(preflight.stdout) > 2048:
-            raise RuntimeError('udp_preflight_failed')
-        result['wsl_udp_preflight'] = json.loads(preflight.stdout)
-        if preflight.returncode or result['wsl_udp_preflight'].get('passed') is not True:
+        result['wsl_udp_preflight'] = udp_boundary()
+        if result['wsl_udp_preflight'].get('passed') is not True:
             raise RuntimeError('udp_preflight_failed')
         stage = 'armed_deadline'
         watchdog = Child(['pwsh', '-NoProfile', '-NonInteractive', '-File',
@@ -177,6 +183,8 @@ def main():
         stage = 'ordinary_https'
         delivered, source = ordinary_https(origin, addresses)
         result.update(tls_https_delivered=delivered, https_socket_source_is_tun=source)
+        stage = 'wsl_udp_active_sdk'
+        result['wsl_udp_active_sdk'] = udp_boundary()
         stage = 'ordinary_dns'
         dns_before = totals()
         dns, dns_source, dns_observation = ordinary_dns(info['dns'][0], addresses)

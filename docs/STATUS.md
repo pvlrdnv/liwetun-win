@@ -302,6 +302,17 @@ booleans/numeric OS errors exported. A failure stops before the SDK can change
 routes. This additional preflight has only passed syntax checking locally;
 actual WSL1/Windows execution remains pending.
 
+Follow-up runs: `855a69b` H2
+[43875493554](https://github.com/pvlrdnv/liwetun-win/actions/runs/43875493554)
+and `2bd6a68` H3
+[43875792983](https://github.com/pvlrdnv/liwetun-win/actions/runs/43875792983)
+both passed ordinary TLS HTTPS and TUN source selection; DNS timed out, so both
+overall results remain **FAIL**. WFP/network restoration passed without watchdog
+intervention. The H3 run additionally passed every WSL1 connected-UDP preflight
+observation before SDK start. Private relay binding alone did not fix DNS.
+Added the same boundary observation while the SDK is active to distinguish
+fixture/routing interference from endpoint UDP handling; Windows check pending.
+
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),
 passed 18 service checks and all six H2/H3/DNS/auth/CA/UI-death/crash network cases
