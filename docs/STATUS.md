@@ -94,7 +94,17 @@ all application checks passed again; the captured inventory identified Flutter's
 format 1.0.0 with an empty native-assets mapping for this application. Staging
 now requires that exact empty mapping (bounded to 1024 bytes), copies it and
 includes it in the required files/hash manifest. Other JSON/native mappings
-remain rejected. The corrected staging still needs a fresh Windows run.
+remain rejected. Corrected staging **PASS** on `9d891c8`,
+[run 43837997739](https://github.com/pvlrdnv/liwetun-win/actions/runs/43837997739):
+analyze, 118 Dart + 6 Rust + 3 actual desktop tests, release build and GUI runtime
+artifacts all passed. [Safe GUI evidence](evidence/windows-payload-gui-9d891c8.json).
+The production-mode signed payload qualification has been dispatched using that
+GUI artifact. First payload run
+[43838617523](https://github.com/pvlrdnv/liwetun-win/actions/runs/43838617523)
+compiled the production-mode service and restricted-token helper successfully,
+then failed at original CRT signature admission before installation. Cleanup and
+unchanged network checks passed. Added a per-CRT filename/hash/numeric signature
+status/closed publisher-category report to diagnose without lowering trust checks.
 
 ## Current stage
 

@@ -74,6 +74,19 @@ try {
     if (!(Test-Path $crt -PathType Container)) { throw 'MSVC app-local runtime unavailable' }
     $crtFiles = @(Get-ChildItem $crt -File -Filter '*.dll')
     if (!$crtFiles.Count) { throw 'MSVC app-local runtime is empty' }
+    $crtInventory = @(foreach ($file in $crtFiles) {
+        if ($file.Name -notmatch '^[A-Za-z0-9_.-]+\.dll$' -or $file.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Unexpected CRT file' }
+        $signature = Get-AuthenticodeSignature $file.FullName
+        $name = if ($signature.SignerCertificate) { $signature.SignerCertificate.GetNameInfo('SimpleName',$false) } else { '' }
+        $publisher = switch -Exact ($name) {
+            'Microsoft Corporation' { 'microsoft_corporation' }
+            'Microsoft Windows' { 'microsoft_windows' }
+            '' { 'none' }
+            default { 'other' }
+        }
+        @{file=$file.Name; signature_status=[int]$signature.Status; publisher=$publisher; sha256=(Get-FileHash $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}
+    })
+    $crtInventory | ConvertTo-Json -Depth 3 | Set-Content -Encoding utf8 (Join-Path $evidence 'crt-inputs.json')
     foreach ($file in $crtFiles) {
         if ($file.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Unexpected CRT reparse point' }
         $signature = Get-AuthenticodeSignature $file.FullName

@@ -47,6 +47,10 @@ Run 43837040458 identified Flutter's generated root `native_assets.json` as the
 unexpected input. Staging now admits only the pinned writer's empty format-1.0.0
 mapping, with a 1024-byte limit, and includes it in the hashed runtime payload.
 Nonempty native mappings require a separate dependency/path review.
+Corrected runtime staging and the complete application workflow **PASS** on
+`9d891c8`, [run 43837997739](https://github.com/pvlrdnv/liwetun-win/actions/runs/43837997739).
+The production-mode signed payload fixture is now dispatched with that exact
+GUI artifact; qualification remains pending until its checks and cleanup pass.
 Installer authoring, upgrade/rollback, desktop ownership selection, release
 signing/revocation and full distribution audit remain open. Public signing
 process availability has been asked while independent preparation continues.
