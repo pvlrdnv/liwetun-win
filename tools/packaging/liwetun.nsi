@@ -122,19 +122,33 @@ Function Rollback
   ${EndIf}
   SetOutPath "$TEMP"
   ${If} $ServiceAttempted == 1
+    StrCpy $0 -1
     ExecWait '"$INSTDIR\liwetun_service.exe" --uninstall' $0
     ${If} $0 != 0
       SetErrorLevel 50
       Return
     ${EndIf}
+    StrCpy $ServiceAttempted 0
   ${EndIf}
   !insertmacro RemovePayload rollback_failed
+  Delete "$SMPROGRAMS\LiWeTun.lnk"
+  IfFileExists "$SMPROGRAMS\LiWeTun.lnk" rollback_failed
+  DeleteRegKey HKLM "${UNINSTALL_KEY}"
+  System::Call 'advapi32::RegOpenKeyExW(p 0x80000002, w "${UNINSTALL_KEY}", i 0, i 0x20119, *p .r0) i .r1'
+  ${If} $1 == 0
+    System::Call 'advapi32::RegCloseKey(p r0)'
+    Goto rollback_failed
+  ${ElseIf} $1 != 2
+    Goto rollback_failed
+  ${EndIf}
+  ; Optional metadata may never have existed. Verify absence above, then
+  ; isolate error flags for removal of this invocation's remaining directory.
+  ClearErrors
   Delete "$INSTDIR\installation.ini"
   Delete "$INSTDIR\Uninstall.exe"
-  Delete "$SMPROGRAMS\LiWeTun.lnk"
-  DeleteRegKey HKLM "${UNINSTALL_KEY}"
   RMDir "$INSTDIR"
   IfErrors rollback_failed
+  StrCpy $OwnedDirectory 0
   Return
 rollback_failed:
   SetErrorLevel 50
@@ -151,6 +165,7 @@ Section "LiWeTun"
   CreateDirectory "$INSTDIR"
   IfErrors install_failed
   StrCpy $OwnedDirectory 1
+  StrCpy $0 -1
   ExecWait '"$SYSDIR\icacls.exe" "$INSTDIR" /inheritance:r /grant:r "*S-1-5-18:(OI)(CI)F" "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-32-545:(OI)(CI)RX" /Q' $0
   ${If} $0 != 0
     Goto install_failed
@@ -160,11 +175,13 @@ Section "LiWeTun"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteINIStr "$INSTDIR\installation.ini" "LiWeTun" "Package" "1"
   IfErrors install_failed
+  StrCpy $0 -1
   ExecWait '"$SYSDIR\icacls.exe" "$INSTDIR" /setowner "*S-1-5-32-544" /T /Q' $0
   ${If} $0 != 0
     Goto install_failed
   ${EndIf}
   StrCpy $ServiceAttempted 1
+  StrCpy $0 -1
   ${If} $OwnerSid == ""
     ExecWait '"$INSTDIR\liwetun_service.exe" --install-desktop-owner' $0
   ${Else}
@@ -208,6 +225,7 @@ Section "Uninstall"
   Call un.ServiceState
   Pop $0
   ${If} $0 == 1
+    StrCpy $0 -1
     ExecWait '"$INSTDIR\liwetun_service.exe" --uninstall' $0
   ${EndIf}
   ${If} $0 != 0

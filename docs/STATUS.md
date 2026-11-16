@@ -169,6 +169,14 @@ must capture a Win32 last-error atomically; a separate plugin call can lose
 ERROR_SERVICE_DOES_NOT_EXIST. Both service and mutex probes now use `?e`.
 The fixture additionally tests mutex, preexisting stopped service, registry and
 shortcut preservation. The core/service admission checks are unchanged.
+Run 43846497536 passed compiler/signature and all five fresh-admission fixture
+groups. Invalid-owner setup returned rollback-failure 50 even though its directory,
+registration and shortcut were already absent before fixture cleanup. Rollback
+was checking a stale error flag after deleting optional metadata that had never
+been created. It now verifies those absences explicitly and isolates final
+directory-removal errors; successful rollback tracking is idempotent. Native
+process launch return slots are initialized to failure before ExecWait so launch
+failure cannot reuse an old success value. Full installer matrix still pending.
 
 ## Current stage
 
