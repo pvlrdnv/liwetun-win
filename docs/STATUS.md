@@ -178,6 +178,19 @@ directory-removal errors; successful rollback tracking is idempotent. Native
 process launch return slots are initialized to failure before ExecWait so launch
 failure cannot reuse an old success value. Full installer matrix still pending.
 
+Fresh installer matrix **PASS** on `d31a0bb`,
+[run 43847087250](https://github.com/pvlrdnv/liwetun-win/actions/runs/43847087250):
+12 installer check groups, enclosing production-mode payload checks, unchanged
+DNS/routes/adapter snapshots and complete cleanup. Setup/uninstaller signatures,
+preservation of existing objects, invalid-owner rollback, payload digests,
+demand-start service registration, installed medium GUI query, unknown-file
+preservation, retry and ordinary uninstaller bootstrap passed. Both native test
+network flags were OFF and no tunnel was started. [Evidence](evidence/installer-d31a0bb.json).
+This supersedes pending installer CI qualification above. Default Explorer owner
+selection/alternate-admin UAC, in-use UI removal, upgrades/recovery and Win10/11
+desktop acceptance remain open. Temporary CI signing is not release signing;
+no installer was uploaded for owner use.
+
 ## Current stage
 
 LOCAL development in independent private repository
@@ -216,8 +229,10 @@ also passed on disposable Windows CI. See [service architecture](WINDOWS_SERVICE
 
 ## Actual checks
 
-- Flutter 3.38.10 / Dart 3.10.9, Rust 1.95.0 isolated under `/tmp` for local work.
-- `flutter analyze --no-pub`: PASS. `flutter test --no-pub --reporter expanded`:
+- Pinned Flutter 3.38.10 / Dart 3.10.9; Rust 1.95.0 in Windows CI. Local tools
+  under `/tmp` are ephemeral and do not establish Windows readiness.
+- Earlier service-channel baseline: `flutter analyze --no-pub`: PASS.
+  `flutter test --no-pub --reporter expanded`:
   **75 PASS**, including timeout/stop, stale observation, duplicate commands,
   late disposal and raw-error canaries. Flutter's local test socket requires
   running outside the filesystem sandbox.
@@ -252,7 +267,8 @@ also passed on disposable Windows CI. See [service architecture](WINDOWS_SERVICE
 
 The client is not release-ready. Unsigned workspace builds fail service admission;
 no service is installed on the owner's computer. Protected storage and actual
-GUI integration passed disposable Windows CI. No signed
+GUI integration passed disposable Windows CI. The fresh installer prototype
+passed only disposable CI with temporary signing. No release-signed
 installer/updater, subscription fetch,
 recovery/tray/startup, real metrics, route-bound
 health probes, kill switch or Hysteria2/Xray connection adapter.

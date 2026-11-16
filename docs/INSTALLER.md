@@ -1,4 +1,4 @@
-# Fresh Windows installer prototype — CI qualification pending
+# Fresh Windows installer prototype — bounded CI PASS
 
 This is installer source for disposable CI, not a package for the owner's PC.
 It uses the already qualified GUI artifact plus a production-mode service/SDK
@@ -50,7 +50,8 @@ upgrade/rollback implementation. In-use GUI behavior remains a separate gate.
 Current-user DPAPI files outside the installation remain untouched. No shared
 driver-store cleanup or unrelated service/adapter/certificate changes occur.
 
-The CI fixture checks existing-directory preservation, invalid-owner rollback,
+The CI fixture checks existing-directory, setup mutex, stopped-service,
+uninstall-key and shortcut preservation, invalid-owner rollback,
 fresh install/digests/demand-start registration, duplicate rejection, actual
 installed GUI query at restricted medium integrity with fifteen privileged
 rights denied, unknown-file preservation, uninstall retry and normal uninstaller
@@ -59,7 +60,15 @@ NSIS `_?=` to wait for its exit; a separate test exercises ordinary self-copy
 bootstrap. DNS/routes/adapter snapshots are checked by the enclosing payload
 fixture. Only closed result evidence and hashes are uploaded, not this installer.
 
-Current implementation has not yet passed that Windows fixture. Remaining gates:
+The complete fixture **PASS** on `d31a0bb`,
+[run 43847087250](https://github.com/pvlrdnv/liwetun-win/actions/runs/43847087250):
+12 installer check groups, plus the enclosing production-mode payload checks,
+unchanged network snapshots and cleanup. An exact GUI artifact from `9d891c8`
+and pinned SDK run 43752644532 were used. Setup compiled without warnings and
+both installer/uninstaller signatures passed under the temporary CI trust.
+[Safe evidence](evidence/installer-d31a0bb.json).
+
+Remaining gates:
 desktop-owner selection, in-use/reboot/failure recovery, upgrades, release
 signing/revocation, final notices and ordinary routing/DNS/IPv6 acceptance. Do not
 give this package to the owner or equate CI certificate trust with a public signer.

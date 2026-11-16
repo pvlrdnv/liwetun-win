@@ -1,0 +1,86 @@
+{
+  "passed": true,
+  "tunnel_started": false,
+  "signing": "ephemeral_ci_only",
+  "stage": "normal_uninstaller_bootstrap",
+  "checks": [
+    "pinned_compiler_and_signed_installer",
+    "preexisting_directory_preserved",
+    "preexisting_setup_mutex_denied",
+    "preexisting_service_preserved_without_starting",
+    "preexisting_registration_and_shortcut_preserved",
+    "invalid_owner_rolls_back_fresh_files_and_service",
+    "fresh_install_preserves_payload_and_signed_uninstaller",
+    "duplicate_install_denied",
+    "installed_gui_queries_production_service_at_medium_integrity",
+    "unknown_file_preserved_with_retry_uninstaller",
+    "uninstall_retry_after_service_removal",
+    "normal_uninstaller_bootstrap_and_removal"
+  ],
+  "desktop_owner_selection_tested": false,
+  "cleanup_passed": true,
+  "invocations": [
+    {
+      "exit_code": 21,
+      "stage": "preexisting_directory_denial"
+    },
+    {
+      "exit_code": 25,
+      "stage": "preexisting_setup_mutex_denial"
+    },
+    {
+      "exit_code": 22,
+      "stage": "preexisting_service_denial"
+    },
+    {
+      "exit_code": 23,
+      "stage": "preexisting_registration_denial"
+    },
+    {
+      "exit_code": 23,
+      "stage": "preexisting_registration_denial"
+    },
+    {
+      "exit_code": 31,
+      "stage": "invalid_owner_rollback"
+    },
+    {
+      "exit_code": 0,
+      "stage": "fresh_install"
+    },
+    {
+      "exit_code": 21,
+      "stage": "fresh_install"
+    },
+    {
+      "exit_code": 41,
+      "stage": "uninstall_preserves_unknown_file"
+    },
+    {
+      "exit_code": 0,
+      "stage": "uninstall_preserves_unknown_file"
+    },
+    {
+      "exit_code": 0,
+      "stage": "normal_uninstaller_bootstrap"
+    },
+    {
+      "exit_code": 0,
+      "stage": "normal_uninstaller_bootstrap"
+    }
+  ],
+  "before_fixture_cleanup": {
+    "registration": false,
+    "directory": false,
+    "shortcut": false
+  },
+  "release_ready": false,
+  "installer_sha256": "b3a7fc719bd65ea2e3ac65b8c179eedd77bc2833e95dc0ef33a2434889c4d532",
+  "source_commit": "d31a0bba9f7ae7b46d6a459c4adf38d24d3706f6",
+  "source_run": "43847087250",
+  "runner_os": "windows-2022",
+  "gui_source": "9d891c83ef847a47af3422f821bf83985316d73f",
+  "sdk_source_run": 43752644532,
+  "network_unchanged": true,
+  "network_test_modes_enabled": false
+}

@@ -62,6 +62,9 @@ eight token-control permissions are checked separately and remain denied.
 See [service boundary](WINDOWS_SERVICE.md) and
 [safe payload evidence](evidence/package-payload-2c79109.json).
 
-Installer authoring, upgrade/rollback, desktop ownership selection, release
-signing/revocation and full distribution audit remain open. Public signing
-process availability has been asked while independent preparation continues.
+The opt-in fresh installer prototype passed its bounded Windows fixture on
+`d31a0bb`, [run 43847087250](https://github.com/pvlrdnv/liwetun-win/actions/runs/43847087250).
+See [installer scope and remaining gates](INSTALLER.md). Upgrade/rollback,
+desktop ownership selection, in-use UI handling, release signing/revocation and
+full distribution audit remain open. Public signing process availability has
+been asked while independent preparation continues.
