@@ -71,11 +71,15 @@ def main():
         return
     (directory / 'credentials.toml').write_text('[[client]]\nusername="synthetic-user"\npassword="synthetic-password"\n')
     protocol = 'http2' if args.protocol == 'http2' else 'quic'
+    forwarder = ''
+    if (directory / 'forwarder-inputs.json').exists():
+        forwarder = '[forward_protocol.socks5]\naddress="127.0.0.1:38445"\nextended_auth=false\n'
     # H3 case deliberately has NO H2 listener: fallback cannot pass the test.
     (directory / 'vpn.toml').write_text(
         'listen_address="127.0.0.1:38443"\ncredentials_file="credentials.toml"\n'
         'ipv6_available=false\nallow_private_network_connections=true\n'
         'connection_establishment_timeout_secs=5\n'
+        + forwarder +
         f'[listen_protocols.http1]\n[listen_protocols.{protocol}]\n'
         '[metrics]\naddress="127.0.0.1:38444"\nper_client_metrics=false\n')
     (directory / 'hosts.toml').write_text(

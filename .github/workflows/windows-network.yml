@@ -12,6 +12,19 @@ on:
         required: false
         default: false
         type: boolean
+      production_probe:
+        description: Single unbound IPv4 HTTPS/DNS probe with production routing and a physically bound endpoint forwarder
+        required: false
+        default: false
+        type: boolean
+      production_transport:
+        description: Transport for the single production routing probe
+        required: false
+        default: http2
+        type: choice
+        options:
+          - http2
+          - http3
       endpoint_version:
         description: Pinned official endpoint version to compare
         required: true
@@ -33,6 +46,8 @@ jobs:
       LIWETUN_CI_DISTRO: LiWeTunCI${{ github.run_id }}
       LIWETUN_NETWORK_DIAGNOSTIC: ${{ inputs.diagnostic_only }}
       LIWETUN_ENDPOINT_VERSION: ${{ inputs.endpoint_version }}
+      LIWETUN_PRODUCTION_PROBE: ${{ inputs.production_probe }}
+      LIWETUN_PRODUCTION_TRANSPORT: ${{ inputs.production_transport }}
     defaults:
       run:
         shell: pwsh
@@ -50,7 +65,8 @@ jobs:
         run: |
           rustup toolchain install 1.95.0 --profile minimal
           if ($LASTEXITCODE -ne 0) { throw 'Rust install failed' }
-          cmake -S native/service -B build/service -A x64 -DLIWETUN_TEST_TUN_NETWORK=ON
+          $bounded = if ($env:LIWETUN_PRODUCTION_PROBE -eq 'true') { 'OFF' } else { 'ON' }
+          cmake -S native/service -B build/service -A x64 -DLIWETUN_TEST_NO_GLOBAL_ROUTES=OFF "-DLIWETUN_TEST_TUN_NETWORK=$bounded"
           if ($LASTEXITCODE -ne 0) { throw 'Service configure failed' }
           cmake --build build/service --config Release --parallel 2
           if ($LASTEXITCODE -ne 0) { throw 'Service build failed' }
@@ -92,7 +108,11 @@ jobs:
           wsl -d $env:LIWETUN_CI_DISTRO -- sh -c 'apt-get update >/dev/null 2>&1 && DEBIAN_FRONTEND=noninteractive apt-get install -y python3 openssl ca-certificates >/dev/null 2>&1'
           if ($LASTEXITCODE -ne 0) { throw 'Task Linux test tools failed' }
       - name: Real signed service TUN HTTPS DNS H2 H3 and stop/crash tests
-        run: ./tools/service/qualify.ps1 -Sdk build/sdk-runtime -Network
+        run: |
+          python -m unittest discover -s tools/service -p test_physical_forwarder.py
+          if ($LASTEXITCODE -ne 0) { throw 'Forwarder protocol fixtures failed' }
+          if ($env:LIWETUN_PRODUCTION_PROBE -eq 'true') { ./tools/service/qualify.ps1 -Sdk build/sdk-runtime -Network -ProductionTraffic }
+          else { ./tools/service/qualify.ps1 -Sdk build/sdk-runtime -Network }
       - name: Remove exact task-created Linux fixture
         if: always() && env.LIWETUN_DISTRO_CREATED == 'true'
         run: |

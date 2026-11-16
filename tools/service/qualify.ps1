@@ -1,12 +1,13 @@
 # ONLY for a disposable GitHub runner, never an installer for the owner's PC.
-param([string]$Build = 'build/service/Release', [string]$Sdk = '', [switch]$Network, [switch]$ProductionLifecycle)
+param([string]$Build = 'build/service/Release', [string]$Sdk = '', [switch]$Network, [switch]$ProductionLifecycle, [switch]$ProductionTraffic)
 $ErrorActionPreference = 'Stop'
 if ($env:GITHUB_ACTIONS -ne 'true' -or !$env:GITHUB_RUN_ID) { throw 'Disposable GitHub runner required' }
 if ($Network -and !$Sdk) { throw 'Network qualification requires actual SDK' }
 if ($ProductionLifecycle -and (!$Sdk -or $Network)) { throw 'Production lifecycle requires SDK and excludes bounded network mode' }
+if ($ProductionTraffic -and (!$Network -or $ProductionLifecycle)) { throw 'Production traffic requires its own live endpoint fixture' }
 $cache = Get-Content (Join-Path (Split-Path $Build -Parent) 'CMakeCache.txt')
 $expectedNoGlobal = if (!$Network -and !$ProductionLifecycle) { 'ON' } else { 'OFF' }
-$expectedTun = if ($Network) { 'ON' } else { 'OFF' }
+$expectedTun = if ($Network -and !$ProductionTraffic) { 'ON' } else { 'OFF' }
 if ($cache -notcontains ('LIWETUN_TEST_NO_GLOBAL_ROUTES:BOOL=' + $expectedNoGlobal) -or $cache -notcontains ('LIWETUN_TEST_TUN_NETWORK:BOOL=' + $expectedTun)) { throw 'Service compilation mode mismatch' }
 $root = Join-Path $env:ProgramFiles ('LiWeTun-CI-' + $env:GITHUB_RUN_ID)
 if (Test-Path $root) { throw 'Fresh isolated installation directory required' }
@@ -167,17 +168,26 @@ try {
             $checks.Add('real_sdk_start_observe_stop')
         }
         if ($Network) {
-            python tools/service/network.py --client $client
-            if ($LASTEXITCODE -ne 0) { throw 'Real TUN network qualification failed; see safe network.json' }
-            $checks.Add('tun_https_dns_transport_and_cleanup')
-            $lifecycle = @{verified_by='live_endpoint_network_cases';refused_endpoint_smoke='not_run'}
+            if ($ProductionTraffic) { python tools/service/production_network.py --client $client }
+            else { python tools/service/network.py --client $client }
+            if ($LASTEXITCODE -ne 0) {
+                if ($ProductionTraffic) { throw 'Production traffic fixture failed; see safe production-network.json' }
+                throw 'Real TUN network qualification failed; see safe network.json'
+            }
+            if ($ProductionTraffic) {
+                $checks.Add('production_single_unbound_https_dns_and_cleanup')
+                $lifecycle = @{verified_by='production_single_unbound_ipv4_fixture';full_matrix_qualified=$false}
+            } else {
+                $checks.Add('tun_https_dns_transport_and_cleanup')
+                $lifecycle = @{verified_by='live_endpoint_network_cases';refused_endpoint_smoke='not_run'}
+            }
         }
         Uninstall
     }
     $checks.Add('service_uninstalled')
     if ((DnsSnapshot) -ne $dnsBefore -or (DefaultRoutes) -ne $routesBefore) { throw 'DNS or default routes were not restored after CI fixture' }
     $checks.Add('dns_and_default_routes_unchanged')
-    $result = @{checks=@($checks); core_runtime_ready=$runtimeReady; signed_service_ipc='verified'; driver_cycle=$driver; sdk_lifecycle=$lifecycle; test_mode_no_global_routes=(!$Network -and !$ProductionLifecycle); test_mode_tun_network=[bool]$Network; production_refused_endpoint_lifecycle=[bool]$ProductionLifecycle; dns_and_default_routes_unchanged=$true; release_ready=$false}
+    $result = @{checks=@($checks); core_runtime_ready=$runtimeReady; signed_service_ipc='verified'; driver_cycle=$driver; sdk_lifecycle=$lifecycle; test_mode_no_global_routes=(!$Network -and !$ProductionLifecycle); test_mode_tun_network=($Network -and !$ProductionTraffic); production_refused_endpoint_lifecycle=[bool]$ProductionLifecycle; production_single_traffic_fixture=[bool]$ProductionTraffic; dns_and_default_routes_unchanged=$true; release_ready=$false}
     New-Item -ItemType Directory -Force build/service-evidence | Out-Null
     $result | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 build/service-evidence/qualification.json
 } finally {

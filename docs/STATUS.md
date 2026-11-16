@@ -273,6 +273,18 @@ was armed before SDK start. [Evidence](evidence/general-wfp-fc60eb3.json).
 Internet payload, effective DNS-leak protection and desktop acceptance remain
 open. The WFP probe is not linked into the shipped GUI or service.
 
+Ordinary-traffic fixture continuation: the official endpoint's SOCKS5 forwarder
+can separate its egress from the same-host Windows client's routing. Added a
+loopback-only, synthetic-authenticated, destination-allowlisted test forwarder;
+only its egress sockets bind the original physical interface. Four live local
+TCP/UDP protocol tests PASS, including wrong auth, denied destinations and UDP
+fragment rejection. A new opt-in single IPv4 case uses production service flags,
+ordinary unbound client sockets, selected TUN route/source checks, normal HTTPS
+TLS, synthetic DNS and a 60-second independently armed deadline. No test host
+routes are added and the official endpoint binary is unchanged. This new fixture
+is pending actual Windows proof; it does not qualify the full failure/IPv6/desktop
+matrix. The existing bounded network workflow remains the default.
+
 ## Current stage
 
 LOCAL development in independent private repository
