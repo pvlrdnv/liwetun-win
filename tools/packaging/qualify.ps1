@@ -59,6 +59,7 @@ try {
         if (!$expectedFiles.Contains([IO.Path]::GetRelativePath($guiRoot,$file.FullName).Replace('\','/'))) { throw 'Unlisted GUI artifact file' }
     }
     if (Get-ChildItem $guiRoot -Recurse -Force | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }) { throw 'Unexpected GUI reparse point' }
+    $stage = 'assemble_pinned_payload'
     New-Item -ItemType Directory $payload | Out-Null
     Copy-Item (Join-Path $guiRoot '*') $payload -Recurse
     Copy-Item build/package-service/Release/liwetun_service.exe $payload
@@ -68,6 +69,7 @@ try {
         if ((Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $pin.files.PSObject.Properties[$file].Value) { throw 'SDK file digest mismatch' }
         Copy-Item $path $payload
     }
+    $stage = 'original_microsoft_crt'
     $crt = Join-Path $env:VCToolsRedistDir 'x64/Microsoft.VC143.CRT'
     if (!(Test-Path $crt -PathType Container)) { throw 'MSVC app-local runtime unavailable' }
     $crtFiles = @(Get-ChildItem $crt -File -Filter '*.dll')
@@ -81,6 +83,7 @@ try {
         Copy-Item $file.FullName $target
     }
     $checks.Add('original_microsoft_app_local_crt_staged')
+    $stage = 'notices_and_native_architecture'
     New-Item -ItemType Directory (Join-Path $payload 'notices') | Out-Null
     Copy-Item third_party/sdk (Join-Path $payload 'notices') -Recurse
     Copy-Item third_party/rust (Join-Path $payload 'notices') -Recurse
@@ -106,6 +109,7 @@ try {
     foreach ($name in @('liwetun.exe','liwetun_service.exe','trusttunnel.dll')) { Sign (Join-Path $payload $name) }
     $checks.Add('common_ci_signer_only_for_owned_components')
     $checks.Add('original_wintun_bytes_preserved')
+    $stage = 'protected_payload_directory'
     New-Item -ItemType Directory $root | Out-Null
     $created = $true
     $acl = [Security.AccessControl.DirectorySecurity]::new()

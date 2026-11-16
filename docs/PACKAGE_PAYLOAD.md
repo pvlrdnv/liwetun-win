@@ -35,8 +35,14 @@ service, task directory and temporary trust entries are removed; safe evidence
 and a post-signing file manifest remain. There is no owner-device installation,
 temporary-root instruction, release publication or license-approval claim.
 
-Current status: local analyze passed; updated GUI CLI/runtime staging and the
-production-mode payload fixture still need actual Windows qualification.
+Current status: GUI CLI compilation and the unsigned rejection check passed
+actual Windows qualification on `56f94e6` (run 43825848338), together with analyze,
+118 Dart, 6 Rust and 3 desktop tests. The overall workflow failed afterwards at
+the runtime staging guard; its unexpected input was not identified by that run.
+A bounded root build-file inventory now accompanies failure-independent build
+evidence. Runtime staging and the production-mode payload fixture remain pending.
+Payload failures use closed assembly/signing/ACL/query stage identifiers so that
+the evidence can distinguish packaging failures without recording raw core data.
 Installer authoring, upgrade/rollback, desktop ownership selection, release
 signing/revocation and full distribution audit remain open. Public signing
 process availability has been asked while independent preparation continues.
