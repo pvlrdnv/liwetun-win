@@ -390,6 +390,18 @@ Added exact synthetic-question request/reply counters at the endpoint relay and
 per-probe deltas to exclude unrelated runner DNS from transport proof; require at
 least 82 transport bytes. Five local protocol tests and syntax/diff checks PASS;
 Windows reruns with these strengthened observations pending.
+Strengthened ordinary-mode checks **PASS** on `4653876`:
+[H2 43882488976](https://github.com/pvlrdnv/liwetun-win/actions/runs/43882488976),
+[H3 43882496493](https://github.com/pvlrdnv/liwetun-win/actions/runs/43882496493).
+Each observed exactly one synthetic question and reply through the endpoint
+relay, exactly 82 DNS transport bytes, correct unbound TUN sources and full
+network/WFP restoration without watchdog intervention. Both flags OFF and no
+client host routes. IPv6/full fault matrix/desktop/release gates remain open.
+Next fault case: force termination of the exact live authenticated lease-client
+process after successful traffic, without Stop or stdin EOF. The service must
+restore routes/DNS/adapter and WFP itself. This is a native CI lease process,
+not a claim about an installed visible GUI crash. Syntax/YAML checks PASS;
+actual ordinary-mode lease-death CI pending.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

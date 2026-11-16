@@ -88,9 +88,13 @@ def main():
     protocol = os.environ.get('LIWETUN_PRODUCTION_TRANSPORT', 'http2')
     if protocol not in ['http2', 'http3']:
         raise RuntimeError('invalid_fixture_protocol')
+    termination = os.environ.get('LIWETUN_PRODUCTION_TERMINATION', 'stop')
+    if termination not in ['stop', 'lease-death']:
+        raise RuntimeError('invalid_fixture_termination')
     report = ROOT / 'build/service-evidence/production-network.json'
     report.parent.mkdir(exist_ok=True, parents=True)
     result = {'passed': False, 'mode': 'single_production_unbound_ipv4', 'protocol': protocol,
+              'termination': termination,
               'network_test_modes_enabled': False, 'client_host_routes_added': False,
               'server_https_egress_bound_physical': True,
               'endpoint_udp_relay': 'wsl_local',
@@ -221,8 +225,19 @@ def main():
                       synthetic_dns_forwarder_delta=marker_delta,
                       endpoint_bytes_by_transport=delta, dns_endpoint_bytes_by_transport=dns_delta,
                       forwarder_counts=proxy, dns_fixture_counts=endpoint_observation)
-        stage = 'stop_and_restore'
-        session.close('stop')
+        stage = 'terminate_and_restore'
+        # No stdin EOF/graceful Stop in this fault case: Child.close without a
+        # command kills exactly its owned process. The service must detect loss
+        # of its authenticated lease and restore the network itself.
+        if termination == 'lease-death':
+            if session.process.poll() is not None:
+                raise RuntimeError('lease_client_already_exited')
+            session.close()
+            result['lease_client_forced_exit'] = session.process.returncode != 0
+            if not result['lease_client_forced_exit']:
+                raise RuntimeError('lease_client_not_forced')
+        else:
+            session.close('stop')
         session = None
         restored = wait_clean(baseline)
         wfp_after = owned_wfp(client)

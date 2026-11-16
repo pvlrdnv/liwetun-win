@@ -82,7 +82,16 @@ others. Two-flow endpoint preflight passed before routing; full route/DNS/adapte
 and WFP session restoration passed without watchdog intervention. No test host
 routes; both app network-test flags OFF. H3 has no H2 listener, so fallback cannot
 pass. Per-synthetic-question relay counters are added for a stronger rerun;
-unrelated runner DNS cannot satisfy those counters.
+unrelated runner DNS cannot satisfy those counters. That stronger rerun **PASS**
+on `4653876`: [H2](evidence/production-traffic-43882488976.json),
+[H3](evidence/production-traffic-43882496493.json). Each recorded exactly one
+synthetic request/reply, 82 DNS bytes and complete network/WFP restoration.
+
+The optional `production_termination=lease-death` fault closes no stdin and sends
+no Stop command. It first confirms the exact owned lease-client process is live,
+force-terminates it, requires a nonzero exit, and then observes the service's own
+cleanup under the independent deadline. This native CI lease process is not an
+installed visible GUI. Its ordinary-mode Windows check is pending.
 
 Remaining gates: full ordinary-mode fault matrix, effective DNS leak prevention,
 IPv6 payload delivery, crash/network-
