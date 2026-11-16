@@ -86,6 +86,15 @@ jobs:
         run: |
           $source = 'build/windows/x64/runner/Release'
           $destination = 'build/unsigned-gui-runtime'
+          # Compiler output only; never enumerate user profiles or runtime logs.
+          $inventory = @(Get-ChildItem $source -Force | ForEach-Object {
+            @{
+              name = $(if ($_.Name -cmatch '^[A-Za-z0-9_.-]{1,128}$') { $_.Name } else { 'redacted' })
+              directory = $_.PSIsContainer
+              reparse = [bool]($_.Attributes -band [IO.FileAttributes]::ReparsePoint)
+            }
+          })
+          @{source_commit='${{ github.sha }}'; entries=$inventory; release_ready=$false} | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 build/gui-build-inventory.json
           if (Test-Path $destination) { throw 'Fresh GUI staging directory required' }
           New-Item -ItemType Directory $destination | Out-Null
           foreach ($entry in Get-ChildItem $source -Force) {
@@ -116,11 +125,19 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
         with:
           name: windows-import-evidence
           path: build/windows-import-evidence.json
           retention-days: 7
-          if-no-files-found: error
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: gui-build-inventory
+          path: build/gui-build-inventory.json
+          retention-days: 7
+          if-no-files-found: warn
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: unsigned-gui-runtime-ci-only

@@ -78,6 +78,15 @@ and a restricted medium-integrity GUI query fixture are implemented. Windows
 qualification is pending. This is not an installer or owner-machine test package;
 see [PACKAGE_PAYLOAD.md](PACKAGE_PAYLOAD.md).
 
+GUI continuation on `56f94e6`: analyze, 118 Dart tests, 6 Rust tests, release
+build and all 3 actual desktop channel tests passed in
+[run 43825848338](https://github.com/pvlrdnv/liwetun-win/actions/runs/43825848338),
+including the unsigned GUI read-only status command. The overall workflow failed
+at the subsequent runtime staging guard because of an unexpected build output;
+its name was not captured. Added a bounded root build-file inventory and
+failure-independent evidence upload to diagnose this without relaxing admission.
+Payload qualification remains pending; no installer or desktop readiness claim.
+
 ## Current stage
 
 LOCAL development in independent private repository
