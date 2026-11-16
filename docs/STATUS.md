@@ -264,6 +264,14 @@ WFP observation run 43857843576 stopped during compilation of the new CI probe:
 its translation unit lacked the required windows.h include before fwpmu.h.
 The service itself compiled; no new runtime qualification was obtained. Added
 the explicit Windows header; WFP observation remains pending a fresh run.
+Production route/DNS/WFP lifecycle **PASS** on `fc60eb3`,
+[run 43858170850](https://github.com/pvlrdnv/liwetun-win/actions/runs/43858170850):
+18 service checks; both IPv4/IPv6 sample route coverage and own adapter DNS;
+SDK-owned dynamic WFP session appearance and return to baseline after stop;
+exact route/DNS/adapter restoration without deadline intervention. The watchdog
+was armed before SDK start. [Evidence](evidence/general-wfp-fc60eb3.json).
+Internet payload, effective DNS-leak protection and desktop acceptance remain
+open. The WFP probe is not linked into the shipped GUI or service.
 
 ## Current stage
 

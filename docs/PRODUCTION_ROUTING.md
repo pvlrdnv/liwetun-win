@@ -32,7 +32,13 @@ engine. A read-only CI-only probe now counts only the SDK-labelled sessions
 belonging to the authenticated own service PID; other session names, SIDs,
 usernames and IDs are not exported. The stricter lifecycle fixture requires
 dynamic sessions to appear and return to baseline after SDK stop while the
-service itself remains running. This additional check is pending Windows proof.
+service itself remains running. This additional check **PASS** on `fc60eb3`,
+[run 43858170850](https://github.com/pvlrdnv/liwetun-win/actions/runs/43858170850):
+SDK-owned dynamic sessions appeared, returned to baseline after SDK stop, and
+the complete IPv4/IPv6 route/DNS restoration check passed without watchdog
+intervention. [Evidence](evidence/general-wfp-fc60eb3.json). This is session
+lifecycle evidence under the Windows dynamic-session contract, not an independent
+enumeration of individual filters or an effective DNS-leak test.
 [Windows dynamic-session semantics](https://learn.microsoft.com/en-us/windows/win32/api/fwpmtypes/ns-fwpmtypes-fwpm_session0).
 
 Remaining gates: successful ordinary unbound traffic to a real synthetic
