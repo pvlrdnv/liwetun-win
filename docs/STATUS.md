@@ -36,7 +36,9 @@ the disposable recipe job. Revised recipe exports and actual archive download/ch
 preparation **PASS** on
 [43917795754](https://github.com/pvlrdnv/liwetun-win/actions/runs/43917795754);
 [receipt](evidence/sdk-source-archives-707d870.json). Separate candidate lock
-refreshed from those verified exports; full rebuild pending. Subsequent service/network/package
+refreshed from those verified exports. Corrected full rebuild running on
+[43918219945](https://github.com/pvlrdnv/liwetun-win/actions/runs/43918219945)
+from `9c8bfd5`; compilation result pending. Subsequent service/network/package
 qualification remains pending.
 Prepared explicit candidate-manifest selection for those jobs; source manifest /
 lock digests, exact build run/commit and DLL digests remain required. No candidate
@@ -44,7 +46,11 @@ runtime manifest is generated until its successful DLL artifact is inspected.
 Prepared a candidate notice bridge that checks exact dependency substitutions
 and rejects new packaged notice bodies; source supplements remain explicit.
 Twelve local notice/source-pin/closure checks and unchanged original UI notice
-bundle PASS. Actual candidate notice comparison awaits a successful build.
+bundle PASS. Windows notice-integrity and three guard tests also **PASS** on
+[43918712779](https://github.com/pvlrdnv/liwetun-win/actions/runs/43918712779),
+[receipt](evidence/windows-notices-9c8bfd5.json). Missing candidate runtime is
+rejected with closed diagnostics. Actual candidate notice comparison awaits a
+successful build.
 See [source pin scope](SDK_SOURCE_PINS.md).
 The active Conan lock and qualified DLL/runtime pins remain unchanged.
 

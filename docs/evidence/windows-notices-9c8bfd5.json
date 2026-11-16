@@ -1,0 +1,10 @@
+{
+  "source_run": 43918712779,
+  "source_commit": "9c8bfd5edf0fbed94d2c1d8da70a3e0b6d4b4272",
+  "conclusion": "success",
+  "sdk_notice_files": 38,
+  "rust_notice_files": 22,
+  "guard_tests": 3,
+  "new_candidate_packaged_notices_compared": false,
+  "release_qualified": false
+}
