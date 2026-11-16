@@ -51,6 +51,11 @@ Corrected runtime staging and the complete application workflow **PASS** on
 `9d891c8`, [run 43837997739](https://github.com/pvlrdnv/liwetun-win/actions/runs/43837997739).
 The production-mode signed payload fixture is now dispatched with that exact
 GUI artifact; qualification remains pending until its checks and cleanup pass.
+Initial payload runs stopped before installation at the CRT publisher-name
+check. All ten original signatures were Valid; the captured certificate name
+was `Microsoft Windows Software Compatibility Publisher`. Admission accepts
+that exact name or `Microsoft Corporation`, still requiring Valid Authenticode.
+The CRT files retain their original signatures and bytes.
 Installer authoring, upgrade/rollback, desktop ownership selection, release
 signing/revocation and full distribution audit remain open. Public signing
 process availability has been asked while independent preparation continues.

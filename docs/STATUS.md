@@ -105,6 +105,12 @@ compiled the production-mode service and restricted-token helper successfully,
 then failed at original CRT signature admission before installation. Cleanup and
 unchanged network checks passed. Added a per-CRT filename/hash/numeric signature
 status/closed publisher-category report to diagnose without lowering trust checks.
+Diagnostic runs 43839005376/43839414368 showed all ten original CRT signatures
+Valid; the actual certificate name is `Microsoft Windows Software Compatibility
+Publisher`, rather than the originally assumed `Microsoft Corporation`. CRT
+admission now accepts those two exact Microsoft publisher names with a Valid
+Authenticode result; signatures/bytes are preserved. No generic trusted-signer
+fallback or temporary Microsoft root was added. Payload recheck pending.
 
 ## Current stage
 

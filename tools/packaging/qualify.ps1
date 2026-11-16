@@ -80,20 +80,19 @@ try {
         $name = if ($signature.SignerCertificate) { $signature.SignerCertificate.GetNameInfo('SimpleName',$false) } else { '' }
         $publisher = switch -Exact ($name) {
             'Microsoft Corporation' { 'microsoft_corporation' }
+            'Microsoft Windows Software Compatibility Publisher' { 'microsoft_windows_software_compatibility' }
             'Microsoft Windows' { 'microsoft_windows' }
             '' { 'none' }
             default { 'other' }
         }
-        # Public third-party code-signing metadata, never application/core logs.
-        # Keep the vendor name bounded; reject arbitrary certificate strings.
-        $publicName = if ($name -cmatch '^[A-Za-z0-9 .(),_-]{1,128}$') { $name } else { 'redacted' }
-        @{file=$file.Name; signature_status=[int]$signature.Status; publisher=$publisher; public_signer_name=$publicName; sha256=(Get-FileHash $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}
+        @{file=$file.Name; signature_status=[int]$signature.Status; publisher=$publisher; sha256=(Get-FileHash $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}
     })
     $crtInventory | ConvertTo-Json -Depth 3 | Set-Content -Encoding utf8 (Join-Path $evidence 'crt-inputs.json')
     foreach ($file in $crtFiles) {
         if ($file.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Unexpected CRT reparse point' }
         $signature = Get-AuthenticodeSignature $file.FullName
-        if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.GetNameInfo('SimpleName',$false) -ne 'Microsoft Corporation') { throw 'Untrusted original CRT runtime' }
+        $trustedPublishers = @('Microsoft Corporation', 'Microsoft Windows Software Compatibility Publisher')
+        if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.GetNameInfo('SimpleName',$false) -cnotin $trustedPublishers) { throw 'Untrusted original CRT runtime' }
         $target = Join-Path $payload $file.Name
         if (Test-Path $target) { throw 'Duplicate CRT runtime in GUI payload' }
         Copy-Item $file.FullName $target
