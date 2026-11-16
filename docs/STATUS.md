@@ -332,6 +332,15 @@ HTTPS to the Windows physical exit, and requires the private synthetic DNS route
 to select the physical interface. No client host routes or app network changes.
 Five local protocol checks PASS, including authenticated chained TCP delivery;
 Python syntax/diff checks PASS. Actual Windows experiment pending.
+Local-relay experiment `84e76cb`,
+[43878059292](https://github.com/pvlrdnv/liwetun-win/actions/runs/43878059292),
+again passed HTTPS/TUN source, private DNS physical-route selection, boundary
+preflights and restoration; DNS still timed out. Overall **FAIL**. The Linux-local
+relay sent replies without errors, so relocating it did not fix the symptom.
+Added a fixed synthetic HTTP/1 CONNECT `_udp2` wire preflight against the official
+endpoint before SDK start (normal profile-scoped fixture TLS verification).
+It requires exact returned metadata and DNS answer; failure stops before route
+changes and records closed observations only. Syntax/diff PASS; CI pending.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

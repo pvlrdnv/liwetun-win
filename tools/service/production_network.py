@@ -151,6 +151,12 @@ def main():
         result['wsl_udp_preflight'] = udp_boundary()
         if result['wsl_udp_preflight'].get('passed') is not True:
             raise RuntimeError('udp_preflight_failed')
+        stage = 'endpoint_udp_preflight'
+        from endpoint_udp_probe import probe as endpoint_udp_probe
+        result['endpoint_udp_preflight'] = endpoint_udp_probe(directory)
+        if result['endpoint_udp_preflight'].get('passed') is not True:
+            result['dns_fixture_counts'] = endpoint.command('stats')
+            raise RuntimeError('endpoint_udp_preflight_failed')
         stage = 'armed_deadline'
         watchdog = Child(['pwsh', '-NoProfile', '-NonInteractive', '-File',
                           str(ROOT / 'tools/service/general-watchdog.ps1'), '-DeadlineSeconds', '60'])
