@@ -30,3 +30,16 @@ bytes/signature are retained and licensed separately.
 This is a LiWeTun-modified build, not an unmodified upstream distribution or an
 upstream endorsement. This change notice does not approve redistribution rights,
 resolve the remaining dependency-source/nested-notice audit, or qualify a release.
+
+For the separately selected immutable-source candidate, dependency recipes also
+pin exact Git commits or archive checksums for libevent, libsodium, nghttp2,
+nghttp3, NativeLibsCommon, DnsLibs and BoringSSL. BoringSSL uses the official
+GitHub mirror archive of the same commit with identical file contents; both
+archive recipes specify `.tar.gz` filenames for Conan extraction. Original
+library versions, source patch files and build options are retained. Exact
+recipe input/output digests and replacements are in `native/sdk/source-pins.json`
+in the source repository, reproduced by `tools/sdk/pin_sources.py`. Candidate
+packages include `SOURCE_PINS.json` and `CANDIDATE_SOURCE_RECEIPT.json` alongside
+these notices. The original archived notice inventory retains its earlier
+build provenance; the separate candidate receipt checks the new build's package
+notice bodies and identifies packages still relying on source supplements.

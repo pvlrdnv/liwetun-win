@@ -69,5 +69,7 @@ failed before DLL production: Conan inferred an extensionless archive filename
 from the codeload URL and selected ZIP extraction after successful SHA256 checking.
 Both archive recipes now specify a `.tar.gz` filename. The recipe discovery job
 also executes real `conan source` download/checksum/extraction/upstream-patch
-checks for both recipes. Updated exports and lock refresh are pending; the
+checks for both recipes. Updated exports, both real archive preparations and lock refresh passed on
+[43917795754](https://github.com/pvlrdnv/liwetun-win/actions/runs/43917795754),
+[receipt](evidence/sdk-source-archives-707d870.json); the
 previous seven-recipe export receipt describes the earlier candidate exactly.

@@ -113,7 +113,10 @@ try {
     New-Item -ItemType Directory (Join-Path $payload 'notices') | Out-Null
     Copy-Item third_party/sdk (Join-Path $payload 'notices') -Recurse
     Copy-Item third_party/rust (Join-Path $payload 'notices') -Recurse
-    if ($env:SOURCE_PINNED -eq 'true') { Copy-Item native/sdk/notice-sources.json (Join-Path $payload 'notices/sdk/CANDIDATE_SOURCE_RECEIPT.json') }
+    if ($env:SOURCE_PINNED -eq 'true') {
+        Copy-Item native/sdk/notice-sources.json (Join-Path $payload 'notices/sdk/CANDIDATE_SOURCE_RECEIPT.json')
+        Copy-Item native/sdk/source-pins.json (Join-Path $payload 'notices/sdk/SOURCE_PINS.json')
+    }
     if ($Installer) {
         if (!$env:LIWETUN_NSIS_ROOT) { throw 'Pinned NSIS compiler was not prepared' }
         Copy-Item (Join-Path $env:LIWETUN_NSIS_ROOT 'COPYING') (Join-Path $payload 'notices/NSIS-COPYING.txt')

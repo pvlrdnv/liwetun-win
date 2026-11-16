@@ -91,6 +91,8 @@ def check_candidate_notices(archived, actual, replacements):
     for item in packages:
         ref = reference(item['ref'])
         notices = item['notices']
+        if item['context'] not in ('host', 'build'):
+            raise ValueError('candidate_notice_set_invalid')
         if not isinstance(notices, list) or len(notices) > 500:
             raise ValueError('candidate_notice_set_invalid')
         digests = {notice['sha256'] for notice in notices}

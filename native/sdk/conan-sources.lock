@@ -5,7 +5,7 @@
     "tomlplusplus/3.3.0#3109e968b4a517f395e638753c6faa43%1718732131.039",
     "tldregistry/2022-12-26@adguard/oss#a37e4c059ba30270e7f0f9888c0bd890%1794751160.3980274",
     "pcre2/10.37@adguard/oss#e9120818270c6f02b943e6864ff8f21c%1794751159.5233254",
-    "openssl/boring-2026-05-08@adguard/oss#dc61007e1b1896c5e090819d5be50df0",
+    "openssl/boring-2026-05-08@adguard/oss#2e2280e85258e377e88d92132af79428",
     "nlohmann_json/3.12.0#2d634ab0ec8d9f56353e5ccef6d6612c%1744735883.94",
     "ngtcp2/1.22.1@adguard/oss#36d9b5ab7bae5525760e9ab0c3dec1b4%1794751158.6155787",
     "nghttp3/1.0.0@adguard/oss#0a49dc3df4c0ec9e1db87dd356dfc7af",
@@ -15,7 +15,7 @@
     "llhttp/9.3.0@adguard/oss#d4c606ade7f77345c3bf71199c495d0e%1794751155.9081233",
     "libuv/1.41.0@adguard/oss#311f317edcf383bd7aeddcc51308f380%1794751155.4699883",
     "libsodium/1.0.18@adguard/oss#e7aeedcb8077c3d577a27c97f943b947",
-    "libevent/2.1.11@adguard/oss#bf271768bbb619d0ec612716df6be80d",
+    "libevent/2.1.11@adguard/oss#d83df250f97d2c9ad77acdb865d03cf4",
     "ldns/2021-03-29@adguard/oss#ac8bb875bbc36a5afbdadbacb0e3fb7e%1794751154.1091824",
     "klib/2021-04-06@adguard/oss#2fba69658655c2972a005c1b3502cab0%1794751153.6558702",
     "http_parser/2.9.4#98d91690d6fd021e9e624218a85d9d97%1743410856.678",
@@ -32,9 +32,9 @@
   ],
   "python_requires": [],
   "overrides": {
-    "openssl/boring-2026-05-08@adguard/oss#dc61007e1b1896c5e090819d5be50df0": [
+    "openssl/boring-2026-05-08@adguard/oss#2e2280e85258e377e88d92132af79428": [
       null,
-      "openssl/boring-2026-05-08@adguard/oss#dc61007e1b1896c5e090819d5be50df0"
+      "openssl/boring-2026-05-08@adguard/oss#2e2280e85258e377e88d92132af79428"
     ]
   },
   "config_requires": []

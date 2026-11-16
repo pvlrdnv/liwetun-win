@@ -32,8 +32,11 @@ build failed during dependency source preparation on
 from `6ba8e0d`: Conan verified the BoringSSL download digest but interpreted its
 extensionless saved filename as ZIP. Added explicit `.tar.gz` filenames for both
 BoringSSL and libevent and a real `conan source` archive/checksum/patch check to
-the disposable recipe job. Revised recipe exports and candidate lock refresh
-are pending before the next full build. Subsequent service/network/package
+the disposable recipe job. Revised recipe exports and actual archive download/checksum/extraction/patch
+preparation **PASS** on
+[43917795754](https://github.com/pvlrdnv/liwetun-win/actions/runs/43917795754);
+[receipt](evidence/sdk-source-archives-707d870.json). Separate candidate lock
+refreshed from those verified exports; full rebuild pending. Subsequent service/network/package
 qualification remains pending.
 Prepared explicit candidate-manifest selection for those jobs; source manifest /
 lock digests, exact build run/commit and DLL digests remain required. No candidate
