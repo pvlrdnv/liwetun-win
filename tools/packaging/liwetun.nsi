@@ -50,9 +50,9 @@ Var ServiceAttempted
     SetErrorLevel 20
     Quit
   ${EndIf}
-  System::Call 'kernel32::CreateMutexW(p 0, i 0, w "Global\LiWeTun.Setup") p .r0'
+  System::Call 'kernel32::CreateMutexW(p 0, i 0, w "Global\LiWeTun.Setup") p .r0 ?e'
+  Pop $1
   StrCpy $SetupMutex $0
-  System::Call 'kernel32::GetLastError() i .r1'
   ${If} $SetupMutex == 0
   ${OrIf} $1 == 183
     SetErrorLevel 25
@@ -65,8 +65,8 @@ Function ${PREFIX}ServiceState
   StrCpy $3 2
   System::Call 'advapi32::OpenSCManagerW(p 0, p 0, i 1) p .r0'
   ${If} $0 != 0
-    System::Call 'advapi32::OpenServiceW(p r0, w "LiWeTun", i 4) p .r1'
-    System::Call 'kernel32::GetLastError() i .r2'
+    System::Call 'advapi32::OpenServiceW(p r0, w "LiWeTun", i 4) p .r1 ?e'
+    Pop $2
     ${If} $1 != 0
       StrCpy $3 1
       System::Call 'advapi32::CloseServiceHandle(p r1)'
@@ -89,8 +89,11 @@ Function .onInit
   IfFileExists "$SMPROGRAMS\LiWeTun.lnk" existing_metadata
   Call ServiceState
   Pop $0
-  ${If} $0 != 0
+  ${If} $0 == 1
     SetErrorLevel 22
+    Quit
+  ${ElseIf} $0 != 0
+    SetErrorLevel 24
     Quit
   ${EndIf}
   System::Call 'advapi32::RegOpenKeyExW(p 0x80000002, w "${UNINSTALL_KEY}", i 0, i 0x20119, *p .r0) i .r1'

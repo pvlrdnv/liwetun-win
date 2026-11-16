@@ -13,6 +13,7 @@ $passed = $false
 $stage = 'compiler_inputs'
 $checks = [Collections.Generic.List[string]]::new()
 $invocations = [Collections.Generic.List[object]]::new()
+$syntheticService = $false
 $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 function InvokeInstaller([string]$Executable, [string]$Arguments) {
     $process = [Diagnostics.Process]::new()
@@ -78,6 +79,39 @@ try {
     Remove-Item $sentinel
     Remove-Item $root
     $checks.Add('preexisting_directory_preserved')
+
+    $stage = 'preexisting_setup_mutex_denial'
+    $mutex = [Threading.Mutex]::new($false,'Global\LiWeTun.Setup')
+    try {
+        if ((InvokeInstaller $installer "/S /OWNER_SID=$sid") -ne 25) { throw 'Concurrent setup mutex was ignored' }
+    } finally { $mutex.Dispose() }
+    VerifyAbsent
+    $checks.Add('preexisting_setup_mutex_denied')
+
+    $stage = 'preexisting_service_denial'
+    $dummyPath = '"' + (Join-Path $payload 'liwetun_service.exe') + '" --service ' + $sid
+    $dummy = New-Service -Name LiWeTun -BinaryPathName $dummyPath -StartupType Manual
+    $syntheticService = $true
+    $dummy.Dispose()
+    if ((InvokeInstaller $installer "/S /OWNER_SID=$sid") -ne 22 -or (Test-Path $root)) { throw 'Existing service was admitted' }
+    $existing = Get-CimInstance Win32_Service -Filter "Name='LiWeTun'"
+    if ($existing.PathName -cne $dummyPath -or $existing.State -ne 'Stopped') { throw 'Existing stopped service was changed' }
+    sc.exe delete LiWeTun | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Synthetic service removal failed' }
+    $syntheticService = $false
+    VerifyAbsent
+    $checks.Add('preexisting_service_preserved_without_starting')
+
+    $stage = 'preexisting_registration_denial'
+    New-Item -Path $registry -Force | Out-Null
+    New-ItemProperty $registry -Name SyntheticPreserve -Value 'synthetic-preserve' | Out-Null
+    if ((InvokeInstaller $installer "/S /OWNER_SID=$sid") -ne 23 -or (Get-ItemPropertyValue $registry -Name SyntheticPreserve) -cne 'synthetic-preserve') { throw 'Existing uninstall key was changed' }
+    Remove-Item $registry
+    [IO.File]::WriteAllText($shortcut,'synthetic-preserve')
+    if ((InvokeInstaller $installer "/S /OWNER_SID=$sid") -ne 23 -or [IO.File]::ReadAllText($shortcut) -cne 'synthetic-preserve') { throw 'Existing shortcut was changed' }
+    Remove-Item $shortcut
+    VerifyAbsent
+    $checks.Add('preexisting_registration_and_shortcut_preserved')
 
     $stage = 'invalid_owner_rollback'
     if ((InvokeInstaller $installer '/S /OWNER_SID=S-1-0-0') -ne 31) { throw 'Invalid owner installation was not rejected' }
@@ -149,7 +183,8 @@ try {
         if ($service) {
             $service.Dispose()
             $configuration = Get-CimInstance Win32_Service -Filter "Name='LiWeTun'"
-            $expected = '"' + (Join-Path $root 'liwetun_service.exe') + '" --service '
+            $serviceDirectory = if ($syntheticService) { $payload } else { $root }
+            $expected = '"' + (Join-Path $serviceDirectory 'liwetun_service.exe') + '" --service '
             if (!$configuration.PathName.StartsWith($expected,[StringComparison]::OrdinalIgnoreCase)) { throw 'Unexpected fixture service owner path' }
             Stop-Service LiWeTun -ErrorAction Stop
             sc.exe delete LiWeTun | Out-Null

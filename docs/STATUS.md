@@ -163,6 +163,12 @@ Fixed registry command quoting, made explicit failure exits run rollback before
 Quit, and enabled compiler warnings-as-errors. Closed invocation exit codes and
 pre-cleanup presence facts now accompany failures. Installer qualification remains
 pending, including normal uninstall and desktop owner selection.
+Run 43845886814 identified the actual early failure: setup returned service-
+preflight code 22 before creating any files. NSIS System's documented `?e`
+must capture a Win32 last-error atomically; a separate plugin call can lose
+ERROR_SERVICE_DOES_NOT_EXIST. Both service and mutex probes now use `?e`.
+The fixture additionally tests mutex, preexisting stopped service, registry and
+shortcut preservation. The core/service admission checks are unchanged.
 
 ## Current stage
 
