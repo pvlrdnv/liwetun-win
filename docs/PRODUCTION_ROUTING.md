@@ -1,4 +1,4 @@
-# Production routing configuration — route lifecycle, not Internet acceptance
+# Production routing configuration and bounded traffic evidence
 
 Production means both `LIWETUN_TEST_NO_GLOBAL_ROUTES` and
 `LIWETUN_TEST_TUN_NETWORK` are OFF. It does not mean release qualification.
@@ -41,8 +41,24 @@ lifecycle evidence under the Windows dynamic-session contract, not an independen
 enumeration of individual filters or an effective DNS-leak test.
 [Windows dynamic-session semantics](https://learn.microsoft.com/en-us/windows/win32/api/fwpmtypes/ns-fwpmtypes-fwpm_session0).
 
-Remaining gates: successful ordinary unbound traffic to a real synthetic
-endpoint, effective DNS leak prevention, IPv6 payload delivery, crash/network-
+The opt-in network production case uses the official endpoint's SOCKS5 forwarder
+to separate server egress from client routes on the same disposable host. Its
+fixed synthetic account and exact HTTPS/DNS destination allowlist are mandatory.
+Only server egress binds the physical interface; client sockets remain unbound
+and no test host routes are added. TCP control binds loopback; the UDP relay
+binds the same-host private address, accepting only loopback or that exact host.
+No payloads, DNS names or raw endpoint/core output are retained.
+
+Run [43861649225](https://github.com/pvlrdnv/liwetun-win/actions/runs/43861649225)
+passed ordinary HTTPS with normal TLS and TUN-selected source, but DNS return
+failed despite a synthetic answer sent by the forwarder. Overall result **FAIL**;
+all route/DNS/adapter and WFP session baselines restored without watchdog action.
+The private-address UDP relay change is a pending fixture experiment, not a
+client DNS fix or a pass. The report now distinguishes timeout from a received
+invalid reply using closed booleans and a numeric OS error only.
+
+Remaining gates: ordinary-mode DNS and H3 traffic, effective DNS leak prevention,
+IPv6 payload delivery, crash/network-
 change/suspend recovery and installed Windows 10/11 desktop acceptance. These
 route/sample observations cannot establish any of those. Existing H2/H3/DNS
 payload acceptance uses bounded, explicitly interface-bound sockets and is

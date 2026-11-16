@@ -1,4 +1,4 @@
-"""Loopback-only CI SOCKS5 exit for the unmodified official endpoint.
+"""Same-host CI SOCKS5 exit for the unmodified official endpoint.
 
 Only the fixed synthetic account and the task's exact HTTPS/DNS destinations
 are accepted. Only server-side egress binds the physical interface; the client
@@ -37,9 +37,11 @@ def physical_socket(kind, index):
 
 
 class Forwarder:
-    def __init__(self, origin, dns, index, factory=physical_socket, port=38445):
+    def __init__(self, origin, dns, index, factory=physical_socket, port=38445,
+                 udp_bind_host='127.0.0.1'):
         self.origin, self.dns, self.index = origin, dns, index
         self.factory = factory
+        self.udp_bind_host = udp_bind_host
         self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listener.bind(('127.0.0.1', port))
         self.listener.listen(16)
@@ -108,11 +110,11 @@ class Forwarder:
     def udp(self, client):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as relay, \
                 self.factory(socket.SOCK_DGRAM, self.index) as upstream:
-            relay.bind(('127.0.0.1', 0))
+            relay.bind((self.udp_bind_host, 0))
             relay.settimeout(2)
             upstream.settimeout(2)
             port = relay.getsockname()[1]
-            client.sendall(b'\x05\x00\x00\x01\x7f\x00\x00\x01' + struct.pack('!H', port))
+            client.sendall(b'\x05\x00\x00\x01' + socket.inet_aton(self.udp_bind_host) + struct.pack('!H', port))
             deadline = time.monotonic() + 30
             while not self.stop.is_set() and time.monotonic() < deadline:
                 readable, _, _ = select.select([client, relay], [], [], .2)
@@ -121,7 +123,7 @@ class Forwarder:
                 if relay not in readable:
                     continue
                 packet, sender = relay.recvfrom(4106)
-                if sender[0] != '127.0.0.1' or len(packet) < 10 or packet[:4] != b'\x00\x00\x00\x01':
+                if sender[0] not in ('127.0.0.1', self.udp_bind_host) or len(packet) < 10 or packet[:4] != b'\x00\x00\x00\x01':
                     self.count('destination_denied')
                     continue
                 destination = socket.inet_ntoa(packet[4:8]), struct.unpack('!H', packet[8:10])[0]
@@ -189,7 +191,9 @@ def main():
     index = data['physical_index']
     if not origin.is_global or not dns.is_private or dns.is_loopback or type(index) is not int or not 1 <= index <= 0xffffffff:
         raise RuntimeError('invalid_fixture_inputs')
-    proxy = Forwarder((str(origin), 443), (str(dns), 38553), index)
+    # WSL1's connected UDP uses the same-host private address for both directions.
+    # TCP control remains loopback-only; no public UDP source is admitted.
+    proxy = Forwarder((str(origin), 443), (str(dns), 38553), index, udp_bind_host=str(dns))
     thread = threading.Thread(target=proxy.serve, daemon=True)
     thread.start()
     try:

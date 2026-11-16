@@ -51,6 +51,7 @@ def ordinary_https(origin, addresses):
 
 def ordinary_dns(target, addresses):
     source_matches = False
+    observation = dict(reply_received=False, id_matches=False, one_answer=False, payload_matches=False)
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as raw:
             raw.settimeout(5)
@@ -60,10 +61,13 @@ def ordinary_dns(target, addresses):
             packet = b'\x37\x19\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00' + question
             raw.send(packet)
             answer = raw.recv(4096)
-            return (answer[:2] == packet[:2] and answer[6:8] == b'\x00\x01'
-                    and answer.endswith(b'\xc0\x00\x02\x7b')), source_matches
-    except OSError:
-        return False, source_matches
+            observation.update(reply_received=True, id_matches=answer[:2] == packet[:2],
+                               one_answer=answer[6:8] == b'\x00\x01',
+                               payload_matches=answer.endswith(b'\xc0\x00\x02\x7b'))
+            return all(observation.values()), source_matches, observation
+    except OSError as error:
+        observation['os_code'] = error.errno
+        return False, source_matches, observation
 
 
 def main():
@@ -167,7 +171,7 @@ def main():
         result.update(tls_https_delivered=delivered, https_socket_source_is_tun=source)
         stage = 'ordinary_dns'
         dns_before = totals()
-        dns, dns_source = ordinary_dns(info['dns'][0], addresses)
+        dns, dns_source, dns_observation = ordinary_dns(info['dns'][0], addresses)
         dns_after = totals()
         for _ in range(10):
             if dns_after[protocol] > dns_before[protocol]:
@@ -179,6 +183,7 @@ def main():
         dns_delta = {key: dns_after[key] - dns_before[key] for key in before}
         proxy = forwarder.command('stats')
         result.update(dns_fixture_answer=dns, dns_socket_source_is_tun=dns_source,
+                      dns_observation=dns_observation,
                       endpoint_bytes_by_transport=delta, dns_endpoint_bytes_by_transport=dns_delta,
                       forwarder_counts=proxy, dns_fixture_counts=endpoint.command('stats'))
         stage = 'stop_and_restore'

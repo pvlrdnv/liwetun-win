@@ -275,15 +275,32 @@ open. The WFP probe is not linked into the shipped GUI or service.
 
 Ordinary-traffic fixture continuation: the official endpoint's SOCKS5 forwarder
 can separate its egress from the same-host Windows client's routing. Added a
-loopback-only, synthetic-authenticated, destination-allowlisted test forwarder;
+same-host, synthetic-authenticated, destination-allowlisted test forwarder;
 only its egress sockets bind the original physical interface. Four live local
 TCP/UDP protocol tests PASS, including wrong auth, denied destinations and UDP
 fragment rejection. A new opt-in single IPv4 case uses production service flags,
 ordinary unbound client sockets, selected TUN route/source checks, normal HTTPS
 TLS, synthetic DNS and a 60-second independently armed deadline. No test host
 routes are added and the official endpoint binary is unchanged. This new fixture
-is pending actual Windows proof; it does not qualify the full failure/IPv6/desktop
+does not qualify the full failure/IPv6/desktop
 matrix. The existing bounded network workflow remains the default.
+
+First ordinary-traffic run on `f2a1a74`,
+[43861649225](https://github.com/pvlrdnv/liwetun-win/actions/runs/43861649225):
+ordinary unbound HTTPS with normal TLS and a TUN source **PASS**. DNS **FAIL**:
+the synthetic question reached the DNS fixture and the forwarder sent its reply,
+but no reply bytes were observed at the endpoint/client. Overall case failed;
+route/DNS/adapter and SDK WFP sessions restored, watchdog did not intervene.
+Investigating the WSL1 connected-UDP return path: TCP control stays loopback,
+UDP relay now advertises/binds the same-host private address and admits only
+loopback or that exact host as source. No public relay, test client host routes,
+TLS relaxation or app routing changes. Local four protocol tests PASS with a
+connected UDP client; Python compilation PASS. Windows rerun pending.
+
+The unchanged bounded regression on `f797465`,
+[43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),
+passed 18 service checks and all six H2/H3/DNS/auth/CA/UI-death/crash network cases
+with final restoration. It does not establish ordinary-mode DNS or desktop readiness.
 
 ## Current stage
 

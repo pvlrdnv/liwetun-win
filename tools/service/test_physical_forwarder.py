@@ -108,10 +108,11 @@ class ForwarderTest(unittest.TestCase):
             header = b'\x00\x00\x00\x01' + socket.inet_aton(address[0]) + struct.pack('!H', address[1])
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
                 udp.settimeout(2)
-                udp.sendto(header + b'dns-fixture', relay)
+                udp.connect(relay)  # Match the official endpoint's connected UDP.
+                udp.send(header + b'dns-fixture')
                 self.assertEqual(udp.recv(4096), header + b'ack:dns-fixture')
                 udp.settimeout(.3)
-                udp.sendto(b'\x00\x00\x01' + header[3:] + b'dns-fixture', relay)
+                udp.send(b'\x00\x00\x01' + header[3:] + b'dns-fixture')
                 with self.assertRaises(socket.timeout):
                     udp.recv(4096)
             self.assertEqual(proxy.stats()['udp_forwarded'], 1)
