@@ -113,5 +113,5 @@ jobs:
         with:
           name: sdk-development-runtime-not-for-release
           path: build/sdk-runtime/
-          retention-days: 3
+          retention-days: 14
           if-no-files-found: error

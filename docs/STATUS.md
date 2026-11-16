@@ -1,4 +1,4 @@
-# Development checkpoint — 2026-11-15
+# Development checkpoint — 2026-11-16
 
 ## TUN network stage — bounded CI PASS
 
@@ -29,8 +29,12 @@ including DPAPI roundtrip and profile restoration without auto-connect.
 
 SDK build continuation: enforced Conan recipe input lock, output/graph drift
 checks and bounded packaged-notice collection implemented; five local tests and
-fresh-source preparation passed. Updated SDK rebuild remains pending; this does
-not qualify licenses or change the earlier network artifact. See
+fresh-source preparation passed. Updated SDK build **PASS** on `37519a8`,
+[run 43752644532](https://github.com/pvlrdnv/liwetun-win/actions/runs/43752644532).
+Its downloaded DLL hashes are pinned in `native/sdk/runtime.json`; network
+requalification of this new binary is pending. Notice collection found 13 missing
+package notice sets out of 28 graph nodes, retained as explicit release blockers.
+This does not qualify licenses or change the earlier network artifact. See
 [dependency closure](DEPENDENCY_CLOSURE.md).
 
 Owner-test preparation: safe report summary v2 adds bounded Windows API build /

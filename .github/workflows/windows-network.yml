@@ -5,7 +5,7 @@ on:
       sdk_run_id:
         description: Successful SDK qualification run in this repository
         required: true
-        default: '43721746165'
+        default: '43752644532'
         type: string
       diagnostic_only:
         description: H2 diagnostic only (never a complete qualification)
@@ -61,11 +61,16 @@ jobs:
       - name: Fetch previously qualified SDK from this repository
         run: |
           if ($env:SDK_RUN_ID -notmatch '^[0-9]{1,20}$') { throw 'Invalid SDK run ID' }
+          $pin = Get-Content native/sdk/runtime.json -Raw | ConvertFrom-Json
+          if ($env:SDK_RUN_ID -ne [string]$pin.source_run) { throw 'SDK run does not match reviewed runtime manifest' }
           $run = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:SDK_RUN_ID" | ConvertFrom-Json
-          if ($LASTEXITCODE -ne 0 -or $run.name -ne 'Windows SDK qualification' -or $run.conclusion -ne 'success') { throw 'SDK run not qualified' }
+          if ($LASTEXITCODE -ne 0 -or $run.name -ne 'Windows SDK qualification' -or $run.conclusion -ne 'success' -or $run.head_sha -ne $pin.source_commit) { throw 'SDK run not qualified' }
           gh run download $env:SDK_RUN_ID --repo $env:GITHUB_REPOSITORY --name sdk-development-runtime-not-for-release --dir build/sdk-runtime
           if ($LASTEXITCODE -ne 0) { throw 'SDK download failed' }
-          if ((Get-FileHash build/sdk-runtime/trusttunnel.dll -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'c4c672d7553a6ba2721e48abdac88eeb8af8be5dbd99053301ad992254e90a23') { throw 'SDK digest mismatch' }
+          foreach ($file in @('trusttunnel.dll', 'wintun.dll')) {
+            $expected = $pin.files.PSObject.Properties[$file].Value
+            if ($expected -notmatch '^[0-9a-f]{64}$' -or (Get-FileHash (Join-Path build/sdk-runtime $file) -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'SDK digest mismatch' }
+          }
       - name: Prepare task-only WSL1 endpoint with pinned image and binary
         run: |
           Invoke-WebRequest https://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/ubuntu-base-22.04.5-base-amd64.tar.gz -OutFile build/ubuntu-base.tar.gz

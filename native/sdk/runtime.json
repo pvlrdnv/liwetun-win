@@ -1,0 +1,11 @@
+{
+  "source_run": 43752644532,
+  "source_commit": "37519a8500d0834660268e434f9aedaaff8b9c82",
+  "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+  "privacy_policy_version": 1,
+  "files": {
+    "trusttunnel.dll": "6778a4816249a08fe0d32c4940d2c09ff530b284e91effff98989bc67462f606",
+    "wintun.dll": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce"
+  },
+  "release_qualified": false
+}
