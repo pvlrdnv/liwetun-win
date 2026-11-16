@@ -84,3 +84,12 @@ archived bodies; 13 source-supplement sets remain explicit. The separate
 source/lock digests. Both candidate integrity and unchanged offline GUI bundle
 checks pass. Service, ordinary network and package requalification remain open;
 this compilation success alone is not a working-tunnel or release claim.
+
+Candidate requalification subsequently passed the reviewed service, installer,
+ordinary IPv4 and synthetic IPv6/AAAA coverage; see
+[evidence and retained initial failures](evidence/sdk-source-requalification.json).
+A CI adapter-removal observation race was corrected without changing product
+cleanup. Three lease-death confirmations and ordinary Stop passed the corrected
+strict observer. The candidate runtime receipt records this limited CI scope;
+Windows 10/11, native IPv6 exit, trusted release signing and legal review remain
+open. The original default runtime/lock are preserved separately.

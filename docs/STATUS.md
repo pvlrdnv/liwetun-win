@@ -1,89 +1,52 @@
 # Development checkpoint — 2026-11-16
 
-## Resumed — dependency source-pin candidate
+## Active — client subscription integration next
 
-Work resumed at the owner's request. Latest H2/H3 synthetic IPv6 + AAAA runs
-completed successfully; the updated notice-aware installer also passed.
-LikeWeb, production and the owner's network/trust configuration
-remain unchanged. No owner-installable release has been produced.
+Work continues in this independent repository. LikeWeb, production and the
+owner's corporate tunnel/network/trust configuration remain unchanged. No
+owner-installable release has been produced.
 
-Prepared a separate candidate for four Common recipes: libevent uses an exact
-commit archive + SHA256; libsodium, nghttp2 1.56.0 and nghttp3 1.0.0 use immutable
-Git commits from archived notice provenance. Input/output recipe digests are
-pinned, all inputs validate before writes, and each changed file is labelled.
-Three local tamper/path/lock-isolation tests and exact preparation against all
-four upstream recipe files PASS. Python/YAML/diff checks PASS. Windows Conan
-original/candidate export verification PASS on
-[43913812035](https://github.com/pvlrdnv/liwetun-win/actions/runs/43913812035).
-Extended the candidate to seven recipes: root Common now pins its full commit,
-root DnsLibs replaces an abbreviated checkout with its full commit, and BoringSSL
-uses its exact official GitHub mirror archive with SHA256. Two original Gitiles
-archives had changing tar metadata but identical 8582 file contents; the mirror
-has the identical file set and bodies. Four local tests and all seven exact
-upstream input/output digest checks PASS. Expanded Windows exports **PASS** on
-[43915706506](https://github.com/pvlrdnv/liwetun-win/actions/runs/43915706506);
-[receipt](evidence/sdk-source-pins-538fe45.json). Separate
-`native/sdk/conan-sources.lock` records only the seven replacements and matching
-BoringSSL override. Added optional candidate SDK build with fresh recipe export /
-recorded-lock verification. Both fresh-source preparation profiles and nine local
-source-pin/closure tests PASS; Python/YAML/diff checks PASS. Full candidate DLL
-build failed during dependency source preparation on
-[43916079717](https://github.com/pvlrdnv/liwetun-win/actions/runs/43916079717)
-from `6ba8e0d`: Conan verified the BoringSSL download digest but interpreted its
-extensionless saved filename as ZIP. Added explicit `.tar.gz` filenames for both
-BoringSSL and libevent and a real `conan source` archive/checksum/patch check to
-the disposable recipe job. Revised recipe exports and actual archive download/checksum/extraction/patch
-preparation **PASS** on
-[43917795754](https://github.com/pvlrdnv/liwetun-win/actions/runs/43917795754);
-[receipt](evidence/sdk-source-archives-707d870.json). Separate candidate lock
-refreshed from those verified exports. Corrected full rebuild **PASS** on
-[43918219945](https://github.com/pvlrdnv/liwetun-win/actions/runs/43918219945)
-from `9c8bfd5`. Downloaded DLL hashes, exact recipe lock, actual dependency graph,
-privacy/source-profile digests and all new packaged notice bodies verified.
-[Build receipt](evidence/sdk-sources-43918219945.json). Separate
-`runtime-sources.json` admits only this candidate; active runtime stays unchanged.
-All 15 packaged notice sets match archived bodies; the remaining 13 still use
-explicit archived source supplements. Candidate notice bridge and unchanged GUI
-notice bundle PASS. Ten separate service/security, six ordinary IPv4, two
-synthetic IPv6 + AAAA and installer jobs dispatched from `51ded08` using only the
-candidate manifest; [case run IDs](evidence/sdk-source-requalification.json).
-Nine jobs PASS: 18 service checks, 14 installer groups, H2/H3 Stop,
-service-crash, wrong-auth/CA and both synthetic IPv6 + AAAA cases. Exact SDK input
-receipts and installer source/notice-manifest bytes verified. One lease-death
-case failed at post-termination observation after HTTPS/DNS and forced exit;
-network/DNS/adapter restoration PASS without watchdog, final WFP measurement
-unavailable. No all-cases-pass claim. Added only closed probe-stage/query-code
-and failure-reason diagnostics for a focused rerun; no retry or security-check
-relaxation. Three diagnostic repeats: two PASS; one reproduced
-`fixture_system_command_failed` during restoration observation, before the WFP
-probe. All three restored routes/DNS/adapter without watchdog. The old poll used
-full adapter details / per-interface route queries while that adapter was being
-removed and aborted on any failed CIM observation. Changed only the CI observer:
-check adapter absence before/after an exact global DNS/route snapshot, treat a
-failed query as unknown within the same bounded 20-attempt window, and still fail
-persistent errors or mismatches. Closed attempt/failure counters added. Four local
-transient/persistent/mismatch/reappearance checks PASS; Windows recheck pending.
-The client/service/SDK cleanup implementation is unchanged.
-Prepared explicit candidate-manifest selection for those jobs; source manifest /
-lock digests, exact build run/commit and DLL digests remain required. No candidate
-runtime manifest is generated until its successful DLL artifact is inspected.
-Prepared a candidate notice bridge that checks exact dependency substitutions
-and rejects new packaged notice bodies; source supplements remain explicit.
-Twelve local notice/source-pin/closure checks and unchanged original UI notice
-bundle PASS. Windows notice-integrity and three guard tests also **PASS** on
-[43918712779](https://github.com/pvlrdnv/liwetun-win/actions/runs/43918712779),
-[receipt](evidence/windows-notices-9c8bfd5.json). Missing candidate runtime is
-rejected with closed diagnostics. Actual candidate notice comparison subsequently PASS as recorded above.
-See [source pin scope](SDK_SOURCE_PINS.md).
-The active Conan lock and qualified DLL/runtime pins remain unchanged.
+Immutable-source SDK candidate **built and requalified on disposable Windows CI**.
+Seven recipes pin exact commits / archive checksums, with exact input/output
+recipe digests and Conan lock verification. Both archive preparations were
+executed before the corrected full build:
+[43918219945](https://github.com/pvlrdnv/liwetun-win/actions/runs/43918219945),
+[build/source receipt](evidence/sdk-sources-43918219945.json).
+`native/sdk/runtime-sources.json` records its actual DLL hashes separately from
+the unchanged original `runtime.json`. All 15 packaged notice sets match archived
+bodies; 13 explicit source supplements remain. Candidate notice checks and the
+unchanged 60-text offline GUI bundle PASS; distribution rights remain open.
 
-Pinned SDK/GUI/diagnostic endpoint artifacts were checked and remain available.
-The original SDK runtime artifact expires 2026-11-18 19:55 UTC; GUI and repaired
-diagnostic endpoint artifacts expire 2026-11-30. Before later continuation verify
-availability again;
-temporary local tools/caches and CI artifacts can expire. Preserve all digest /
-source-run checks; rebuild and requalify if needed. Trusted release signing,
-Windows 10/11 desktop acceptance and final distribution audit remain open.
+[Candidate qualification and all run IDs](evidence/sdk-source-requalification.json):
+18 service checks, 14 installer groups, H2/H3 ordinary HTTPS/DNS, service crash,
+wrong-auth/CA, lease-client death and H2/H3 synthetic IPv6 TCP/UDP + AAAA PASS.
+Every network case restored routes/DNS/adapter/WFP without watchdog action.
+Installer includes the exact source-pin manifest, candidate notice receipt and
+SDK modification notice; it still uses ephemeral CI signing only.
+
+Two historical lease observations failed before WFP measurement because a
+PowerShell network observation failed during adapter removal. Traffic and final
+network cleanup had passed. The CI observer now avoids per-interface queries
+while removing that interface and treats a failed observation as unknown within
+the same bounded 20 attempts. It still requires exact baseline DNS/routes and
+adapter absence before/after the snapshot; persistent errors cannot pass.
+Four local guard tests PASS. Three independent lease-death confirmations plus
+ordinary Stop PASS from `ebdce3c`, with final WFP restoration in each. Original
+failed reports remain archived; no application/service/SDK cleanup change.
+
+Current work moves to the missing client subscription path: the synthetic v1
+parser/reconciliation exists, but GUI application, protected cache and HTTPS
+refresh are not integrated. No LikeWeb API/server change or production fetch is
+authorized or required for client-side development. Other open original-scope
+work includes route-bound health evidence, sleep/network-change recovery, tray,
+Hysteria2/Xray and release update handling. A readiness estimate for a basic
+manual-import TT client must not be presented as completion of the full handoff.
+
+Trusted common-leaf release signing, final distribution audit and separate
+Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
+do not qualify those systems. New SDK artifacts retain for 14 days; GUI and
+repaired diagnostic endpoint artifacts expire 2026-11-30. Recheck availability
+and preserve all source-run/digest guards before reuse.
 
 ## Latest checkpoint — six basic ordinary IPv4 CI cases PASS
 

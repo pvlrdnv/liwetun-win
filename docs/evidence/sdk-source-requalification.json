@@ -98,5 +98,54 @@
       "passed": true,
       "evidence": "sdk-source-check-43923728418.json"
     }
-  ]
+  ],
+  "confirmation_runs": [
+    {
+      "case": "http2_lease-death",
+      "run_id": 43924801735,
+      "passed": true,
+      "evidence": "sdk-source-check-43924801735.json",
+      "restoration_observation": {
+        "attempts": 1,
+        "query_failures": 0,
+        "coherent_clean_observed": true
+      }
+    },
+    {
+      "case": "http2_lease-death",
+      "run_id": 43924810145,
+      "passed": true,
+      "evidence": "sdk-source-check-43924810145.json",
+      "restoration_observation": {
+        "attempts": 2,
+        "query_failures": 0,
+        "coherent_clean_observed": true
+      }
+    },
+    {
+      "case": "http2_lease-death",
+      "run_id": 43924817783,
+      "passed": true,
+      "evidence": "sdk-source-check-43924817783.json",
+      "restoration_observation": {
+        "attempts": 2,
+        "query_failures": 0,
+        "coherent_clean_observed": true
+      }
+    },
+    {
+      "case": "http2_stop",
+      "run_id": 43924824626,
+      "passed": true,
+      "evidence": "sdk-source-check-43924824626.json",
+      "restoration_observation": {
+        "attempts": 1,
+        "query_failures": 0,
+        "coherent_clean_observed": true
+      }
+    }
+  ],
+  "reviewed_case_coverage_passed": true,
+  "historical_failures_retained": true,
+  "observer_fix_commit": "ebdce3c9de0f159c83e4fda28e67b6515036c04b"
 }
