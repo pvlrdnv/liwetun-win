@@ -1,5 +1,6 @@
 #include "status_cli.h"
 #include "client.h"
+#include <windows.h>
 #include <string>
 
 int PrintServiceStatus() {
