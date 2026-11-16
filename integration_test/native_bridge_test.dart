@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:liwetun/app.dart';
@@ -24,6 +25,19 @@ void main() {
     expect(environment.major, 10);
     expect(environment.build, greaterThanOrEqualTo(20348));
     expect(environment.appArchitecture, AppArchitecture.x64);
+    final cli = await Process.run(Platform.resolvedExecutable, [
+      '--service-status',
+    ]);
+    expect(
+      cli.exitCode,
+      9,
+    ); // Unsigned workspace is rejected before SCM/pipe access.
+    expect(jsonDecode(cli.stdout as String), {
+      'code': 9,
+      'state': null,
+      'runtime_ready': null,
+      'core_state': null,
+    });
     final capabilities = await WindowsTrustTunnel.channel
         .invokeMapMethod<String, dynamic>('capabilities');
     expect(capabilities?['canInspect'], true);

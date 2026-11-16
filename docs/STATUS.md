@@ -67,8 +67,16 @@ race was found: disconnect after completed write can discard unread reply bytes.
 Bounded/cancellable peer-close waiting and a deliberately delayed-reader
 regression check passed in both updated Windows runs above. Source notice
 supplements now cover all 13 missing package sets; 38 SDK/Wintun/related files
-and 22 Rust files have integrity/dependency checks. Final distribution audit and
-Windows notice-check workflow remain pending.
+and 22 Rust files have integrity/dependency checks. The Windows notice-check
+workflow **PASS** on `a5f9d29`,
+[run 43816739851](https://github.com/pvlrdnv/liwetun-win/actions/runs/43816739851).
+Final distribution audit remains pending.
+
+Package payload preparation: read-only GUI status command, manifest-checked GUI
+artifact staging, production-mode service + app-local CRT and notice assembly,
+and a restricted medium-integrity GUI query fixture are implemented. Windows
+qualification is pending. This is not an installer or owner-machine test package;
+see [PACKAGE_PAYLOAD.md](PACKAGE_PAYLOAD.md).
 
 ## Current stage
 

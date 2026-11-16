@@ -1,0 +1,69 @@
+name: Windows package payload qualification
+on:
+  workflow_dispatch:
+    inputs:
+      gui_run_id:
+        description: Successful Windows native import run with unsigned GUI runtime artifact
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  payload:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: x64
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+      - name: Fetch verified GUI and pinned SDK inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GUI_RUN_ID: ${{ inputs.gui_run_id }}
+        run: |
+          if ($env:GUI_RUN_ID -notmatch '^[0-9]{1,20}$') { throw 'Invalid GUI run ID' }
+          $gui = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:GUI_RUN_ID" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $gui.name -ne 'Windows native import check' -or $gui.conclusion -ne 'success') { throw 'GUI run not qualified' }
+          gh run download $env:GUI_RUN_ID --repo $env:GITHUB_REPOSITORY --name unsigned-gui-runtime-ci-only --dir build/gui-runtime
+          if ($LASTEXITCODE -ne 0) { throw 'GUI download failed' }
+          gh run download $env:GUI_RUN_ID --repo $env:GITHUB_REPOSITORY --name unsigned-gui-runtime-provenance --dir build/gui-provenance
+          if ($LASTEXITCODE -ne 0) { throw 'GUI provenance download failed' }
+          $provenance = Get-Content build/gui-provenance/gui-runtime-provenance.json -Raw | ConvertFrom-Json
+          if ($provenance.source_commit -ne $gui.head_sha -or $provenance.kind -ne 'unsigned_gui_ci_only' -or $provenance.release_ready -ne $false) { throw 'GUI provenance mismatch' }
+          $pin = Get-Content native/sdk/runtime.json -Raw | ConvertFrom-Json
+          $sdk = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$($pin.source_run)" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $sdk.name -ne 'Windows SDK qualification' -or $sdk.conclusion -ne 'success' -or $sdk.head_sha -ne $pin.source_commit) { throw 'SDK source not qualified' }
+          gh run download $pin.source_run --repo $env:GITHUB_REPOSITORY --name sdk-development-runtime-not-for-release --dir build/sdk-runtime
+          if ($LASTEXITCODE -ne 0) { throw 'SDK download failed' }
+      - name: Build production-mode service and restricted-token CI helper
+        run: |
+          rustup toolchain install 1.95.0 --profile minimal
+          if ($LASTEXITCODE -ne 0) { throw 'Rust installation failed' }
+          cmake -S native/service -B build/package-service -A x64 -DLIWETUN_BUILD_PACKAGE_PROBE=ON
+          if ($LASTEXITCODE -ne 0) { throw 'Production service configure failed' }
+          cmake --build build/package-service --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { throw 'Production service build failed' }
+          foreach ($flag in @('LIWETUN_TEST_NO_GLOBAL_ROUTES', 'LIWETUN_TEST_TUN_NETWORK')) {
+            if ((Get-Content build/package-service/CMakeCache.txt) -notcontains ($flag + ':BOOL=OFF')) { throw 'Production service contains a test network mode' }
+          }
+          python tools/sdk/verify_notices.py
+          if ($LASTEXITCODE -ne 0) { throw 'Candidate notice integrity failed' }
+      - name: Assemble and test signed payload without starting any tunnel
+        run: ./tools/packaging/qualify.ps1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: package-payload-safe-evidence
+          path: build/package-evidence/
+          retention-days: 14
+          if-no-files-found: warn

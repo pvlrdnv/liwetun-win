@@ -54,6 +54,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Rust notice collection failed' }
       - name: Analyze application
         run: flutter analyze --no-pub
+      - name: Verify archived dependency notice candidates
+        run: |
+          python tools/sdk/verify_notices.py
+          if ($LASTEXITCODE -ne 0) { throw 'Archived notice integrity failed' }
       - name: Run application and privacy unit tests
         run: flutter test --no-pub --reporter expanded
       - name: Build Windows release shell with static native parser
@@ -78,6 +82,32 @@ jobs:
             release_ready = $false
           }
           $report | ConvertTo-Json | Set-Content -Encoding utf8 build/windows-import-evidence.json
+      - name: Stage unsigned GUI runtime for isolated package qualification
+        run: |
+          $source = 'build/windows/x64/runner/Release'
+          $destination = 'build/unsigned-gui-runtime'
+          if (Test-Path $destination) { throw 'Fresh GUI staging directory required' }
+          New-Item -ItemType Directory $destination | Out-Null
+          foreach ($entry in Get-ChildItem $source -Force) {
+            if ($entry.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Unexpected GUI staging reparse point' }
+            if ($entry.PSIsContainer) {
+              if ($entry.Name -ne 'data') { throw 'Unexpected GUI runtime directory' }
+              if (Get-ChildItem $entry.FullName -Recurse -Force | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }) { throw 'Unexpected GUI runtime reparse point' }
+              Copy-Item $entry.FullName $destination -Recurse
+            } elseif ($entry.Name -eq 'liwetun.exe' -or $entry.Extension -eq '.dll') {
+              Copy-Item $entry.FullName $destination
+            } elseif ($entry.Extension -notin @('.pdb', '.lib', '.exp', '.ilk')) {
+              throw 'Unexpected GUI build output'
+            }
+          }
+          foreach ($file in @('liwetun.exe', 'flutter_windows.dll', 'data/app.so', 'data/icudtl.dat', 'data/flutter_assets/NOTICES.Z')) {
+            if (!(Test-Path (Join-Path $destination $file) -PathType Leaf)) { throw 'Incomplete GUI runtime' }
+          }
+          $root = (Resolve-Path $destination).Path
+          $files = @(Get-ChildItem $destination -File -Recurse | ForEach-Object {
+            @{file=[IO.Path]::GetRelativePath($root,$_.FullName).Replace('\','/'); sha256=(Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}
+          })
+          @{source_commit='${{ github.sha }}'; kind='unsigned_gui_ci_only'; release_ready=$false; files=$files} | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 build/gui-runtime-provenance.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
@@ -90,4 +120,16 @@ jobs:
           name: windows-import-evidence
           path: build/windows-import-evidence.json
           retention-days: 7
+          if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: unsigned-gui-runtime-ci-only
+          path: build/unsigned-gui-runtime/
+          retention-days: 14
+          if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: unsigned-gui-runtime-provenance
+          path: build/gui-runtime-provenance.json
+          retention-days: 14
           if-no-files-found: error
