@@ -321,6 +321,17 @@ readiness and aggregates only the owned endpoint child's UDP receive queues;
 it exports no addresses, inode IDs, descriptors or raw output. Local own-child
 queue check PASS (queued then consumed, unrelated sender excluded), syntax PASS.
 WSL1 execution of these additional observations is pending.
+Run `1071e79`,
+[43877097450](https://github.com/pvlrdnv/liwetun-win/actions/runs/43877097450),
+passed edge-triggered epoll boundary checks before/during SDK operation; ordinary
+HTTPS passed and DNS still timed out. Overall **FAIL**, cleanup/WFP restored.
+WSL1 exposed zero matching endpoint UDP descriptors in its proc tables, which
+does not prove an empty receive queue; zero matches are now explicitly unknown.
+Next fixture experiment keeps the endpoint's UDP relay inside WSL1, chains only
+HTTPS to the Windows physical exit, and requires the private synthetic DNS route
+to select the physical interface. No client host routes or app network changes.
+Five local protocol checks PASS, including authenticated chained TCP delivery;
+Python syntax/diff checks PASS. Actual Windows experiment pending.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

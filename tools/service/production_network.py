@@ -92,7 +92,8 @@ def main():
     report.parent.mkdir(exist_ok=True, parents=True)
     result = {'passed': False, 'mode': 'single_production_unbound_ipv4', 'protocol': protocol,
               'network_test_modes_enabled': False, 'client_host_routes_added': False,
-              'server_forwarder_egress_bound_physical': True,
+              'server_https_egress_bound_physical': True,
+              'endpoint_udp_relay': 'wsl_local',
               'full_matrix_qualified': False, 'release_ready': False}
     directory = ROOT / 'build/network-fixture'
     directory.mkdir(exist_ok=True, parents=True)
@@ -176,6 +177,11 @@ def main():
         result['ordinary_origin_route_is_tun'] = selected
         if not info or not selected:
             raise RuntimeError('production_route_not_selected')
+        os.environ['LIWETUN_CI_DNS_HOST'] = str(dns_host)
+        dns_physical = ps(f"@(Find-NetRoute -RemoteIPAddress $env:LIWETUN_CI_DNS_HOST | Where-Object InterfaceIndex -eq {int(physical['index'])}).Count -gt 0 | ConvertTo-Json -Compress")
+        result['fixture_dns_private_route_is_physical'] = dns_physical
+        if not dns_physical:
+            raise RuntimeError('fixture_dns_route_not_physical')
         index = int(info['index'])
         addresses = ps(f"@(Get-NetIPAddress -InterfaceIndex {index} -AddressFamily IPv4).IPAddress | ConvertTo-Json -Compress")
         if isinstance(addresses, str):
@@ -198,10 +204,11 @@ def main():
         delta = {key: after[key] - before[key] for key in before}
         dns_delta = {key: dns_after[key] - dns_before[key] for key in before}
         proxy = forwarder.command('stats')
+        endpoint_observation = endpoint.command('stats')
         result.update(dns_fixture_answer=dns, dns_socket_source_is_tun=dns_source,
                       dns_observation=dns_observation,
                       endpoint_bytes_by_transport=delta, dns_endpoint_bytes_by_transport=dns_delta,
-                      forwarder_counts=proxy, dns_fixture_counts=endpoint.command('stats'))
+                      forwarder_counts=proxy, dns_fixture_counts=endpoint_observation)
         stage = 'stop_and_restore'
         session.close('stop')
         session = None
@@ -213,7 +220,8 @@ def main():
         result['passed'] = (delivered and source and dns and dns_source and restored and wfp_restored
                             and delta[protocol] > 0 and dns_delta[protocol] > 0
                             and all(delta[key] == 0 for key in delta if key != protocol)
-                            and proxy['tcp_connected'] > 0 and proxy['udp_replies'] > 0)
+                            and proxy['tcp_connected'] > 0
+                            and endpoint_observation['local_forwarder_counts']['udp_replies'] > 0)
     except Exception as error:
         result['failed_stage'] = stage
         result['error_type'] = type(error).__name__

@@ -14,6 +14,8 @@ import sys
 import ipaddress
 import re
 
+from endpoint_forwarder import EndpointForwarder, local_socket
+
 
 def owned_udp_queues(process):
     """Aggregate only this child endpoint's UDP queues, never addresses/inodes."""
@@ -41,7 +43,8 @@ def owned_udp_queues(process):
                 if len(columns) > 9 and columns[9] in inodes:
                     count += 1
                     queued += int(columns[4].split(':')[1], 16)
-        observation.update(available=True, sockets=count, rx_kernel_bytes=queued)
+        if count:
+            observation.update(available=True, sockets=count, rx_kernel_bytes=queued)
     except (OSError, ValueError, IndexError):
         pass
     return observation
@@ -105,8 +108,17 @@ def main():
     (directory / 'credentials.toml').write_text('[[client]]\nusername="synthetic-user"\npassword="synthetic-password"\n')
     protocol = 'http2' if args.protocol == 'http2' else 'quic'
     forwarder = ''
+    local_exit = None
     if (directory / 'forwarder-inputs.json').exists():
-        forwarder = '[forward_protocol.socks5]\naddress="127.0.0.1:38445"\nextended_auth=false\n'
+        inputs = json.loads((directory / 'forwarder-inputs.json').read_text())
+        origin = ipaddress.IPv4Address(inputs['origin'])
+        dns = ipaddress.IPv4Address(inputs['dns_host'])
+        if not origin.is_global or not dns.is_private or dns.is_loopback:
+            raise RuntimeError('invalid_fixture_address')
+        local_exit = EndpointForwarder((str(origin), 443), (str(dns), 38553), 0,
+                                       factory=local_socket, port=38446)
+        threading.Thread(target=local_exit.serve, daemon=True).start()
+        forwarder = '[forward_protocol.socks5]\naddress="127.0.0.1:38446"\nextended_auth=false\n'
     # H3 case deliberately has NO H2 listener: fallback cannot pass the test.
     (directory / 'vpn.toml').write_text(
         'listen_address="127.0.0.1:38443"\ncredentials_file="credentials.toml"\n'
@@ -148,6 +160,7 @@ def main():
                 observation = dict(counters)
                 if forwarder:
                     observation['owned_endpoint_udp_queues'] = owned_udp_queues(endpoint)
+                    observation['local_forwarder_counts'] = local_exit.stats()
                 print(json.dumps(observation), flush=True)
             else:
                 break
@@ -160,6 +173,8 @@ def main():
             endpoint.kill()
             endpoint.wait(timeout=5)
         worker.join(timeout=1)
+        if local_exit:
+            local_exit.close()
 
 
 if __name__ == '__main__':

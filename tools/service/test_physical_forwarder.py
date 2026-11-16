@@ -6,6 +6,7 @@ import threading
 import unittest
 
 from physical_forwarder import Forwarder, exact
+from endpoint_forwarder import EndpointForwarder
 
 
 def local_socket(kind, _index):
@@ -55,8 +56,8 @@ class ForwarderTest(unittest.TestCase):
             proxy.close()
             thread.join(timeout=3)
 
-    def start(self, origin=('127.0.0.1', 1), dns=('127.0.0.1', 2)):
-        proxy = Forwarder(origin, dns, 1, factory=local_socket, port=0)
+    def start(self, origin=('127.0.0.1', 1), dns=('127.0.0.1', 2), kind=Forwarder, **kwargs):
+        proxy = kind(origin, dns, 1, factory=local_socket, port=0, **kwargs)
         thread = threading.Thread(target=proxy.serve, daemon=True)
         thread.start()
         self.forwarders.append((proxy, thread))
@@ -88,6 +89,20 @@ class ForwarderTest(unittest.TestCase):
         _, result = self.authenticate(proxy, b'wrong-synthetic-password')
         self.assertEqual(result, b'\x01\x01')
         self.assertEqual(proxy.stats()['tcp_connected'], 0)
+
+    def test_local_relay_chains_authenticated_tcp_exit(self):
+        with echo(socket.SOCK_STREAM) as address:
+            physical = self.start(origin=address)
+            local = self.start(origin=address, kind=EndpointForwarder,
+                               physical_exit=('127.0.0.1', physical.port))
+            client, result = self.authenticate(local)
+            self.assertEqual(result, b'\x01\x00')
+            client.sendall(b'\x05\x01\x00\x01' + socket.inet_aton(address[0]) + struct.pack('!H', address[1]))
+            self.assertEqual(exact(client, 10)[:2], b'\x05\x00')
+            client.sendall(b'fixture-data')
+            self.assertEqual(exact(client, 16), b'ack:fixture-data')
+            self.assertEqual(physical.stats()['tcp_connected'], 1)
+            self.assertEqual(local.stats()['tcp_connected'], 1)
 
     def test_unlisted_tcp_destination_denied(self):
         proxy = self.start()

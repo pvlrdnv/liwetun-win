@@ -53,9 +53,21 @@ Run [43861649225](https://github.com/pvlrdnv/liwetun-win/actions/runs/4386164922
 passed ordinary HTTPS with normal TLS and TUN-selected source, but DNS return
 failed despite a synthetic answer sent by the forwarder. Overall result **FAIL**;
 all route/DNS/adapter and WFP session baselines restored without watchdog action.
-The private-address UDP relay change is a pending fixture experiment, not a
-client DNS fix or a pass. The report now distinguishes timeout from a received
-invalid reply using closed booleans and a numeric OS error only.
+Further Windows runs confirmed the private-address relay alone does not fix
+DNS. Connected UDP and edge-triggered epoll boundary preflights passed before
+and during SDK operation, while client DNS still timed out. H3 ordinary HTTPS
+also passed on run 43875792983. These are partial observations, overall failures.
+The report distinguishes timeout from a received invalid reply using closed
+booleans and a numeric OS error only. Proc-table zero matches in WSL1 are unknown,
+not proof of an empty endpoint queue.
+
+The next pending fixture experiment places the endpoint's authenticated UDP
+relay inside WSL1. HTTPS chains to the Windows physically bound exit; the only
+direct UDP destination is the private same-host synthetic DNS fixture. Its
+ordinary route must select the original physical interface, verified after TUN
+start. Client probes still require TUN sources and actual HTTPS/DNS replies.
+The endpoint binary and application routing are unchanged. Local five protocol
+checks passed, including chained authenticated TCP; Windows proof is pending.
 
 Remaining gates: ordinary-mode DNS and H3 traffic, effective DNS leak prevention,
 IPv6 payload delivery, crash/network-

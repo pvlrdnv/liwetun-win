@@ -92,9 +92,7 @@ class Forwarder:
             self.count('destination_denied')
             client.sendall(b'\x05\x02\x00\x01' + b'\x00' * 6)
             return
-        with self.factory(socket.SOCK_STREAM, self.index) as upstream:
-            upstream.settimeout(8)
-            upstream.connect(destination)
+        with self.connect_tcp(destination) as upstream:
             client.sendall(b'\x05\x00\x00\x01' + b'\x00' * 6)
             self.count('tcp_connected')
             deadline = time.monotonic() + 30
@@ -106,6 +104,16 @@ class Forwarder:
                         return
                     (upstream if source is client else client).sendall(chunk)
                     self.count('tcp_bytes', len(chunk))
+
+    def connect_tcp(self, destination):
+        upstream = self.factory(socket.SOCK_STREAM, self.index)
+        try:
+            upstream.settimeout(8)
+            upstream.connect(destination)
+            return upstream
+        except BaseException:
+            upstream.close()
+            raise
 
     def udp(self, client):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as relay, \
