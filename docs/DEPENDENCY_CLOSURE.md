@@ -85,3 +85,10 @@ Package/installer validation using that GUI also **PASS** on `17d66b6`,
 including the installed native notice-byte guard and all 14 installer groups.
 [Evidence](evidence/installer-notices-17d66b6.json). Final distribution rights,
 source/nested attribution, CRT and modified-source notices remain separate gates.
+
+The SDK notice directory now also carries a prominent
+[LiWeTun modification notice](../third_party/sdk/MODIFICATIONS.md) identifying
+the exact upstream SDK, changed Windows logging/connection-info instrumentation
+and Conan provider behavior. Original 38 notice texts are unchanged. The package
+copies that notice directory; final assembled distribution/source attribution
+review remains open.

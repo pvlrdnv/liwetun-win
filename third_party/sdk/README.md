@@ -28,3 +28,8 @@ conservatively; they are not claims that every listed component is linked.
 provenance and file bytes for this SDK set and the Rust set. A changed dependency,
 missing file, path escape, extra text file or altered notice fails verification.
 Original line endings/spacing are preserved to keep receipt hashes valid.
+
+[LiWeTun modification notice](MODIFICATIONS.md) records the SDK privacy-profile
+and build-provider changes and accompanies the copied SDK notice directory in
+the installer payload. It is separate from the 38 original upstream texts and
+does not constitute final legal/release approval.

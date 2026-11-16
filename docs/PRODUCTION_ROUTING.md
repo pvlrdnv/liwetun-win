@@ -138,6 +138,12 @@ fixed-destination mapping and denial of unrelated destinations/payloads. No
 owner-machine IPv6 routes were changed. Native Windows proof is pending; even a
 pass establishes client IPv6 packet handling, not native server IPv6 egress,
 IPv6 DNS/leak policy or desktop readiness.
+That client packet experiment **PASS** on `4ffe672`,
+[H2 evidence](evidence/synthetic-ipv6-43891393542.json) and
+[H3 evidence](evidence/synthetic-ipv6-43891403062.json): unbound IPv6 HTTPS and UDP
+sources/routes selected TUN, one exact IPv6 echo request/reply and 54 transport
+bytes, existing IPv4 DNS proof and complete network/WFP restoration without the
+watchdog. The reports retain native IPv6 egress qualification false.
 
 Remaining gates: wider ordinary-mode fault matrix, effective DNS leak prevention,
 IPv6 payload delivery, crash/network-

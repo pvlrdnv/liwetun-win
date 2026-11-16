@@ -488,6 +488,19 @@ explicitly enable IPv6. IPv4 DNS is reported separately; native IPv6 Internet
 egress/DNS/leak/desktop qualification stays false. Seven local protocol tests,
 Python syntax/YAML/diff checks PASS; Rust/Windows execution pending. No local
 routes, drivers or owner network changes.
+Synthetic IPv6 client TCP/UDP **PASS** on `4ffe672`:
+[H2 43891393542](https://github.com/pvlrdnv/liwetun-win/actions/runs/43891393542),
+[H3 43891403062](https://github.com/pvlrdnv/liwetun-win/actions/runs/43891403062).
+Both selected TUN IPv6 routes/sources for unbound HTTPS and UDP; one exact echo
+request/reply with 54 selected-transport bytes, plus the existing IPv4 DNS proof.
+Full route/DNS/adapter/WFP restoration passed without watchdog intervention.
+[H2 evidence](evidence/synthetic-ipv6-43891393542.json),
+[H3 evidence](evidence/synthetic-ipv6-43891403062.json). This qualifies synthetic
+client packet handling only; the exit translates to IPv4. Native IPv6 egress,
+IPv6 DNS transport/leak policy and desktop acceptance remain open.
+Added a separate SDK modification notice documenting the existing privacy/build
+changes; the 60 original upstream notice bodies and generated UI bundle remain
+unchanged. Integrity check PASS; this does not approve final distribution rights.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),
