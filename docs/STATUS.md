@@ -87,6 +87,15 @@ its name was not captured. Added a bounded root build-file inventory and
 failure-independent evidence upload to diagnose this without relaxing admission.
 Payload qualification remains pending; no installer or desktop readiness claim.
 
+Staging diagnosis on `ffa8262`,
+[run 43837040458](https://github.com/pvlrdnv/liwetun-win/actions/runs/43837040458):
+all application checks passed again; the captured inventory identified Flutter's
+`native_assets.json` as the rejected root file. The pinned Flutter writer emits
+format 1.0.0 with an empty native-assets mapping for this application. Staging
+now requires that exact empty mapping (bounded to 1024 bytes), copies it and
+includes it in the required files/hash manifest. Other JSON/native mappings
+remain rejected. The corrected staging still needs a fresh Windows run.
+
 ## Current stage
 
 LOCAL development in independent private repository

@@ -105,11 +105,16 @@ jobs:
               Copy-Item $entry.FullName $destination -Recurse
             } elseif ($entry.Name -eq 'liwetun.exe' -or $entry.Extension -eq '.dll') {
               Copy-Item $entry.FullName $destination
+            } elseif ($entry.Name -eq 'native_assets.json') {
+              # Pinned Flutter writes this even when no Dart code assets exist.
+              # A nonempty mapping needs a separate dependency/path review.
+              if ($entry.Length -gt 1024 -or [IO.File]::ReadAllText($entry.FullName).Trim() -cne '{"format-version":[1,0,0],"native-assets":{}}') { throw 'Unexpected Flutter native asset mapping' }
+              Copy-Item $entry.FullName $destination
             } elseif ($entry.Extension -notin @('.pdb', '.lib', '.exp', '.ilk')) {
               throw 'Unexpected GUI build output'
             }
           }
-          foreach ($file in @('liwetun.exe', 'flutter_windows.dll', 'data/app.so', 'data/icudtl.dat', 'data/flutter_assets/NOTICES.Z')) {
+          foreach ($file in @('liwetun.exe', 'flutter_windows.dll', 'native_assets.json', 'data/app.so', 'data/icudtl.dat', 'data/flutter_assets/NOTICES.Z')) {
             if (!(Test-Path (Join-Path $destination $file) -PathType Leaf)) { throw 'Incomplete GUI runtime' }
           }
           $root = (Resolve-Path $destination).Path

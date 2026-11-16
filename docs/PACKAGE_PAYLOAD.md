@@ -43,6 +43,10 @@ A bounded root build-file inventory now accompanies failure-independent build
 evidence. Runtime staging and the production-mode payload fixture remain pending.
 Payload failures use closed assembly/signing/ACL/query stage identifiers so that
 the evidence can distinguish packaging failures without recording raw core data.
+Run 43837040458 identified Flutter's generated root `native_assets.json` as the
+unexpected input. Staging now admits only the pinned writer's empty format-1.0.0
+mapping, with a 1024-byte limit, and includes it in the hashed runtime payload.
+Nonempty native mappings require a separate dependency/path review.
 Installer authoring, upgrade/rollback, desktop ownership selection, release
 signing/revocation and full distribution audit remain open. Public signing
 process availability has been asked while independent preparation continues.
