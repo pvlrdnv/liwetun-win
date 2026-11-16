@@ -341,6 +341,11 @@ Added a fixed synthetic HTTP/1 CONNECT `_udp2` wire preflight against the offici
 endpoint before SDK start (normal profile-scoped fixture TLS verification).
 It requires exact returned metadata and DNS answer; failure stops before route
 changes and records closed observations only. Syntax/diff PASS; CI pending.
+Added a separate disposable Ubuntu endpoint-only control using that same fixed
+wire probe, binary hash and synthetic relay/DNS fixture. It starts no SDK/TUN,
+changes no routes and cannot establish Windows readiness. Comparing native Linux
+with WSL1 should isolate a server/fixture problem from Windows SDK behavior.
+Python syntax/diff checks PASS; actual CI execution pending.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),
