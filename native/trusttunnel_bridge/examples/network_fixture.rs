@@ -6,6 +6,8 @@ fn main() {
     assert_eq!(env::var("GITHUB_ACTIONS").as_deref(), Ok("true"));
     let directory = env::args().nth(1).expect("fixture directory required");
     let directory = Path::new(&directory);
+    let family = env::var("LIWETUN_PRODUCTION_FAMILY").unwrap_or_else(|_| "ipv4".into());
+    assert!(matches!(family.as_str(), "ipv4" | "synthetic-ipv6"));
     let dns_host: std::net::Ipv4Addr = fs::read_to_string(directory.join("dns-host.txt"))
         .expect("task private DNS address")
         .trim()
@@ -36,7 +38,7 @@ fn main() {
             .username("synthetic-user".into())
             .password(password.into())
             .upstream_protocol(protocol)
-            .has_ipv6(false)
+            .has_ipv6(family == "synthetic-ipv6")
             .certificate(Some(cert.clone()))
             .dns_upstreams(vec![format!("{dns_host}:38553")])
             .build()

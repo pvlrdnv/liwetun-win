@@ -6,6 +6,7 @@ endpoint UDP sockets/relay in WSL1 while preserving the original client routes.
 """
 import socket
 import struct
+import ipaddress
 
 from physical_forwarder import Forwarder, exact
 
@@ -29,7 +30,9 @@ class EndpointForwarder(Forwarder):
             upstream.sendall(b'\x01' + bytes([len(user)]) + user + bytes([len(password)]) + password)
             if exact(upstream, 2) != b'\x01\x00':
                 raise ValueError('physical_exit_auth_denied')
-            upstream.sendall(b'\x05\x01\x00\x01' + socket.inet_aton(destination[0])
+            address = ipaddress.ip_address(destination[0])
+            kind = b'\x01' if address.version == 4 else b'\x04'
+            upstream.sendall(b'\x05\x01\x00' + kind + address.packed
                              + struct.pack('!H', destination[1]))
             if exact(upstream, 10)[:4] != b'\x05\x00\x00\x01':
                 raise ValueError('physical_exit_connect_denied')

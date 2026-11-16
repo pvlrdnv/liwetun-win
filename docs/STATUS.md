@@ -479,6 +479,15 @@ actual visible medium-integrity GUI / uninstall admission, installed notice-byte
 checks, unchanged network and cleanup. GUI input was `eefbcf7` run 43887262100.
 [Evidence](evidence/installer-notices-17d66b6.json). Signing remains ephemeral CI
 only; no owner package, release/legal approval or Windows 10/11 qualification.
+Prepared synthetic IPv6 client TCP/UDP production-mode cases. A fixed
+documentation IPv6 destination is translated only inside the allowlisted CI
+server fixture to its existing physical IPv4 HTTPS exit / private fixed echo.
+Client sockets remain unbound, must select TUN IPv6 sources/routes, and require
+exact IPv6 UDP echo markers and selected transport bytes. Generated profiles
+explicitly enable IPv6. IPv4 DNS is reported separately; native IPv6 Internet
+egress/DNS/leak/desktop qualification stays false. Seven local protocol tests,
+Python syntax/YAML/diff checks PASS; Rust/Windows execution pending. No local
+routes, drivers or owner network changes.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

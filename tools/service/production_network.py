@@ -1,8 +1,9 @@
-"""One ordinary unbound IPv4 HTTPS/DNS case on disposable Windows CI.
+"""One ordinary unbound traffic/refusal/fault case on disposable Windows CI.
 
 The official endpoint uses its SOCKS5 forwarder feature. Only its test exit
 binds the physical interface; this harness adds no client/physical host routes.
-This single positive case is not the complete crash/negative/desktop matrix.
+Optional IPv6 TCP/UDP uses a fixed synthetic NAT64 exit, not native IPv6 Internet.
+Each invocation is one case, not complete recovery/desktop qualification.
 """
 import argparse
 import ipaddress
@@ -16,6 +17,7 @@ import sys
 import time
 
 from network import Child, ROOT, ps, snapshot, totals, tun, wait_clean
+from physical_forwarder import SYNTHETIC_IPV6, SYNTHETIC_IPV6_PAYLOAD, SYNTHETIC_IPV6_UDP_PORT
 
 
 def owned_wfp(client):
@@ -29,13 +31,18 @@ def owned_wfp(client):
     return result
 
 
-def ordinary_https(origin, addresses):
+def source_is_tun(stream, addresses):
+    source = ipaddress.ip_address(stream.getsockname()[0].split('%')[0])
+    return any(source == ipaddress.ip_address(address.split('%')[0]) for address in addresses)
+
+
+def ordinary_https(origin, addresses, family=socket.AF_INET):
     source_matches = False
     try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as raw:
+        with socket.socket(family, socket.SOCK_STREAM) as raw:
             raw.settimeout(8)
             raw.connect((origin, 443))  # Deliberately no bind or IP_UNICAST_IF.
-            source_matches = raw.getsockname()[0] in addresses
+            source_matches = source_is_tun(raw, addresses)
             with ssl.create_default_context().wrap_socket(raw, server_hostname='example.com') as tls:
                 tls.sendall(b'GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n')
                 answer = b''
@@ -56,7 +63,7 @@ def ordinary_dns(target, addresses):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as raw:
             raw.settimeout(5)
             raw.connect((target, 53))  # Ordinary Windows route/source selection.
-            source_matches = raw.getsockname()[0] in addresses
+            source_matches = source_is_tun(raw, addresses)
             question = b'\x07liwetun\x07invalid\x00\x00\x01\x00\x01'
             packet = b'\x37\x19\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00' + question
             raw.send(packet)
@@ -67,6 +74,23 @@ def ordinary_dns(target, addresses):
             return all(observation.values()), source_matches, observation
     except OSError as error:
         observation['os_code'] = error.errno
+        return False, source_matches, observation
+
+
+def ordinary_ipv6_echo(addresses):
+    source_matches = False
+    observation = dict(reply_received=False, payload_matches=False)
+    try:
+        with socket.socket(socket.AF_INET6, socket.SOCK_DGRAM) as raw:
+            raw.settimeout(5)
+            raw.connect((SYNTHETIC_IPV6, SYNTHETIC_IPV6_UDP_PORT))
+            source_matches = source_is_tun(raw, addresses)
+            raw.send(SYNTHETIC_IPV6_PAYLOAD)
+            answer = raw.recv(4096)
+            observation.update(reply_received=True, payload_matches=answer == SYNTHETIC_IPV6_PAYLOAD)
+            return all(observation.values()), source_matches, observation
+    except OSError as error:
+        observation.update(os_code=error.errno, timed_out=isinstance(error, TimeoutError))
         return False, source_matches, observation
 
 
@@ -95,16 +119,25 @@ def main():
     if profile not in ['valid', 'wrong-auth', 'wrong-ca'] or (
             profile != 'valid' and (protocol != 'http2' or termination != 'stop')):
         raise RuntimeError('invalid_fixture_profile')
+    family = os.environ.get('LIWETUN_PRODUCTION_FAMILY', 'ipv4')
+    if family not in ['ipv4', 'synthetic-ipv6'] or (family != 'ipv4' and profile != 'valid'):
+        raise RuntimeError('invalid_fixture_family')
+    synthetic_ipv6 = family == 'synthetic-ipv6'
     report = ROOT / 'build/service-evidence/production-network.json'
     report.parent.mkdir(exist_ok=True, parents=True)
     result = {'passed': False, 'mode': 'single_production_unbound_ipv4', 'protocol': protocol,
               'termination': termination,
               'profile': profile,
+              'client_family': family,
               'network_test_modes_enabled': False, 'client_host_routes_added': False,
               'server_https_egress_bound_physical': True,
               'endpoint_udp_relay': 'wsl_local',
               'endpoint_diagnostic_source_fix': bool(os.environ.get('LIWETUN_ENDPOINT_FIXTURE_RUN')),
               'full_matrix_qualified': False, 'release_ready': False}
+    if synthetic_ipv6:
+        result.update(mode='single_production_synthetic_ipv6_nat64',
+                      ipv6_fixture_exit_translates_to_ipv4=True,
+                      ipv6_native_egress_qualified=False, dns_probe_family='ipv4')
     directory = ROOT / 'build/network-fixture'
     directory.mkdir(exist_ok=True, parents=True)
     baseline = snapshot()
@@ -127,7 +160,8 @@ def main():
             raise RuntimeError('invalid_fixture_address')
         (directory / 'dns-host.txt').write_text(str(dns_host))
         (directory / 'forwarder-inputs.json').write_text(json.dumps({
-            'origin': origin, 'dns_host': str(dns_host), 'physical_index': physical['index']}))
+            'origin': origin, 'dns_host': str(dns_host), 'physical_index': physical['index'],
+            'synthetic_ipv6': synthetic_ipv6}))
         wsl = ['wsl.exe', '-d', distro, '--']
         def linux(path):
             return subprocess.check_output(wsl + ['wslpath', '-u', path.as_posix()],
@@ -187,7 +221,7 @@ def main():
             raise RuntimeError('service_start_rejected')
         info = None
         selected = False
-        os.environ['LIWETUN_CI_ORIGIN'] = origin
+        os.environ['LIWETUN_CI_ORIGIN'] = SYNTHETIC_IPV6 if synthetic_ipv6 else origin
         for _ in range(20):
             state = session.command('query')
             info = tun()
@@ -211,11 +245,44 @@ def main():
             addresses = ps(f"@(Get-NetIPAddress -InterfaceIndex {index} -AddressFamily IPv4).IPAddress | ConvertTo-Json -Compress")
             if isinstance(addresses, str):
                 addresses = [addresses]
+            https_addresses = addresses
+            if synthetic_ipv6:
+                stage = 'ipv6_tun_addresses'
+                https_addresses = ps(f"@(Get-NetIPAddress -InterfaceIndex {index} -AddressFamily IPv6).IPAddress | ConvertTo-Json -Compress")
+                if isinstance(https_addresses, str):
+                    https_addresses = [https_addresses]
+                if not isinstance(https_addresses, list) or not https_addresses:
+                    raise RuntimeError('ipv6_tun_address_missing')
             stage = 'ordinary_https'
-            delivered, source = ordinary_https(origin, addresses)
+            delivered, source = ordinary_https(SYNTHETIC_IPV6 if synthetic_ipv6 else origin,
+                                               https_addresses,
+                                               socket.AF_INET6 if synthetic_ipv6 else socket.AF_INET)
             result.update(tls_https_delivered=delivered, https_socket_source_is_tun=source)
             stage = 'wsl_udp_active_sdk'
             result['wsl_udp_active_sdk'] = udp_boundary()
+            ipv6_ok = True
+            if synthetic_ipv6:
+                stage = 'ordinary_ipv6_udp'
+                echo_before = endpoint.command('stats')['local_forwarder_counts']
+                echo_transport_before = totals()
+                echo, echo_source, echo_observation = ordinary_ipv6_echo(https_addresses)
+                echo_transport_after = totals()
+                for _ in range(10):
+                    if echo_transport_after[protocol] - echo_transport_before[protocol] >= 2 * len(SYNTHETIC_IPV6_PAYLOAD):
+                        break
+                    time.sleep(.1)
+                    echo_transport_after = totals()
+                echo_after = endpoint.command('stats')['local_forwarder_counts']
+                echo_delta = {key: echo_after[key] - echo_before[key]
+                              for key in ['synthetic_ipv6_echo_requests', 'synthetic_ipv6_echo_replies']}
+                echo_transport = {key: echo_transport_after[key] - echo_transport_before[key]
+                                  for key in echo_transport_before}
+                ipv6_ok = (echo and echo_source and all(value > 0 for value in echo_delta.values())
+                           and echo_transport[protocol] >= 2 * len(SYNTHETIC_IPV6_PAYLOAD)
+                           and all(value == 0 for key, value in echo_transport.items() if key != protocol))
+                result.update(ipv6_udp_echo_delivered=echo, ipv6_udp_source_is_tun=echo_source,
+                              ipv6_udp_observation=echo_observation, ipv6_echo_forwarder_delta=echo_delta,
+                              ipv6_echo_transport_bytes=echo_transport)
             stage = 'ordinary_dns'
             marker_before = endpoint.command('stats')['local_forwarder_counts']
             dns_before = totals()
@@ -246,7 +313,7 @@ def main():
                     and active['sdk_dynamic_sessions'] > wfp_before['sdk_dynamic_sessions'])
                 if not result['retained_sdk_dynamic_session_observed']:
                     raise RuntimeError('active_wfp_session_not_observed')
-            traffic_ok = (delivered and source and dns and dns_source
+            traffic_ok = (delivered and source and dns and dns_source and ipv6_ok
                           and delta[protocol] > 0 and dns_delta[protocol] >= 82
                           and all(value > 0 for value in marker_delta.values())
                           and all(delta[key] == 0 for key in delta if key != protocol)

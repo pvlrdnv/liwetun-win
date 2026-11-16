@@ -124,6 +124,21 @@ The [six-case receipt](evidence/production-basic-matrix.json) links both ordinar
 positive transports, H2 lease death/service crash and both H2 startup refusals.
 It deliberately keeps complete fault/IPv6/desktop/release qualification false.
 
+Pending client IPv6 experiment: `production_family=synthetic-ipv6` sets the
+generated synthetic profile's IPv6 capability and uses an unbound IPv6 HTTPS
+socket plus a fixed IPv6 UDP echo, both requiring TUN-selected sources/routes.
+The only synthetic destination is documentation address `2001:db8:1::1`.
+The destination-allowlisted fixture translates HTTPS to the physically bound
+IPv4 public origin and UDP to the private same-host fixed echo. Returned SOCKS5
+UDP headers preserve the original IPv6 metadata; exact echo payload/relay counts
+and transport bytes must agree. No client host routes, forced client interface
+or TLS bypass. Existing IPv4 DNS proof remains separate and explicit.
+Seven local protocol checks PASS, including IPv6 wire-header preservation,
+fixed-destination mapping and denial of unrelated destinations/payloads. No
+owner-machine IPv6 routes were changed. Native Windows proof is pending; even a
+pass establishes client IPv6 packet handling, not native server IPv6 egress,
+IPv6 DNS/leak policy or desktop readiness.
+
 Remaining gates: wider ordinary-mode fault matrix, effective DNS leak prevention,
 IPv6 payload delivery, crash/network-
 change/suspend recovery and installed Windows 10/11 desktop acceptance. These

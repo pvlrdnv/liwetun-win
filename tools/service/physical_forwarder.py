@@ -15,6 +15,10 @@ import sys
 import threading
 import time
 
+SYNTHETIC_IPV6 = '2001:db8:1::1'
+SYNTHETIC_IPV6_UDP_PORT = 38554
+SYNTHETIC_IPV6_PAYLOAD = b'liwetun-synthetic-ipv6-echo'
+
 
 def exact(stream, size):
     result = b''
@@ -38,10 +42,13 @@ def physical_socket(kind, index):
 
 class Forwarder:
     def __init__(self, origin, dns, index, factory=physical_socket, port=38445,
-                 udp_bind_host='127.0.0.1'):
+                 udp_bind_host='127.0.0.1', synthetic_ipv6=False, ipv6_echo=None):
         self.origin, self.dns, self.index = origin, dns, index
         self.factory = factory
         self.udp_bind_host = udp_bind_host
+        self.synthetic_ipv6 = synthetic_ipv6
+        self.ipv6_origin = (SYNTHETIC_IPV6, 443)
+        self.ipv6_echo = ipv6_echo or (dns[0], SYNTHETIC_IPV6_UDP_PORT)
         self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listener.bind(('127.0.0.1', port))
         self.listener.listen(16)
@@ -52,7 +59,9 @@ class Forwarder:
         self.lock = threading.Lock()
         self.counts = dict.fromkeys(['auth_rejected', 'destination_denied', 'tcp_connected',
                                      'tcp_bytes', 'udp_forwarded', 'udp_replies', 'errors', 'active',
-                                     'synthetic_dns_requests', 'synthetic_dns_replies'], 0)
+                                     'synthetic_dns_requests', 'synthetic_dns_replies',
+                                     'tcp_ipv6_destination_connected', 'synthetic_ipv6_echo_requests',
+                                     'synthetic_ipv6_echo_replies'], 0)
 
     def count(self, name, amount=1):
         with self.lock:
@@ -66,6 +75,8 @@ class Forwarder:
         kind = exact(data, 1)[0]
         if kind == 1:
             host = socket.inet_ntoa(exact(data, 4))
+        elif kind == 4:
+            host = socket.inet_ntop(socket.AF_INET6, exact(data, 16))
         elif kind == 3:
             name = exact(data, exact(data, 1)[0]).decode('ascii').lower()
             host = self.origin[0] if name == 'example.com' else ''
@@ -89,13 +100,15 @@ class Forwarder:
         return accepted
 
     def tcp(self, client, destination):
-        if destination != self.origin:
+        if destination != self.origin and not (self.synthetic_ipv6 and destination == self.ipv6_origin):
             self.count('destination_denied')
             client.sendall(b'\x05\x02\x00\x01' + b'\x00' * 6)
             return
         with self.connect_tcp(destination) as upstream:
             client.sendall(b'\x05\x00\x00\x01' + b'\x00' * 6)
             self.count('tcp_connected')
+            if destination == self.ipv6_origin:
+                self.count('tcp_ipv6_destination_connected')
             deadline = time.monotonic() + 30
             while not self.stop.is_set() and time.monotonic() < deadline:
                 readable, _, _ = select.select([client, upstream], [], [], .2)
@@ -110,7 +123,10 @@ class Forwarder:
         upstream = self.factory(socket.SOCK_STREAM, self.index)
         try:
             upstream.settimeout(8)
-            upstream.connect(destination)
+            # CI-only fixed NAT64 destination: the client still sends IPv6
+            # through TUN; the public HTTPS exit uses the physical IPv4 socket.
+            target = self.origin if self.synthetic_ipv6 and destination == self.ipv6_origin else destination
+            upstream.connect(target)
             return upstream
         except BaseException:
             upstream.close()
@@ -132,25 +148,43 @@ class Forwarder:
                 if relay not in readable:
                     continue
                 packet, sender = relay.recvfrom(4106)
-                if sender[0] not in ('127.0.0.1', self.udp_bind_host) or len(packet) < 10 or packet[:4] != b'\x00\x00\x00\x01':
+                if sender[0] not in ('127.0.0.1', self.udp_bind_host) or len(packet) < 4 or packet[:3] != b'\x00\x00\x00':
                     self.count('destination_denied')
                     continue
-                destination = socket.inet_ntoa(packet[4:8]), struct.unpack('!H', packet[8:10])[0]
-                if destination != self.dns:
+                if packet[3] == 1 and len(packet) >= 10:
+                    header_size = 10
+                    destination = socket.inet_ntoa(packet[4:8]), struct.unpack('!H', packet[8:10])[0]
+                elif self.synthetic_ipv6 and packet[3] == 4 and len(packet) >= 22:
+                    header_size = 22
+                    destination = socket.inet_ntop(socket.AF_INET6, packet[4:20]), struct.unpack('!H', packet[20:22])[0]
+                else:
                     self.count('destination_denied')
                     continue
-                upstream.sendto(packet[10:], destination)
+                payload = packet[header_size:]
+                ipv6_echo = (self.synthetic_ipv6 and destination == (SYNTHETIC_IPV6, SYNTHETIC_IPV6_UDP_PORT)
+                             and payload == SYNTHETIC_IPV6_PAYLOAD)
+                if destination == self.dns:
+                    target = self.dns
+                elif ipv6_echo:
+                    target = self.ipv6_echo
+                else:
+                    self.count('destination_denied')
+                    continue
+                upstream.sendto(payload, target)
                 self.count('udp_forwarded')
-                payload = packet[10:]
+                if ipv6_echo:
+                    self.count('synthetic_ipv6_echo_requests')
                 question = b'\x07liwetun\x07invalid\x00\x00\x01\x00\x01'
                 synthetic = (payload[4:6] == b'\x00\x01'
                              and payload[12:12 + len(question)] == question)
                 if synthetic:
                     self.count('synthetic_dns_requests')
                 answer, address = upstream.recvfrom(4096)
-                if address == self.dns:
-                    relay.sendto(packet[:10] + answer, sender)
+                if address == target:
+                    relay.sendto(packet[:header_size] + answer, sender)
                     self.count('udp_replies')
+                    if ipv6_echo and answer == SYNTHETIC_IPV6_PAYLOAD:
+                        self.count('synthetic_ipv6_echo_replies')
                     if (synthetic and answer[:2] == payload[:2] and answer[6:8] == b'\x00\x01'
                             and answer.endswith(b'\xc0\x00\x02\x7b')):
                         self.count('synthetic_dns_replies')
@@ -207,11 +241,15 @@ def main():
     origin = ipaddress.IPv4Address(data['origin'])
     dns = ipaddress.IPv4Address(data['dns_host'])
     index = data['physical_index']
+    synthetic_ipv6 = data.get('synthetic_ipv6', False)
+    if type(synthetic_ipv6) is not bool:
+        raise RuntimeError('invalid_fixture_mode')
     if not origin.is_global or not dns.is_private or dns.is_loopback or type(index) is not int or not 1 <= index <= 0xffffffff:
         raise RuntimeError('invalid_fixture_inputs')
     # WSL1's connected UDP uses the same-host private address for both directions.
     # TCP control remains loopback-only; no public UDP source is admitted.
-    proxy = Forwarder((str(origin), 443), (str(dns), 38553), index, udp_bind_host=str(dns))
+    proxy = Forwarder((str(origin), 443), (str(dns), 38553), index,
+                      udp_bind_host=str(dns), synthetic_ipv6=synthetic_ipv6)
     thread = threading.Thread(target=proxy.serve, daemon=True)
     thread.start()
     try:

@@ -48,6 +48,14 @@ on:
           - valid
           - wrong-auth
           - wrong-ca
+      production_family:
+        description: IPv4 or synthetic IPv6 TUN TCP/UDP through a fixed NAT64 CI exit (not native IPv6 Internet)
+        required: false
+        default: ipv4
+        type: choice
+        options:
+          - ipv4
+          - synthetic-ipv6
       endpoint_version:
         description: Pinned official endpoint version to compare
         required: true
@@ -74,6 +82,7 @@ jobs:
       LIWETUN_PRODUCTION_TRANSPORT: ${{ inputs.production_transport }}
       LIWETUN_PRODUCTION_TERMINATION: ${{ inputs.production_termination }}
       LIWETUN_PRODUCTION_PROFILE: ${{ inputs.production_profile }}
+      LIWETUN_PRODUCTION_FAMILY: ${{ inputs.production_family }}
     defaults:
       run:
         shell: pwsh
@@ -89,6 +98,7 @@ jobs:
           arch: x64
       - name: Build real service with explicit disposable network fixture mode
         run: |
+          if ($env:LIWETUN_PRODUCTION_PROBE -ne 'true' -and $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4') { throw 'Synthetic IPv6 requires production probe mode' }
           rustup toolchain install 1.95.0 --profile minimal
           if ($LASTEXITCODE -ne 0) { throw 'Rust install failed' }
           $bounded = if ($env:LIWETUN_PRODUCTION_PROBE -eq 'true') { 'OFF' } else { 'ON' }

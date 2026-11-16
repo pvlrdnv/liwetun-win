@@ -15,6 +15,21 @@ import ipaddress
 import re
 
 from endpoint_forwarder import EndpointForwarder, local_socket
+from physical_forwarder import SYNTHETIC_IPV6_PAYLOAD, SYNTHETIC_IPV6_UDP_PORT
+
+
+def echo_server(stop, counters, sock):
+    with sock:
+        sock.settimeout(.2)
+        while not stop.is_set():
+            try:
+                packet, address = sock.recvfrom(4096)
+            except socket.timeout:
+                continue
+            if packet == SYNTHETIC_IPV6_PAYLOAD:
+                counters['synthetic_ipv6_echo_requests'] += 1
+                sock.sendto(packet, address)
+                counters['synthetic_ipv6_echo_replies'] += 1
 
 
 def owned_udp_queues(process):
@@ -109,20 +124,24 @@ def main():
     protocol = 'http2' if args.protocol == 'http2' else 'quic'
     forwarder = ''
     local_exit = None
+    synthetic_ipv6 = False
     if (directory / 'forwarder-inputs.json').exists():
         inputs = json.loads((directory / 'forwarder-inputs.json').read_text())
         origin = ipaddress.IPv4Address(inputs['origin'])
         dns = ipaddress.IPv4Address(inputs['dns_host'])
+        synthetic_ipv6 = inputs.get('synthetic_ipv6', False)
+        if type(synthetic_ipv6) is not bool:
+            raise RuntimeError('invalid_fixture_mode')
         if not origin.is_global or not dns.is_private or dns.is_loopback:
             raise RuntimeError('invalid_fixture_address')
         local_exit = EndpointForwarder((str(origin), 443), (str(dns), 38553), 0,
-                                       factory=local_socket, port=38446)
+                                       factory=local_socket, port=38446, synthetic_ipv6=synthetic_ipv6)
         threading.Thread(target=local_exit.serve, daemon=True).start()
         forwarder = '[forward_protocol.socks5]\naddress="127.0.0.1:38446"\nextended_auth=false\n'
     # H3 case deliberately has NO H2 listener: fallback cannot pass the test.
     (directory / 'vpn.toml').write_text(
         'listen_address="127.0.0.1:38443"\ncredentials_file="credentials.toml"\n'
-        'ipv6_available=false\nallow_private_network_connections=true\n'
+        f'ipv6_available={str(synthetic_ipv6).lower()}\nallow_private_network_connections=true\n'
         'connection_establishment_timeout_secs=5\n'
         + forwarder +
         f'[listen_protocols.http1]\n[listen_protocols.{protocol}]\n'
@@ -131,6 +150,8 @@ def main():
         '[[main_hosts]]\nhostname="localhost"\ncert_chain_path="cert.pem"\nprivate_key_path="key.pem"\n')
     stop = threading.Event()
     counters = {'requests': 0, 'request_bytes': 0, 'synthetic_answers': 0, 'other_answers': 0, 'non_questions': 0}
+    if synthetic_ipv6:
+        counters.update(synthetic_ipv6_echo_requests=0, synthetic_ipv6_echo_replies=0)
     dns_host = '127.0.0.1'
     if (directory / 'dns-host.txt').exists():
         address = ipaddress.IPv4Address((directory / 'dns-host.txt').read_text().strip())
@@ -141,6 +162,12 @@ def main():
     dns_socket.bind((dns_host, 38553))
     worker = threading.Thread(target=dns_server, args=(stop, counters, dns_socket), daemon=True)
     worker.start()
+    echo_worker = None
+    if synthetic_ipv6:
+        echo_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        echo_socket.bind((dns_host, SYNTHETIC_IPV6_UDP_PORT))
+        echo_worker = threading.Thread(target=echo_server, args=(stop, counters, echo_socket), daemon=True)
+        echo_worker.start()
     endpoint = subprocess.Popen([str(args.binary.resolve()), 'vpn.toml', 'hosts.toml', '--jobs', '2'],
                                 cwd=directory, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
@@ -173,6 +200,8 @@ def main():
             endpoint.kill()
             endpoint.wait(timeout=5)
         worker.join(timeout=1)
+        if echo_worker:
+            echo_worker.join(timeout=1)
         if local_exit:
             local_exit.close()
 
