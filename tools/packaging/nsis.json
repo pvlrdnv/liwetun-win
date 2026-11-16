@@ -1,6 +1,10 @@
 {
   "version": "3.13",
   "url": "https://downloads.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip",
+  "fallback_urls": [
+    "https://master.dl.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip",
+    "https://altushost-net.dl.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip"
+  ],
   "sha256": "ba63dffc4410ee89193e1cb5a41989991bd77c61068da17e3156d136b7b0b3d8",
   "directory": "nsis-3.13",
   "compression": "zlib",

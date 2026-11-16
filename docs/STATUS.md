@@ -150,6 +150,12 @@ installed medium-integrity GUI checks and normal uninstaller bootstrap. Native
 uninstall now treats an absent service idempotently after trusted-image admission.
 All new installer/native changes require Windows qualification; see
 [installer boundaries](INSTALLER.md). No installer is uploaded for owner use.
+Initial installer run 43844667848 compiled the new native source but stopped at
+the NSIS download digest guard, before extracting/executing that tool. A fresh
+local curl download independently matched the original pinned SHA256 and ZIP
+size 2363925. CI fetch now uses bounded curl and official SourceForge mirror
+fallbacks with the same mandatory digest; only numeric/hash attempt evidence is
+retained. Qualification is still pending; the pin was not replaced.
 
 ## Current stage
 
