@@ -73,3 +73,14 @@ checks for both recipes. Updated exports, both real archive preparations and loc
 [43917795754](https://github.com/pvlrdnv/liwetun-win/actions/runs/43917795754),
 [receipt](evidence/sdk-source-archives-707d870.json); the
 previous seven-recipe export receipt describes the earlier candidate exactly.
+
+The corrected full SDK build passed on
+[43918219945](https://github.com/pvlrdnv/liwetun-win/actions/runs/43918219945),
+source `9c8bfd5`. Downloaded DLLs, provider lock, graph and source-profile digests
+were verified. `native/sdk/runtime-sources.json` records only this candidate;
+`runtime.json` remains unchanged. All 15 new packaged notice sets match their
+archived bodies; 13 source-supplement sets remain explicit. The separate
+`notice-sources.json` retains the actual new build's inventory, run/commit and
+source/lock digests. Both candidate integrity and unchanged offline GUI bundle
+checks pass. Service, ordinary network and package requalification remain open;
+this compilation success alone is not a working-tunnel or release claim.

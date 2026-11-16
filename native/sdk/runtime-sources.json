@@ -1,0 +1,15 @@
+{
+  "source_run": 43918219945,
+  "source_commit": "9c8bfd5edf0fbed94d2c1d8da70a3e0b6d4b4272",
+  "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+  "privacy_policy_version": 1,
+  "files": {
+    "trusttunnel.dll": "bb91455a9859fe7f8c0b78eaac643d9eb64230649dd063cf2283abde69be73a1",
+    "wintun.dll": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce"
+  },
+  "source_pinned_candidate": true,
+  "source_pin_manifest_sha256": "cf9d5d299aeae007c9314b4235d8a45ad52076de46da5e5150e952d3d05cd474",
+  "conan_input_lock_sha256": "2680c44369acf682190acbb322273a3a0a648edcbbba851e99b0c0166595c246",
+  "network_requalified": false,
+  "release_qualified": false
+}

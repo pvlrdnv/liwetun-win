@@ -1,0 +1,205 @@
+{
+  "runtime": {
+    "source_run": 43918219945,
+    "source_commit": "9c8bfd5edf0fbed94d2c1d8da70a3e0b6d4b4272",
+    "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+    "privacy_policy_version": 1,
+    "files": {
+      "trusttunnel.dll": "bb91455a9859fe7f8c0b78eaac643d9eb64230649dd063cf2283abde69be73a1",
+      "wintun.dll": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce"
+    },
+    "source_pinned_candidate": true,
+    "source_pin_manifest_sha256": "cf9d5d299aeae007c9314b4235d8a45ad52076de46da5e5150e952d3d05cd474",
+    "conan_input_lock_sha256": "2680c44369acf682190acbb322273a3a0a648edcbbba851e99b0c0166595c246",
+    "network_requalified": false,
+    "release_qualified": false
+  },
+  "source_profile": {
+    "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+    "policy_version": 1,
+    "bootstrap_sha256": "7e7c23f79a5275653f899a135528190e319334dd547f3284fab58289d56dfeb2",
+    "conan_input_lock_sha256": "2680c44369acf682190acbb322273a3a0a648edcbbba851e99b0c0166595c246",
+    "source_pinned_candidate": true,
+    "source_pin_manifest_sha256": "cf9d5d299aeae007c9314b4235d8a45ad52076de46da5e5150e952d3d05cd474",
+    "prepare_script_sha256": "488808df5f2c2c73e607208f7cfa6599ff603b027a7f0150912da7ac1f92cc69",
+    "patched_files": {
+      "platform/windows/src/trusttunnel.cpp": "18f177634cb29230b169c111a894eec8e2ad328fa8c197872c3091038f4b88c0",
+      "core/src/tunnel.cpp": "e1b829734e7c55b456501232cfaba40f9814d7fd97945c1c7231548a6b79d2ac"
+    },
+    "release_qualified": false
+  },
+  "recipe_closure_verified": true,
+  "graph_verified": true,
+  "notice_package_checks": [
+    {
+      "ref": "dns-libs/2.11.0-alpha.1-3-g3d6359be@adguard/oss#814dd3dce603926a25fe382f4f9f1370",
+      "context": "host",
+      "packaged_notices": 0,
+      "archived_supplement_required": true
+    },
+    {
+      "ref": "cxxopts/3.1.1#b358aff6883980b4f0915734a5c8214a",
+      "context": "host",
+      "packaged_notices": 1,
+      "archived_supplement_required": false
+    },
+    {
+      "ref": "libevent/2.1.11@adguard/oss#d83df250f97d2c9ad77acdb865d03cf4",
+      "context": "host",
+      "packaged_notices": 0,
+      "archived_supplement_required": true
+    },
+    {
+      "ref": "openssl/boring-2026-05-08@adguard/oss#2e2280e85258e377e88d92132af79428",
+      "context": "host",
+      "packaged_notices": 0,
+      "archived_supplement_required": true
+    },
+    {
+      "ref": "libsodium/1.0.18@adguard/oss#e7aeedcb8077c3d577a27c97f943b947",
+      "context": "host",
+      "packaged_notices": 0,
+      "archived_supplement_required": true
+    },
+    {
+      "ref": "libuv/1.41.0@adguard/oss#311f317edcf383bd7aeddcc51308f380",
+      "context": "host",
+      "packaged_notices": 1,
+      "archived_supplement_required": false
+    },
+    {
+      "ref": "klib/2021-04-06@adguard/oss#2fba69658655c2972a005c1b3502cab0",
+      "context": "host",
+      "packaged_notices": 0,
+      "archived_supplement_required": true
+    },
+    {
+      "ref": "ldns/2021-03-29@adguard/oss#ac8bb875bbc36a5afbdadbacb0e3fb7e",
+      "context": "host",
+      "packaged_notices": 0,
+      "archived_supplement_required": true
+    },
+    {
+      "ref": "magic_enum/0.9.5#768c09bb424bda31d224304693b50fb3",
+      "context": "host",
+      "packaged_notices": 1,
+      "archived_supplement_required": false
+    },
+    {
+      "ref": "native_libs_common/8.2.0@adguard/oss#6b7b1cebaf95d4e77e19f9ed4f803094",
+      "context": "host",
+      "packaged_notices": 0,
+      "archived_supplement_required": true
+    },
+    {
+      "ref": "brotli/1.1.0#3f631ef77008f7b5eb388780116371a3",
+      "context": "host",
+      "packaged_notices": 1,
+      "archived_supplement_required": false
+    },
+    {
+      "ref": "fmt/12.1.0#6baf0fb8351783472b94ee6e36232391",
+      "context": "host",
+      "packaged_notices": 1,
+      "archived_supplement_required": false
+    },
+    {
+      "ref": "llhttp/9.3.0@adguard/oss#d4c606ade7f77345c3bf71199c495d0e",
+      "context": "host",
+      "packaged_notices": 1,
+      "archived_supplement_required": false
+    },
+    {
+      "ref": "nghttp2/1.56.0@adguard/oss#efa70b7e694cebdb09c96a2a3a75255f",
+      "context": "host",
+      "packaged_notices": 0,
+      "archived_supplement_required": true
+    },
+    {
+      "ref": "nghttp3/1.0.0@adguard/oss#0a49dc3df4c0ec9e1db87dd356dfc7af",
+      "context": "host",
+      "packaged_notices": 0,
+      "archived_supplement_required": true
+    },
+    {
+      "ref": "ngtcp2/1.22.1@adguard/oss#36d9b5ab7bae5525760e9ab0c3dec1b4",
+      "context": "host",
+      "packaged_notices": 0,
+      "archived_supplement_required": true
+    },
+    {
+      "ref": "pcre2/10.37@adguard/oss#e9120818270c6f02b943e6864ff8f21c",
+      "context": "host",
+      "packaged_notices": 0,
+      "archived_supplement_required": true
+    },
+    {
+      "ref": "gtest/1.14.0#f8f0757a574a8dd747d16af62d6eb1b7",
+      "context": "host",
+      "packaged_notices": 1,
+      "archived_supplement_required": false
+    },
+    {
+      "ref": "tldregistry/2022-12-26@adguard/oss#a37e4c059ba30270e7f0f9888c0bd890",
+      "context": "host",
+      "packaged_notices": 0,
+      "archived_supplement_required": true
+    },
+    {
+      "ref": "ada/2.7.4#e86909dd9cb9714ca39dbc12f7f41053",
+      "context": "host",
+      "packaged_notices": 2,
+      "archived_supplement_required": false
+    },
+    {
+      "ref": "cmake/3.31.12#71c3a0c80cc89cde62956db9e69550e0",
+      "context": "build",
+      "packaged_notices": 1,
+      "archived_supplement_required": false
+    },
+    {
+      "ref": "detours/2021-04-14@adguard/oss#4631c1416196d39fc29ca4d32e8e8a3f",
+      "context": "host",
+      "packaged_notices": 0,
+      "archived_supplement_required": true
+    },
+    {
+      "ref": "nlohmann_json/3.12.0#2d634ab0ec8d9f56353e5ccef6d6612c",
+      "context": "host",
+      "packaged_notices": 5,
+      "archived_supplement_required": false
+    },
+    {
+      "ref": "gtest/1.14.0#f8f0757a574a8dd747d16af62d6eb1b7",
+      "context": "host",
+      "packaged_notices": 1,
+      "archived_supplement_required": false
+    },
+    {
+      "ref": "http_parser/2.9.4#98d91690d6fd021e9e624218a85d9d97",
+      "context": "host",
+      "packaged_notices": 1,
+      "archived_supplement_required": false
+    },
+    {
+      "ref": "tomlplusplus/3.3.0#3109e968b4a517f395e638753c6faa43",
+      "context": "host",
+      "packaged_notices": 1,
+      "archived_supplement_required": false
+    },
+    {
+      "ref": "zlib/1.3.1#cac0f6daea041b0ccf42934163defb20",
+      "context": "host",
+      "packaged_notices": 1,
+      "archived_supplement_required": false
+    },
+    {
+      "ref": "gtest/1.14.0#f8f0757a574a8dd747d16af62d6eb1b7",
+      "context": "host",
+      "packaged_notices": 1,
+      "archived_supplement_required": false
+    }
+  ],
+  "archived_notice_bodies_preserved": true,
+  "release_qualified": false
+}
