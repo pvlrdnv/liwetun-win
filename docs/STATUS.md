@@ -44,7 +44,17 @@ privacy/source-profile digests and all new packaged notice bodies verified.
 `runtime-sources.json` admits only this candidate; active runtime stays unchanged.
 All 15 packaged notice sets match archived bodies; the remaining 13 still use
 explicit archived source supplements. Candidate notice bridge and unchanged GUI
-notice bundle PASS. Service/network/installer requalification pending. Subsequent service/network/package
+notice bundle PASS. Ten separate service/security, six ordinary IPv4, two
+synthetic IPv6 + AAAA and installer jobs dispatched from `51ded08` using only the
+candidate manifest; [case run IDs](evidence/sdk-source-requalification.json).
+Nine jobs PASS: 18 service checks, 14 installer groups, H2/H3 Stop,
+service-crash, wrong-auth/CA and both synthetic IPv6 + AAAA cases. Exact SDK input
+receipts and installer source/notice-manifest bytes verified. One lease-death
+case failed at post-termination observation after HTTPS/DNS and forced exit;
+network/DNS/adapter restoration PASS without watchdog, final WFP measurement
+unavailable. No all-cases-pass claim. Added only closed probe-stage/query-code
+and failure-reason diagnostics for a focused rerun; no retry or security-check
+relaxation. Actual diagnostic Windows rerun pending. Subsequent service/network/package
 qualification remains pending.
 Prepared explicit candidate-manifest selection for those jobs; source manifest /
 lock digests, exact build run/commit and DLL digests remain required. No candidate

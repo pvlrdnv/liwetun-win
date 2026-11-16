@@ -51,6 +51,7 @@ void PrintSessions(DWORD process_id, HANDLE retained, bool watch) {
 int InspectOwnedWfpSessions(bool watch) {
   using namespace liwetun;
   const char* stage = "disposable_ci";
+  uint32_t query_code = UINT32_MAX;
   try {
     wchar_t environment[8]{};
     if (GetEnvironmentVariableW(L"GITHUB_ACTIONS", environment, 8) != 4 ||
@@ -59,6 +60,7 @@ int InspectOwnedWfpSessions(bool watch) {
     // any profile. Never accept a caller-supplied PID/provider/filter name.
     stage = "authenticated_service_query";
     const auto reply = ServiceRequest(Command::Query);
+    query_code = static_cast<uint32_t>(reply.code);
     if (reply.code != Code::Ok && reply.code != Code::CoreFailure) throw 1;
     SC_HANDLE manager = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
     SC_HANDLE service = manager ? OpenServiceW(manager, L"LiWeTun", SERVICE_QUERY_STATUS) : nullptr;
@@ -98,7 +100,10 @@ int InspectOwnedWfpSessions(bool watch) {
     }
     return 0;
   } catch (...) {
-    std::cout << "{\"passed\":false,\"stage\":\"" << stage << "\"}\n";
+    std::cout << "{\"passed\":false,\"stage\":\"" << stage << "\",\"query_code\":";
+    if (query_code <= static_cast<uint32_t>(Code::UntrustedInstallation)) std::cout << query_code;
+    else std::cout << "null";
+    std::cout << "}\n";
     return 1;
   }
 }

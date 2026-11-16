@@ -1,0 +1,82 @@
+{
+  "sdk_source_run": 43918219945,
+  "sdk_manifest": "native/sdk/runtime-sources.json",
+  "qualification_commit": "51ded084ad64fa0ab3bec7e231a513d68be66df0",
+  "diagnostic_endpoint_run": 43880327333,
+  "cases": [
+    {
+      "case": "service_security",
+      "run_id": 43922294313,
+      "status": "completed",
+      "passed": true,
+      "evidence": "sdk-source-check-43922294313.json"
+    },
+    {
+      "case": "installer",
+      "run_id": 43922301843,
+      "status": "completed",
+      "passed": true,
+      "evidence": "sdk-source-check-43922301843.json"
+    },
+    {
+      "case": "http2_stop",
+      "run_id": 43922308662,
+      "status": "completed",
+      "passed": true,
+      "evidence": "sdk-source-check-43922308662.json"
+    },
+    {
+      "case": "http3_stop",
+      "run_id": 43922316153,
+      "status": "completed",
+      "passed": true,
+      "evidence": "sdk-source-check-43922316153.json"
+    },
+    {
+      "case": "http2_lease_death",
+      "run_id": 43922434077,
+      "status": "completed",
+      "passed": false,
+      "evidence": "sdk-source-check-43922434077.json"
+    },
+    {
+      "case": "http2_service_crash",
+      "run_id": 43922440605,
+      "status": "completed",
+      "passed": true,
+      "evidence": "sdk-source-check-43922440605.json"
+    },
+    {
+      "case": "http2_wrong_auth",
+      "run_id": 43922447313,
+      "status": "completed",
+      "passed": true,
+      "evidence": "sdk-source-check-43922447313.json"
+    },
+    {
+      "case": "http2_wrong_ca",
+      "run_id": 43922453591,
+      "status": "completed",
+      "passed": true,
+      "evidence": "sdk-source-check-43922453591.json"
+    },
+    {
+      "case": "synthetic_ipv6_aaaa_http2",
+      "run_id": 43922482773,
+      "status": "completed",
+      "passed": true,
+      "evidence": "sdk-source-check-43922482773.json"
+    },
+    {
+      "case": "synthetic_ipv6_aaaa_http3",
+      "run_id": 43922488810,
+      "status": "completed",
+      "passed": true,
+      "evidence": "sdk-source-check-43922488810.json"
+    }
+  ],
+  "all_passed": false,
+  "windows_10_qualified": false,
+  "windows_11_qualified": false,
+  "release_qualified": false
+}

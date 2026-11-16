@@ -23,11 +23,17 @@ from physical_forwarder import SYNTHETIC_IPV6, SYNTHETIC_IPV6_PAYLOAD, SYNTHETIC
 def owned_wfp(client):
     process = subprocess.run([str(client), '--wfp-state'], capture_output=True,
                              text=True, timeout=15)
-    if process.returncode or len(process.stdout) > 2048:
+    if len(process.stdout) > 2048:
         raise RuntimeError('wfp_probe_failed')
     result = json.loads(process.stdout)
-    if result.get('passed') is not True:
-        raise RuntimeError('wfp_probe_failed')
+    if process.returncode or result.get('passed') is not True:
+        error = RuntimeError('wfp_probe_failed')
+        stages = {'disposable_ci', 'authenticated_service_query', 'owned_service_pid',
+                  'retain_trusted_service', 'read_wfp_sessions'}
+        error.wfp_stage = result.get('stage') if result.get('stage') in stages else 'unknown'
+        code = result.get('query_code')
+        error.wfp_query_code = code if type(code) is int and 0 <= code <= 9 else None
+        raise error
     return result
 
 
@@ -399,6 +405,14 @@ def main():
     except Exception as error:
         result['failed_stage'] = stage
         result['error_type'] = type(error).__name__
+        reasons = {'wfp_probe_failed', 'fixture_system_command_failed', 'fixture_child_timeout',
+                   'fixture_child_closed', 'lease_client_already_exited', 'lease_client_not_forced',
+                   'service_crash_not_observed'}
+        reason = error.args[0] if error.args else None
+        result['failure_reason'] = reason if isinstance(reason, str) and reason in reasons else 'unknown'
+        if reason == 'wfp_probe_failed':
+            result['wfp_probe_stage'] = getattr(error, 'wfp_stage', 'unknown')
+            result['wfp_query_code'] = getattr(error, 'wfp_query_code', None)
     finally:
         if session:
             session.close('stop')

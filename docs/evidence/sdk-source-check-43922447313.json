@@ -1,0 +1,112 @@
+{
+  "source_run": 43922447313,
+  "source_commit": "51ded084ad64fa0ab3bec7e231a513d68be66df0",
+  "sdk_runtime_input": {
+    "source_run": 43918219945,
+    "source_commit": "9c8bfd5edf0fbed94d2c1d8da70a3e0b6d4b4272",
+    "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+    "privacy_policy_version": 1,
+    "files": {
+      "trusttunnel.dll": "bb91455a9859fe7f8c0b78eaac643d9eb64230649dd063cf2283abde69be73a1",
+      "wintun.dll": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce"
+    },
+    "source_pinned_candidate": true,
+    "source_pin_manifest_sha256": "cf9d5d299aeae007c9314b4235d8a45ad52076de46da5e5150e952d3d05cd474",
+    "conan_input_lock_sha256": "2680c44369acf682190acbb322273a3a0a648edcbbba851e99b0c0166595c246",
+    "network_requalified": false,
+    "release_qualified": false
+  },
+  "evidence": {
+    "qualification": {
+      "test_mode_tun_network": false,
+      "release_ready": false,
+      "checks": [
+        "old_disconnect_discards_unread_reply_reproduced",
+        "protocol_bounds",
+        "unsigned_service_denied",
+        "unsigned_client_denied_by_service",
+        "signed_owner_query",
+        "unknown_metrics_and_core_state_preserved",
+        "busy_pipe_waits_without_resending",
+        "delayed_client_consumes_reply_before_disconnect",
+        "invalid_profile_denied",
+        "oversized_frame_denied",
+        "idempotent_stop",
+        "different_signer_denied_by_service",
+        "different_owner_sid_denied_even_to_admin",
+        "sdk_canary_no_raw_logs_or_files",
+        "real_wintun_create_close",
+        "production_single_profile_refusal_and_cleanup",
+        "service_uninstalled",
+        "dns_and_default_routes_unchanged"
+      ],
+      "driver_cycle": {
+        "adapter_created": true,
+        "adapter_removed": true
+      },
+      "sdk_lifecycle": {
+        "full_matrix_qualified": false,
+        "verified_by": "production_single_unbound_ipv4_fixture"
+      },
+      "signed_service_ipc": "verified",
+      "production_refused_endpoint_lifecycle": false,
+      "production_single_traffic_fixture": true,
+      "dns_and_default_routes_unchanged": true,
+      "test_mode_no_global_routes": false,
+      "core_runtime_ready": 1
+    },
+    "production-network": {
+      "passed": true,
+      "mode": "single_production_unbound_ipv4",
+      "protocol": "http2",
+      "termination": "stop",
+      "profile": "wrong-auth",
+      "client_family": "ipv4",
+      "network_test_modes_enabled": false,
+      "client_host_routes_added": false,
+      "server_https_egress_bound_physical": true,
+      "endpoint_udp_relay": "wsl_local",
+      "endpoint_diagnostic_source_fix": true,
+      "full_matrix_qualified": false,
+      "release_ready": false,
+      "wsl_udp_preflight": {
+        "authenticated": true,
+        "associated": true,
+        "reply_received": true,
+        "relay_source_matches": true,
+        "synthetic_answer": true,
+        "poll_readable": true,
+        "passed": true
+      },
+      "endpoint_udp_preflight": {
+        "tls_verified": true,
+        "connect_accepted": true,
+        "frame_received": true,
+        "metadata_matches": true,
+        "synthetic_answer": true,
+        "completed_flows": 2,
+        "passed": true
+      },
+      "ordinary_origin_route_is_tun": false,
+      "profile_refusal_observed": true,
+      "ordinary_https_probe_attempted": false,
+      "adapter_absent_at_refusal": true,
+      "endpoint_bytes_by_transport": {
+        "http1": 0,
+        "http2": 0,
+        "http3": 0
+      },
+      "endpoint_tcp_connections": 0,
+      "sdk_wfp_sessions_restored": true,
+      "deadline_triggered": false,
+      "routes_dns_adapter_restored": true
+    },
+    "general-watchdog": {
+      "method": "not_needed",
+      "release_ready": false,
+      "action_completed": true,
+      "triggered": false
+    }
+  },
+  "release_qualified": false
+}
