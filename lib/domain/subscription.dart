@@ -33,6 +33,7 @@ final class ServerProfile {
 final class Snapshot {
   const Snapshot({
     required this.revision,
+    required this.generatedAt,
     required this.validUntil,
     required this.accessExpiresAt,
     required this.access,
@@ -42,6 +43,7 @@ final class Snapshot {
   });
 
   final int revision;
+  final DateTime generatedAt;
   final DateTime validUntil;
   final DateTime accessExpiresAt;
   final Access access;
@@ -105,49 +107,17 @@ final class Snapshot {
         data['revoked_profile_ids'] is! List) {
       _bad();
     }
+    if ((data['profiles'] as List).length > SubscriptionStore.maxProfiles ||
+        (data['revoked_profile_ids'] as List).length >
+            SubscriptionStore.maxProfiles) {
+      _bad();
+    }
     final profiles = <ServerProfile>[];
     final seen = <String>{};
     for (final item in data['profiles'] as List) {
-      if (item is! Map<String, dynamic>) _bad();
-      _keys(item, {
-        'id',
-        'server_id',
-        'name',
-        'country',
-        'protocol',
-        'uri',
-        'allowed',
-      });
-      final id = _id(item['id']);
-      final serverId = _id(item['server_id']);
-      if (!seen.add(id)) _bad();
-      final name = item['name'];
-      final country = item['country'];
-      if (name is! String ||
-          name.trim().isEmpty ||
-          name.length > 128 ||
-          RegExp(r'[\x00-\x1f\x7f]').hasMatch(name) ||
-          country is! String ||
-          !RegExp(r'^[A-Z]{2}$').hasMatch(country) ||
-          item['uri'] is! String ||
-          item['allowed'] is! bool) {
-        _bad();
-      }
-      final link = parseLink(item['uri'] as String);
-      if (link.kind != ImportKind.profile ||
-          link.protocol?.name != item['protocol']) {
-        _bad();
-      }
-      profiles.add(
-        ServerProfile(
-          id: id,
-          serverId: serverId,
-          name: name,
-          country: country,
-          link: link,
-          allowed: item['allowed'] as bool,
-        ),
-      );
+      final profile = _profile(item);
+      if (!seen.add(profile.id)) _bad();
+      profiles.add(profile);
     }
     final revoked = <String>{};
     for (final value in data['revoked_profile_ids'] as List) {
@@ -160,6 +130,7 @@ final class Snapshot {
     }
     return Snapshot(
       revision: revision,
+      generatedAt: generatedAt,
       validUntil: validUntil,
       accessExpiresAt: accessExpiresAt,
       access: access,
@@ -169,6 +140,56 @@ final class Snapshot {
     );
   }
 }
+
+ServerProfile _profile(dynamic item) {
+  if (item is! Map<String, dynamic>) _bad();
+  _keys(item, {
+    'id',
+    'server_id',
+    'name',
+    'country',
+    'protocol',
+    'uri',
+    'allowed',
+  });
+  final id = _id(item['id']);
+  final serverId = _id(item['server_id']);
+  final name = item['name'];
+  final country = item['country'];
+  if (name is! String ||
+      name.trim().isEmpty ||
+      name.length > 128 ||
+      RegExp(r'[\x00-\x1f\x7f]').hasMatch(name) ||
+      country is! String ||
+      !RegExp(r'^[A-Z]{2}$').hasMatch(country) ||
+      item['uri'] is! String ||
+      item['allowed'] is! bool) {
+    _bad();
+  }
+  final link = parseLink(item['uri'] as String);
+  if (link.kind != ImportKind.profile ||
+      link.protocol?.name != item['protocol']) {
+    _bad();
+  }
+  return ServerProfile(
+    id: id,
+    serverId: serverId,
+    name: name,
+    country: country,
+    link: link,
+    allowed: item['allowed'] as bool,
+  );
+}
+
+Map<String, Object> _profileJson(ServerProfile profile) => {
+  'id': profile.id,
+  'server_id': profile.serverId,
+  'name': profile.name,
+  'country': profile.country,
+  'protocol': profile.link.protocol!.name,
+  'uri': profile.link.secret.value,
+  'allowed': profile.allowed,
+};
 
 Never _bad() => throw const SnapshotException(SnapshotFailure.malformed);
 
@@ -195,7 +216,13 @@ DateTime _date(dynamic value) {
 }
 
 final class CachedProfile {
-  const CachedProfile(this.profile, this.validUntil, this.accessExpiresAt);
+  const CachedProfile(
+    this.profile,
+    this.generatedAt,
+    this.validUntil,
+    this.accessExpiresAt,
+  );
+  final DateTime generatedAt;
   final ServerProfile profile;
   final DateTime validUntil;
   final DateTime accessExpiresAt;
@@ -207,6 +234,105 @@ final class CachedProfile {
 
 /// One instance per subscription. All transitions build a new map before commit.
 final class SubscriptionStore {
+  SubscriptionStore();
+  static const maxProfiles = 100;
+  static const maxCacheBytes = 1024 * 1024;
+
+  /// Private plaintext for the caller's DPAPI envelope; never a diagnostic dump.
+  String encodeCache() {
+    final text = jsonEncode({
+      'schema_version': 1,
+      'revision': _revision,
+      'access': _access.name,
+      'profiles': _profiles.values
+          .map(
+            (cached) => {
+              'profile': _profileJson(cached.profile),
+              'generated_at': _utc(cached.generatedAt),
+              'valid_until': _utc(cached.validUntil),
+              'access_expires_at': _utc(cached.accessExpiresAt),
+            },
+          )
+          .toList(),
+    });
+    _cacheBound(text);
+    return text;
+  }
+
+  factory SubscriptionStore.restoreCache(String text, DateTime now) {
+    try {
+      _cacheBound(text);
+      final data = jsonDecode(text);
+      if (data is! Map<String, dynamic>) _bad();
+      _keys(data, {'schema_version', 'revision', 'access', 'profiles'});
+      if (data['schema_version'] is! int || data['schema_version'] != 1) {
+        throw const SnapshotException(SnapshotFailure.unsupported);
+      }
+      final revision = data['revision'];
+      if (revision is! int || revision < -1 || revision > 9007199254740991) {
+        _bad();
+      }
+      final access = switch (data['access']) {
+        'active' => Access.active,
+        'revoked' => Access.revoked,
+        'expired' => Access.expired,
+        _ => _bad(),
+      };
+      final raw = data['profiles'];
+      if (raw is! List ||
+          raw.length > maxProfiles ||
+          ((revision == -1 || access != Access.active) && raw.isNotEmpty) ||
+          (revision == -1 && access != Access.active)) {
+        _bad();
+      }
+      final next = <String, CachedProfile>{};
+      for (final item in raw) {
+        if (item is! Map<String, dynamic>) _bad();
+        _keys(item, {
+          'profile',
+          'generated_at',
+          'valid_until',
+          'access_expires_at',
+        });
+        final profile = _profile(item['profile']);
+        final generated = _date(item['generated_at']);
+        final valid = _date(item['valid_until']);
+        final expires = _date(item['access_expires_at']);
+        if ((item['profile'] as Map<String, dynamic>)['uri'] !=
+                profile.link.secret.value ||
+            !profile.allowed ||
+            next.containsKey(profile.id) ||
+            generated.isAfter(now.toUtc().add(const Duration(minutes: 5))) ||
+            !valid.isAfter(generated) ||
+            valid.difference(generated) > const Duration(hours: 24) ||
+            valid.isAfter(expires)) {
+          _bad();
+        }
+        next[profile.id] = CachedProfile(profile, generated, valid, expires);
+      }
+      return SubscriptionStore()
+        .._revision = revision
+        .._access = access
+        .._profiles = next;
+    } on SnapshotException {
+      rethrow;
+    } catch (_) {
+      _bad();
+    }
+  }
+
+  static void _cacheBound(String text) {
+    if (text.length > maxCacheBytes ||
+        utf8.encode(text).length > maxCacheBytes) {
+      _bad();
+    }
+  }
+
+  static String _utc(DateTime value) =>
+      value.toUtc().toIso8601String().replaceFirst('.000Z', 'Z');
+
+  @override
+  String toString() => '[private subscription cache]';
   int _revision = -1;
   Access _access = Access.active;
   Map<String, CachedProfile> _profiles = {};
@@ -229,6 +355,7 @@ final class SubscriptionStore {
         if (profile.allowed) {
           next[profile.id] = CachedProfile(
             profile,
+            snapshot.generatedAt,
             snapshot.validUntil,
             snapshot.accessExpiresAt,
           );
@@ -240,6 +367,7 @@ final class SubscriptionStore {
         next.remove(id);
       }
     }
+    if (next.length > maxProfiles) _bad();
     _profiles = next;
     _revision = snapshot.revision;
     _access = snapshot.access;

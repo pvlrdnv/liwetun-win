@@ -34,9 +34,12 @@ Four local guard tests PASS. Three independent lease-death confirmations plus
 ordinary Stop PASS from `ebdce3c`, with final WFP restoration in each. Original
 failed reports remain archived; no application/service/SDK cleanup change.
 
-Current work moves to the missing client subscription path: the synthetic v1
-parser/reconciliation exists, but GUI application, protected cache and HTTPS
-refresh are not integrated. No LikeWeb API/server change or production fetch is
+Current work moves to the missing client subscription path. Added an in-memory
+cache codec retaining revision/revocation and original per-profile deadlines,
+with strict atomic restoration and 100-profile partial-accumulation bounds.
+GUI application, protected cache persistence and HTTPS refresh are not integrated.
+Local analyze and **133 Dart tests PASS** (15 new cache cases). WSL evidence
+does not establish Windows acceptance for this new client work. No LikeWeb API/server change or production fetch is
 authorized or required for client-side development. Other open original-scope
 work includes route-bound health evidence, sleep/network-change recovery, tray,
 Hysteria2/Xray and release update handling. A readiness estimate for a basic

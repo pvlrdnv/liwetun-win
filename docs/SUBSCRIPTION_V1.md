@@ -72,3 +72,22 @@ unknown schema/fields and contradictory revoke/profile entries.
 
 For a directly imported key, entitlement is unknown. Server enforcement is
 authoritative; do not present an invented subscription deadline or active right.
+
+
+## Prepared cache codec (not yet connected to Windows storage or GUI)
+
+`SubscriptionStore.encodeCache` / `restoreCache` preserve the accepted revision
+floor, access denial, and each retained profile's original generated/valid/access
+expiry times. Restoring an old cache never renews a deadline; stale profiles can
+remain visible but `canUse` rejects them. A persisted revoke/expiry stays empty
+and still refuses replay of older revisions. Restoring is atomic and rejects
+unknown fields/versions, duplicate IDs, noncanonical URIs, invalid time bounds
+and unsafe profile types with closed exceptions.
+
+The client policy now bounds a snapshot to 100 profiles / 100 explicit revokes
+and a store to 100 retained profiles, including partial accumulation. A partial
+update exceeding capacity rejects without changing revision or existing data.
+The encoded private cache is limited to 1 MiB. Its plaintext is an in-memory
+serialization for future inclusion in the existing user-DPAPI envelope, never a
+file/log/export format. This codec alone does not implement protected persistence,
+HTTPS refresh, GUI reconciliation, active-session revocation or a LikeWeb route.
