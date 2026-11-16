@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'diagnostics/journal.dart';
 import 'domain/import_link.dart';
 import 'domain/profile_cache.dart';
+import 'domain/subscription.dart';
 import 'native/trusttunnel.dart';
 import 'native/service.dart';
 import 'native/storage.dart';
@@ -12,13 +13,29 @@ import 'native/storage.dart';
 enum ProfileStorageState { memoryOnly, loading, saved, saving, blocked }
 
 final class LocalConnection {
-  const LocalConnection(this.number, this.link, {this.inspection});
+  const LocalConnection(
+    this.number,
+    this.link, {
+    this.inspection,
+    this.sourceId,
+    this.cachedProfile,
+  });
   final int number;
   final ImportedLink link;
   final NativeInspection? inspection;
-  String get title => link.kind == ImportKind.subscription
-      ? 'Подписка $number'
-      : 'Подключение $number';
+  final String? sourceId;
+  final CachedProfile? cachedProfile;
+  String get selectionId => sourceId == null
+      ? link.localId
+      : ProfileCache.subscriptionSelectionId(
+          sourceId!,
+          cachedProfile!.profile.id,
+        );
+  String get title =>
+      cachedProfile?.profile.name ??
+      (link.kind == ImportKind.subscription
+          ? 'Подписка $number'
+          : 'Подключение $number');
 }
 
 final class AppController extends ChangeNotifier {
@@ -27,10 +44,12 @@ final class AppController extends ChangeNotifier {
     TrustTunnelInspector? inspector,
     ServiceGateway? service,
     StorageGateway? storage,
+    DateTime Function()? clock,
   }) : journal = journal ?? Journal(),
        _inspector = inspector ?? const WindowsTrustTunnel(),
        _service = service ?? const WindowsService(),
-       _storage = storage ?? const WindowsStorage() {
+       _storage = storage ?? const WindowsStorage(),
+       _clock = clock ?? DateTime.now {
     this.journal.record(EventId.appStarted);
     this.journal.onPersistenceChanged = () {
       if (!_disposed) notifyListeners();
@@ -41,6 +60,194 @@ final class AppController extends ChangeNotifier {
   final TrustTunnelInspector _inspector;
   final ServiceGateway _service;
   final StorageGateway _storage;
+  final DateTime Function() _clock;
+  Map<String, SubscriptionStore> _subscriptions = {};
+  List<LocalConnection> _derivedConnections = [];
+  bool _applyingSubscription = false;
+  Timer? _subscriptionExpiry;
+  LocalConnection? _activeConnection;
+  bool _subscriptionStopQueued = false;
+  bool get applyingSubscription => _applyingSubscription;
+
+  bool eligible(LocalConnection connection) =>
+      connection.cachedProfile?.canUse(_clock()) ?? true;
+
+  String subscriptionNotice(LocalConnection source) {
+    final store = _subscriptions[source.link.localId];
+    if (store == null || store.revision < 0) return 'Обновлений ещё не было.';
+    if (store.access == Access.revoked) return 'Доступ отозван.';
+    if (store.access == Access.expired) return 'Срок доступа завершён.';
+    final usable = store.profiles.values
+        .where((profile) => profile.canUse(_clock()))
+        .length;
+    return 'Серверов: ${store.profiles.length} · актуальных: $usable · ревизия ${store.revision}';
+  }
+
+  Future<List<LocalConnection>> _inspectSubscription(
+    String sourceId,
+    SubscriptionStore store,
+  ) async {
+    final rows = <LocalConnection>[];
+    final watch = Stopwatch()..start();
+    for (final cached in store.profiles.values) {
+      if (_disposed || watch.elapsed >= const Duration(seconds: 15)) {
+        throw const SnapshotException(SnapshotFailure.malformed);
+      }
+      NativeInspection? inspection;
+      if (cached.profile.link.protocol == Protocol.trusttunnel) {
+        inspection = await _inspector
+            .inspect(cached.profile.link.secret)
+            .timeout(const Duration(seconds: 15) - watch.elapsed);
+        if (inspection.status != NativeImportStatus.accepted &&
+            inspection.status != NativeImportStatus.unavailable) {
+          throw const SnapshotException(SnapshotFailure.malformed);
+        }
+        if (inspection.status == NativeImportStatus.unavailable) {
+          inspection = null;
+        }
+      }
+      rows.add(
+        LocalConnection(
+          rows.length + 1,
+          cached.profile.link,
+          inspection: inspection,
+          sourceId: sourceId,
+          cachedProfile: cached,
+        ),
+      );
+    }
+    return rows;
+  }
+
+  /// Only a validated transport may supply a snapshot; never expose its body to logs.
+  Future<String> applySubscriptionSnapshot(String sourceId, String text) async {
+    if (_disposed) return 'Приложение закрыто.';
+    if (_applyingSubscription || storageState == ProfileStorageState.loading) {
+      return 'Дождитесь завершения текущей операции.';
+    }
+    if (!_connections.any(
+      (item) =>
+          item.link.localId == sourceId &&
+          item.link.kind == ImportKind.subscription,
+    )) {
+      return 'Подписка не найдена.';
+    }
+    _applyingSubscription = true;
+    notifyListeners();
+    try {
+      final previous = _subscriptions[sourceId];
+      final next = previous == null
+          ? SubscriptionStore()
+          : SubscriptionStore.restoreCache(previous.encodeCache(), _clock());
+      next.apply(text, _clock());
+      final inspected = await _inspectSubscription(sourceId, next);
+      if (_disposed) return 'Приложение закрыто.';
+      final stores = {..._subscriptions, sourceId: next};
+      final derived = [
+        ..._derivedConnections.where((item) => item.sourceId != sourceId),
+        ...inspected,
+      ];
+      final all = [..._connections, ...derived];
+      var selection = _selectedId;
+      if (!all.any((item) => item.selectionId == selection)) selection = null;
+      // Validate capacity, source binding and the entire private envelope before
+      // committing any UI/cache/revision changes.
+      ProfileCache(
+        links: _connections.map((item) => item.link),
+        subscriptions: stores,
+        selectedId: selection,
+      ).encode();
+      _subscriptions = stores;
+      _derivedConnections = derived;
+      _selectedId = selection;
+      _profilesChanged();
+      journal.record(EventId.subscriptionApplied);
+      _scheduleSubscriptionExpiry();
+      _enforceSubscriptionAccess();
+      notifyListeners();
+      return 'Список подписки обновлён.';
+    } on SnapshotException catch (error) {
+      if (!_disposed) {
+        journal.record(
+          EventId.subscriptionRejected,
+          reason: error.reason == SnapshotFailure.replay
+              ? ReasonCode.replay
+              : error.reason == SnapshotFailure.stale
+              ? ReasonCode.stale
+              : ReasonCode.malformed,
+        );
+      }
+      return 'Подписка отклонена. Прежний список сохранён.';
+    } on CacheException {
+      if (!_disposed) {
+        journal.record(
+          EventId.subscriptionRejected,
+          reason: ReasonCode.tooLong,
+        );
+      }
+      return 'Список слишком большой. Прежние подключения сохранены.';
+    } catch (_) {
+      if (!_disposed) {
+        journal.record(
+          EventId.subscriptionRejected,
+          reason: ReasonCode.ioFailure,
+        );
+      }
+      return 'Не удалось проверить подписку. Прежний список сохранён.';
+    } finally {
+      _applyingSubscription = false;
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  void _scheduleSubscriptionExpiry() {
+    _subscriptionExpiry?.cancel();
+    DateTime? next;
+    final now = _clock();
+    for (final store in _subscriptions.values) {
+      for (final profile in store.profiles.values) {
+        if (!profile.canUse(now)) continue;
+        final deadline = profile.validUntil.isBefore(profile.accessExpiresAt)
+            ? profile.validUntil
+            : profile.accessExpiresAt;
+        if (next == null || deadline.isBefore(next)) next = deadline;
+      }
+    }
+    if (next == null || _disposed) return;
+    _subscriptionExpiry = Timer(next.difference(now), () {
+      if (_disposed) return;
+      _enforceSubscriptionAccess();
+      _scheduleSubscriptionExpiry();
+      notifyListeners();
+    });
+  }
+
+  bool get _activeSubscriptionAllowed {
+    final active = _activeConnection;
+    if (active?.sourceId == null) return true;
+    final current = _subscriptions[active!.sourceId]
+        ?.profiles[active.cachedProfile!.profile.id];
+    return current != null &&
+        current.canUse(_clock()) &&
+        current.profile.link.localId == active.link.localId;
+  }
+
+  void _enforceSubscriptionAccess() {
+    if (_disposed ||
+        _requesting ||
+        !_stopPossible ||
+        _subscriptionStopQueued ||
+        _activeSubscriptionAllowed) {
+      return;
+    }
+    _subscriptionStopQueued = true;
+    journal.record(
+      EventId.subscriptionAccessLost,
+      reason: ReasonCode.accessChanged,
+    );
+    unawaited(toggleConnection());
+  }
+
   Future<void> initializeJournal() =>
       journal.initializePersistence(const WindowsStorage.journal());
   ProfileStorageState storageState = ProfileStorageState.memoryOnly;
@@ -84,7 +291,7 @@ final class AppController extends ChangeNotifier {
       } else if (reply.code == StorageCode.ok &&
           reply.payload != null &&
           reply.revision.isNotEmpty) {
-        final cache = ProfileCache.decode(reply.payload!);
+        final cache = ProfileCache.decode(reply.payload!, now: _clock());
         final restored = <LocalConnection>[];
         for (final link in cache.links) {
           NativeInspection? inspection;
@@ -96,12 +303,23 @@ final class AppController extends ChangeNotifier {
               _blockStorage(StorageCode.corrupt);
               return;
             }
+            if (inspection.status == NativeImportStatus.unavailable) {
+              inspection = null;
+            }
           }
           restored.add(
             LocalConnection(restored.length + 1, link, inspection: inspection),
           );
         }
+        final derived = <LocalConnection>[];
+        for (final entry in cache.subscriptions.entries) {
+          derived.addAll(await _inspectSubscription(entry.key, entry.value));
+          if (_disposed) return;
+        }
+        _subscriptions = Map.of(cache.subscriptions);
+        _derivedConnections = derived;
         _connections.addAll(restored);
+        _scheduleSubscriptionExpiry();
         _selectedId = cache.selectedId;
         _storageRevision = reply.revision;
         _storageWritable = true;
@@ -115,6 +333,8 @@ final class AppController extends ChangeNotifier {
       }
       storageCode = reply.code;
       notifyListeners();
+    } on SnapshotException {
+      if (!_disposed) _blockStorage(StorageCode.corrupt);
     } on CacheException catch (error) {
       if (!_disposed) {
         _blockStorage(
@@ -150,6 +370,7 @@ final class AppController extends ChangeNotifier {
         final payload = ProfileCache(
           links: _connections.map((connection) => connection.link),
           selectedId: _selectedId,
+          subscriptions: _subscriptions,
         ).encode();
         final reply = await _storage.save(payload, _storageRevision);
         if (_disposed) return;
@@ -184,12 +405,13 @@ final class AppController extends ChangeNotifier {
   bool get stopPossible => _stopPossible;
   bool _disposed = false;
   final List<LocalConnection> _connections = [];
-  List<LocalConnection> get connections => List.unmodifiable(_connections);
+  List<LocalConnection> get connections =>
+      List.unmodifiable([..._connections, ..._derivedConnections]);
   String? _selectedId;
   String? get selectedId => _selectedId;
   LocalConnection? get selected {
-    for (final connection in _connections) {
-      if (connection.link.localId == _selectedId) return connection;
+    for (final connection in connections) {
+      if (connection.selectionId == _selectedId) return connection;
     }
     return null;
   }
@@ -261,7 +483,7 @@ final class AppController extends ChangeNotifier {
       if (_connections.any((item) => item.link.localId == link.localId)) {
         return 'Эта ссылка уже добавлена.';
       }
-      if (_connections.length >= ProfileCache.maxProfiles) {
+      if (connections.length >= ProfileCache.maxProfiles) {
         return 'Достигнут предел: 100 подключений и подписок.';
       }
       _connections.add(LocalConnection(_connections.length + 1, link));
@@ -294,11 +516,11 @@ final class AppController extends ChangeNotifier {
   void select(LocalConnection connection) {
     if (_disposed ||
         connection.link.kind != ImportKind.profile ||
-        !_connections.contains(connection) ||
-        _selectedId == connection.link.localId) {
+        !connections.contains(connection) ||
+        _selectedId == connection.selectionId) {
       return;
     }
-    _selectedId = connection.link.localId;
+    _selectedId = connection.selectionId;
     _profilesChanged();
     notifyListeners();
   }
@@ -317,10 +539,22 @@ final class AppController extends ChangeNotifier {
     if (!_stopPossible && connection!.link.protocol != Protocol.trusttunnel) {
       return 'Подключение этого типа появится позже.';
     }
+    if (!_stopPossible && !eligible(connection!)) {
+      journal.record(EventId.subscriptionRejected, reason: ReasonCode.stale);
+      notifyListeners();
+      return 'Срок данных подписки истёк. Обновите список перед подключением.';
+    }
+    if (!_stopPossible) {
+      _activeConnection = connection;
+      _subscriptionStopQueued = false;
+    }
     _requesting = true;
     _serviceEpoch++;
     notifyListeners();
     final stopping = _stopPossible;
+    if (stopping && _activeConnection?.sourceId != null) {
+      _subscriptionStopQueued = true;
+    }
     try {
       final response = stopping
           ? await _safeService(_service.stop)
@@ -363,6 +597,7 @@ final class AppController extends ChangeNotifier {
           journal.record(EventId.serviceRequestAccepted);
         }
       } else {
+        if (!stopping) _activeConnection = null;
         journal.record(
           EventId.serviceRequestRejected,
           reason: _serviceReason(response.code),
@@ -372,12 +607,15 @@ final class AppController extends ChangeNotifier {
       return _serviceMessage(response.code, stopping);
     } finally {
       _requesting = false;
+      _enforceSubscriptionAccess();
       if (!_disposed) notifyListeners();
     }
   }
 
   Future<void> _poll() async {
     if (_polling || _requesting || _disposed) return;
+    _enforceSubscriptionAccess();
+    if (_requesting) return;
     _polling = true;
     final epoch = _serviceEpoch;
     try {
@@ -393,6 +631,8 @@ final class AppController extends ChangeNotifier {
         serviceStatus = response;
         if (response.state == ServiceState.disconnected) {
           _stopPossible = false;
+          _activeConnection = null;
+          _subscriptionStopQueued = false;
           _pollTimer?.cancel();
         }
       } else if (++_failedPolls >= 6) {
@@ -464,6 +704,7 @@ final class AppController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _pollTimer?.cancel();
+    _subscriptionExpiry?.cancel();
     journal.onPersistenceChanged = null;
     journal.disposePersistence();
     super.dispose();

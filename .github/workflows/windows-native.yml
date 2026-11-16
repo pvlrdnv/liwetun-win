@@ -85,6 +85,7 @@ jobs:
             native_import = 'verified'
             protected_storage_channel = 'verified'
             profile_restore_without_autoconnect = 'verified'
+            subscription_cache_revoke_replay_restore = 'verified_without_network'
             packaged_notice_bytes = 'verified_not_legal_approval'
             tunnel_service = 'not_installed'
             network_tests = 'not_run'

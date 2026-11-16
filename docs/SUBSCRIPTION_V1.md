@@ -2,7 +2,7 @@
 
 Status: local proposal; no LikeWeb route or server implementation exists.
 No URL endpoint is assumed. The current UI accepts a personal HTTPS URL but
-does not fetch it. The domain parser is tested with synthetic JSON only.
+does not fetch it. The parser/cache/controller path is tested with synthetic JSON; no server feed is assumed.
 
 ## Transport boundary, to be implemented
 
@@ -74,7 +74,7 @@ For a directly imported key, entitlement is unknown. Server enforcement is
 authoritative; do not present an invented subscription deadline or active right.
 
 
-## Prepared cache codec (not yet connected to Windows storage or GUI)
+## Cache codec and protected envelope
 
 `SubscriptionStore.encodeCache` / `restoreCache` preserve the accepted revision
 floor, access denial, and each retained profile's original generated/valid/access
@@ -89,5 +89,8 @@ and a store to 100 retained profiles, including partial accumulation. A partial
 update exceeding capacity rejects without changing revision or existing data.
 The encoded private cache is limited to 1 MiB. Its plaintext is an in-memory
 serialization for future inclusion in the existing user-DPAPI envelope, never a
-file/log/export format. This codec alone does not implement protected persistence,
-HTTPS refresh, GUI reconciliation, active-session revocation or a LikeWeb route.
+file/log/export format. The codec now connects to the v2 profile envelope and controller reconciliation;
+actual Windows verification of the new schema is pending. Native trust checks
+precede committing an update, and active-session expiry/revoke/URI replacement
+queues Stop without automatic reconnect or unknown-outcome retries. HTTPS
+refresh, its UI action and any LikeWeb route remain unimplemented.

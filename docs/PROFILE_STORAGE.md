@@ -31,8 +31,12 @@ LocalSystem tunnel service does not own this cache.
 
 ## Application behavior
 
-The exact versioned JSON schema accepts at most 100 private links plus a selected
-profile ID. Links are reparsed, duplicates and invalid selection rejected; no
+The legacy v1 JSON schema retains direct/source links and selected profile ID.
+Schema v2 adds source-bound subscription stores within the same encrypted native
+container and 1 MiB bound; direct/source links plus derived profiles total at most
+100. Selection for derived profiles is scoped to the source and remote profile
+ID, so equal IDs from different feeds do not alias. The accepted revision floor,
+access denial and original per-profile expiry times survive restoration. Links are reparsed, duplicates and invalid selection rejected; no
 native acceptance metadata or live connection state is persisted. Restored TT
 profiles are inspected again through the official parser before the complete
 snapshot is applied. Loading never starts a connection or contacts a server.
@@ -67,3 +71,14 @@ it then removes the synthetic cache. The unsigned app still rejects service
 commands before privileged side effects. No owner-device installation or network
 mutation occurred. Desktop Windows 10/11, non-elevated installed GUI, abrupt
 power loss and profile reset/recovery UI remain separate acceptance gates.
+
+
+Subscription cache/controller integration has local synthetic coverage for
+source binding, atomic parse/native/capacity failure, restart without auto-start,
+replay/revoke persistence, partial deadline retention, expiry and active-session
+Stop. A revoke or changed active URI queues Stop even if Start was still pending.
+An uncertain Stop is not automatically resent. The UI displays derived names /
+stale eligibility; a stale selection cannot start. These client checks do not
+replace server-side entitlement/revocation. HTTPS refresh and its UI action are
+not enabled yet. A fourth actual Windows desktop-channel case is prepared for
+v2 DPAPI save/restore/revoke/replay/cleanup; Windows execution remains pending.

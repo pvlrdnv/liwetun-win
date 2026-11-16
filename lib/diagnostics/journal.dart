@@ -28,6 +28,9 @@ enum EventId {
   profilesRestored,
   profilesSaved,
   profileStorageFailed,
+  subscriptionApplied,
+  subscriptionRejected,
+  subscriptionAccessLost,
 }
 
 enum ReasonCode {
@@ -41,6 +44,9 @@ enum ReasonCode {
   serviceUnavailable,
   serviceDenied,
   coreFailure,
+  replay,
+  stale,
+  accessChanged,
 }
 
 /// No arbitrary string, URI, exception, remote ID or core output is accepted.

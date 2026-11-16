@@ -405,7 +405,9 @@ class _HomeState extends State<_Home> {
               title: Text(connection.title),
               subtitle: Text(
                 connection.link.kind == ImportKind.subscription
-                    ? 'Ожидает загрузки · обновлений ещё не было'
+                    ? widget.controller.subscriptionNotice(connection)
+                    : !widget.controller.eligible(connection)
+                    ? 'Срок данных истёк · обновите подписку'
                     : connection.inspection == null
                     ? 'Формат ожидает нативной проверки · доступность неизвестна'
                     : 'Формат проверен · доступность и право доступа неизвестны',
@@ -413,7 +415,7 @@ class _HomeState extends State<_Home> {
               trailing: connection.link.kind == ImportKind.subscription
                   ? null
                   : Icon(
-                      widget.controller.selectedId == connection.link.localId
+                      widget.controller.selectedId == connection.selectionId
                           ? Icons.radio_button_checked
                           : Icons.radio_button_off,
                     ),

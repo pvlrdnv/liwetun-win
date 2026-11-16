@@ -10,6 +10,7 @@ import 'package:liwetun/native/trusttunnel.dart';
 import 'package:liwetun/native/service.dart';
 import 'package:liwetun/native/storage.dart';
 import 'package:liwetun/domain/profile_cache.dart';
+import 'package:liwetun/domain/subscription.dart';
 import 'package:liwetun/native/environment.dart';
 import 'package:liwetun/diagnostics/journal.dart';
 
@@ -202,6 +203,114 @@ void main() {
         }
         if (profileRevision.isNotEmpty) {
           expect((await profiles.clear(profileRevision)).code, StorageCode.ok);
+        }
+      }
+    },
+  );
+  testWidgets(
+    'actual DPAPI subscription cache preserves revoke and source binding without network',
+    (tester) async {
+      expect(Platform.environment['GITHUB_ACTIONS'], 'true');
+      const storage = WindowsStorage();
+      expect((await storage.load()).code, StorageCode.missing);
+      final clock = DateTime.now().toUtc();
+      final instant = DateTime.fromMillisecondsSinceEpoch(
+        clock.millisecondsSinceEpoch ~/ 1000 * 1000,
+        isUtc: true,
+      );
+      String stamp(DateTime time) =>
+          time.toIso8601String().replaceFirst('.000Z', 'Z');
+      final source = parseLink(
+        'https://subscription.example.invalid/SYNTHETIC_PRIVATE',
+      );
+      String snapshot(int revision, {bool revoked = false}) => jsonEncode({
+        'schema_version': 1,
+        'revision': revision,
+        'generated_at': stamp(instant),
+        'valid_until': stamp(instant.add(const Duration(hours: 1))),
+        'access_expires_at': stamp(instant.add(const Duration(days: 1))),
+        'access': revoked ? 'revoked' : 'active',
+        'complete': true,
+        'profiles': revoked
+            ? []
+            : [
+                {
+                  'id': 'one',
+                  'server_id': 'synthetic_one',
+                  'name': 'Synthetic subscription',
+                  'country': 'NL',
+                  'protocol': 'trusttunnel',
+                  'allowed': true,
+                  'uri': const String.fromEnvironment('SYNTHETIC_TT_HTTP3'),
+                },
+              ],
+        'revoked_profile_ids': [],
+      });
+      AppController? first, second;
+      var created = false;
+      try {
+        final store = SubscriptionStore()..apply(snapshot(1), instant);
+        final selection = ProfileCache.subscriptionSelectionId(
+          source.localId,
+          'one',
+        );
+        final saved = await storage.save(
+          ProfileCache(
+            links: [source],
+            selectedId: selection,
+            subscriptions: {source.localId: store},
+          ).encode(),
+          '',
+        );
+        expect(saved.code, StorageCode.ok);
+        created = true;
+        first = AppController();
+        await first.initializeStorage();
+        expect(first.storageState, ProfileStorageState.saved);
+        expect(first.connections.length, 2);
+        expect(first.selected?.selectionId == selection, isTrue);
+        expect(first.selected?.inspection?.status, NativeImportStatus.accepted);
+        expect(first.stopPossible, isFalse);
+        await first.applySubscriptionSnapshot(
+          source.localId,
+          snapshot(2, revoked: true),
+        );
+        for (
+          var attempt = 0;
+          attempt < 30 && first.storageState == ProfileStorageState.saving;
+          attempt++
+        ) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(first.storageState, ProfileStorageState.saved);
+        expect(first.selected, isNull);
+        final loaded = await storage.load();
+        expect(loaded.code, StorageCode.ok);
+        final cache = ProfileCache.decode(loaded.payload!);
+        expect(cache.subscriptions[source.localId]!.revision, 2);
+        expect(cache.subscriptions[source.localId]!.access, Access.revoked);
+        first.dispose();
+        first = null;
+        second = AppController();
+        await second.initializeStorage();
+        expect(second.connections.length, 1);
+        expect(second.selected, isNull);
+        expect(second.stopPossible, isFalse);
+        await second.applySubscriptionSnapshot(source.localId, snapshot(1));
+        expect(second.connections.length, 1);
+        expect(second.selected, isNull);
+        expect((await storage.load()).revision == loaded.revision, isTrue);
+      } finally {
+        first?.dispose();
+        second?.dispose();
+        if (created) {
+          final remaining = await storage.load();
+          expect(remaining.code, StorageCode.ok);
+          expect(
+            (await storage.clear(remaining.revision)).code,
+            StorageCode.ok,
+          );
+          expect((await storage.load()).code, StorageCode.missing);
         }
       }
     },
