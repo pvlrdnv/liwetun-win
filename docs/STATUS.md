@@ -54,8 +54,16 @@ case failed at post-termination observation after HTTPS/DNS and forced exit;
 network/DNS/adapter restoration PASS without watchdog, final WFP measurement
 unavailable. No all-cases-pass claim. Added only closed probe-stage/query-code
 and failure-reason diagnostics for a focused rerun; no retry or security-check
-relaxation. Actual diagnostic Windows rerun pending. Subsequent service/network/package
-qualification remains pending.
+relaxation. Three diagnostic repeats: two PASS; one reproduced
+`fixture_system_command_failed` during restoration observation, before the WFP
+probe. All three restored routes/DNS/adapter without watchdog. The old poll used
+full adapter details / per-interface route queries while that adapter was being
+removed and aborted on any failed CIM observation. Changed only the CI observer:
+check adapter absence before/after an exact global DNS/route snapshot, treat a
+failed query as unknown within the same bounded 20-attempt window, and still fail
+persistent errors or mismatches. Closed attempt/failure counters added. Four local
+transient/persistent/mismatch/reappearance checks PASS; Windows recheck pending.
+The client/service/SDK cleanup implementation is unchanged.
 Prepared explicit candidate-manifest selection for those jobs; source manifest /
 lock digests, exact build run/commit and DLL digests remain required. No candidate
 runtime manifest is generated until its successful DLL artifact is inspected.

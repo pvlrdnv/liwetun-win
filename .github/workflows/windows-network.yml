@@ -172,8 +172,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Task Linux test tools failed' }
       - name: Real signed service TUN HTTPS DNS H2 H3 and stop/crash tests
         run: |
-          python -m unittest discover -s tools/service -p test_physical_forwarder.py
-          if ($LASTEXITCODE -ne 0) { throw 'Forwarder protocol fixtures failed' }
+          python -m unittest discover -s tools/service -p 'test_*.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Protocol and restoration observation fixtures failed' }
           if ($env:LIWETUN_PRODUCTION_PROBE -eq 'true') { ./tools/service/qualify.ps1 -Sdk build/sdk-runtime -Network -ProductionTraffic }
           else { ./tools/service/qualify.ps1 -Sdk build/sdk-runtime -Network }
       - name: Remove exact task-created Linux fixture

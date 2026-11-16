@@ -78,5 +78,25 @@
   "all_passed": false,
   "windows_10_qualified": false,
   "windows_11_qualified": false,
-  "release_qualified": false
+  "release_qualified": false,
+  "diagnostic_repeats": [
+    {
+      "case": "http2_lease_death_diagnostic",
+      "run_id": 43923554744,
+      "passed": true,
+      "evidence": "sdk-source-check-43923554744.json"
+    },
+    {
+      "case": "http2_lease_death_diagnostic",
+      "run_id": 43923711806,
+      "passed": false,
+      "evidence": "sdk-source-check-43923711806.json"
+    },
+    {
+      "case": "http2_lease_death_diagnostic",
+      "run_id": 43923728418,
+      "passed": true,
+      "evidence": "sdk-source-check-43923728418.json"
+    }
+  ]
 }

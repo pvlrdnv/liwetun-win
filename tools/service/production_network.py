@@ -392,7 +392,10 @@ def main():
         else:
             session.close('stop')
         session = None
-        restored = wait_clean(baseline)
+        stage = 'observe_routes_dns_adapter_restore'
+        result['restoration_observation'] = {}
+        restored = wait_clean(baseline, result['restoration_observation'])
+        stage = 'observe_wfp_restore'
         wfp_after = wfp_watch.command('query') if wfp_watch else owned_wfp(client)
         wfp_restored = (wfp_after['sdk_sessions'] == wfp_before['sdk_sessions'] and
                         wfp_after['sdk_dynamic_sessions'] == wfp_before['sdk_dynamic_sessions'])

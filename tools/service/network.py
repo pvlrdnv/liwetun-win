@@ -223,10 +223,31 @@ def dns_probe(info):
         return answer[:2] == packet[:2] and answer[6:8] == b'\x00\x01' and answer.endswith(b'\xc0\x00\x02\x7b')
 
 
-def wait_clean(baseline):
-    for _ in range(20):
-        if tun() is None and snapshot() == baseline:
-            return True
+def adapter_absent():
+    # Do not dereference an interface index while that interface is being
+    # removed. The detailed tun() observation is for an active adapter only.
+    return ps("""
+    (@(Get-NetAdapter -IncludeHidden | Where-Object Name -eq 'LiWeTun').Count -eq 0) |
+      ConvertTo-Json -Compress
+    """) is True
+
+
+def wait_clean(baseline, observation=None):
+    observation = observation if observation is not None else {}
+    observation.update(attempts=0, query_failures=0, coherent_clean_observed=False)
+    for attempt in range(20):
+        observation['attempts'] = attempt + 1
+        try:
+            if adapter_absent() and snapshot() == baseline and adapter_absent():
+                observation['coherent_clean_observed'] = True
+                return True
+        except RuntimeError as error:
+            # A failed CIM observation during adapter removal is unknown, never
+            # a clean result. Keep the existing bounded observation window;
+            # persistent failures still fail qualification.
+            if error.args != ('fixture_system_command_failed',):
+                raise
+            observation['query_failures'] += 1
         time.sleep(.5)
     return False
 
