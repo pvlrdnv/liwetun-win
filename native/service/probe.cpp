@@ -138,7 +138,7 @@ int wmain(int argc, wchar_t** argv) {
     if (response.code != Code::Ok && response.code != Code::CoreFailure) return 31;
     bool observed = response.core_state <= 5;
     bool adapter_seen = false;
-    for (unsigned i = 0; i < 30; ++i) {
+    for (unsigned i = 0; i < 60; ++i) {
       adapter_seen = adapter_seen || AdapterPresent(L"LiWeTun") == true;
       response = ServiceRequest(Command::Query);
       observed = observed || response.core_state <= 5;

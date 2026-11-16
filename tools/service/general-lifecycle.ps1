@@ -11,6 +11,8 @@ $stage = 'refused_endpoint_preflight'
 $adapterSeen = $false
 $dnsConfigured = $false
 $prefixCounts = @{}
+$ipv4RoutesSeen = $false
+$ipv6RoutesSeen = $false
 $coreObserved = $false
 $nativeClean = $false
 $nativeExit = $null
@@ -26,6 +28,27 @@ function SnapshotGeneral {
         routes=(Get-NetRoute | Sort-Object InterfaceIndex,DestinationPrefix,NextHop,RouteMetric | Select-Object InterfaceIndex,DestinationPrefix,NextHop,RouteMetric | ConvertTo-Json -Compress)
         adapter=[bool](Get-NetAdapter -IncludeHidden | Where-Object Name -eq 'LiWeTun')
     }
+}
+function RouteCovers([string]$Address, $Routes) {
+    $candidate = [Net.IPAddress]::Parse($Address).GetAddressBytes()
+    foreach ($route in $Routes) {
+        $parts = $route.DestinationPrefix.Split('/')
+        $network = [Net.IPAddress]::Parse($parts[0]).GetAddressBytes()
+        if ($candidate.Length -ne $network.Length) { continue }
+        $bits = [int]$parts[1]
+        $whole = [int][Math]::Floor($bits / 8)
+        $remainder = $bits % 8
+        $matches = $true
+        for ($i=0; $i -lt $whole; $i++) {
+            if ($candidate[$i] -ne $network[$i]) { $matches = $false; break }
+        }
+        if ($matches -and $remainder) {
+            $mask = (0xff -shl (8 - $remainder)) -band 0xff
+            $matches = ($candidate[$whole] -band $mask) -eq ($network[$whole] -band $mask)
+        }
+        if ($matches) { return $true }
+    }
+    return $false
 }
 $before = SnapshotGeneral
 if ($before.adapter) { throw 'Preexisting task adapter' }
@@ -62,11 +85,18 @@ try {
         if ($adapter.Count -eq 1) {
             $adapterSeen = $true
             $index = $adapter[0].ifIndex
-            foreach ($route in Get-NetRoute -InterfaceIndex $index) {
+            $routes = @(Get-NetRoute -InterfaceIndex $index)
+            foreach ($route in $routes) {
                 $family = if ($route.DestinationPrefix.Contains(':')) { 'v6/' } else { 'v4/' }
                 $key = $family + $route.DestinationPrefix.Split('/')[-1]
                 $prefixCounts[$key] = 1
             }
+            $v4Covered = $true
+            foreach ($sample in @('1.1.1.1','128.1.1.1','198.51.100.1','203.0.113.1')) {
+                $v4Covered = $v4Covered -and (RouteCovers $sample $routes)
+            }
+            $ipv4RoutesSeen = $ipv4RoutesSeen -or $v4Covered
+            $ipv6RoutesSeen = $ipv6RoutesSeen -or ((RouteCovers '2001:db8::1' $routes) -and (RouteCovers '3001:db8::1' $routes))
             if (@(Get-DnsClientServerAddress -InterfaceIndex $index | Where-Object { $_.ServerAddresses.Count -gt 0 }).Count) { $dnsConfigured = $true }
         }
     }
@@ -84,7 +114,7 @@ try {
         if ($restored) { break }
         Start-Sleep -Milliseconds 200
     }
-    $passed = $nativeExit -eq 0 -and $coreObserved -and $nativeClean -and $restored
+    $passed = $nativeExit -eq 0 -and $coreObserved -and $nativeClean -and $restored -and $ipv4RoutesSeen -and $ipv6RoutesSeen
 } finally {
     $bodyPassed = $passed
     $passed = $false
@@ -107,7 +137,7 @@ try {
     } finally {
         if ($watchdog) { $watchdog.Dispose() }
         if ($done) { $done.Dispose() }
-        @{passed=$passed; stage=$stage; native_exit=$nativeExit; core_state_observed=$coreObserved; adapter_seen=$adapterSeen; adapter_dns_configured_seen=$dnsConfigured; adapter_route_prefix_lengths=@($prefixCounts.Keys | Sort-Object); routes_dns_adapter_restored=$restored; network_test_modes_enabled=$false; internet_delivery_tested=$false; profile='synthetic_refused_loopback'; release_ready=$false} |
+        @{passed=$passed; stage=$stage; native_exit=$nativeExit; core_state_observed=$coreObserved; adapter_seen=$adapterSeen; adapter_dns_configured_seen=$dnsConfigured; adapter_route_prefix_lengths=@($prefixCounts.Keys | Sort-Object); ipv4_sample_route_coverage_seen=$ipv4RoutesSeen; ipv6_sample_route_coverage_seen=$ipv6RoutesSeen; routes_dns_adapter_restored=$restored; network_test_modes_enabled=$false; internet_delivery_tested=$false; profile='synthetic_refused_loopback'; release_ready=$false} |
             ConvertTo-Json -Depth 3 | Set-Content -Encoding utf8 (Join-Path $evidence 'general-lifecycle.json')
     }
 }

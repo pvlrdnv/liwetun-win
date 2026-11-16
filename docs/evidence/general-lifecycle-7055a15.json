@@ -1,0 +1,69 @@
+{
+  "source_run": "43854899728",
+  "source_commit": "7055a15a0ff11513b1eecd6b00d4c0bc84f1e635",
+  "runner_os": "windows-2022",
+  "sdk_source_run": 43752644532,
+  "lifecycle": {
+    "adapter_dns_configured_seen": true,
+    "adapter_route_prefix_lengths": [
+      "v4/32",
+      "v4/4",
+      "v6/128",
+      "v6/64",
+      "v6/8"
+    ],
+    "internet_delivery_tested": false,
+    "network_test_modes_enabled": false,
+    "release_ready": false,
+    "passed": true,
+    "profile": "synthetic_refused_loopback",
+    "native_exit": 0,
+    "adapter_seen": true,
+    "stage": "verify_original_network_restored",
+    "routes_dns_adapter_restored": true,
+    "core_state_observed": true
+  },
+  "watchdog": {
+    "action_completed": true,
+    "triggered": false,
+    "method": "not_needed",
+    "release_ready": false
+  },
+  "qualification": {
+    "test_mode_no_global_routes": false,
+    "driver_cycle": {
+      "adapter_created": true,
+      "adapter_removed": true
+    },
+    "signed_service_ipc": "verified",
+    "dns_and_default_routes_unchanged": true,
+    "checks": [
+      "old_disconnect_discards_unread_reply_reproduced",
+      "protocol_bounds",
+      "unsigned_service_denied",
+      "unsigned_client_denied_by_service",
+      "signed_owner_query",
+      "unknown_metrics_and_core_state_preserved",
+      "busy_pipe_waits_without_resending",
+      "delayed_client_consumes_reply_before_disconnect",
+      "invalid_profile_denied",
+      "oversized_frame_denied",
+      "idempotent_stop",
+      "different_signer_denied_by_service",
+      "different_owner_sid_denied_even_to_admin",
+      "sdk_canary_no_raw_logs_or_files",
+      "real_wintun_create_close",
+      "production_config_refused_endpoint_and_network_restoration",
+      "service_uninstalled",
+      "dns_and_default_routes_unchanged"
+    ],
+    "test_mode_tun_network": false,
+    "core_runtime_ready": 1,
+    "production_refused_endpoint_lifecycle": true,
+    "sdk_lifecycle": {
+      "internet_delivery_tested": false,
+      "verified_by": "production_refused_loopback_lifecycle"
+    },
+    "release_ready": false
+  }
+}

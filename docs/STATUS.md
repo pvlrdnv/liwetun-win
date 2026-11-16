@@ -237,6 +237,20 @@ preflight before the production lifecycle was launched. No lifecycle evidence
 was produced. Preflight now records a closed no-listener observation for the
 synthetic port instead of depending on async connection timing; the independent
 watchdog must emit readiness before the SDK probe can start. Recheck pending.
+Refused-endpoint lifecycle **PASS** on `7055a15`,
+[run 43854899728](https://github.com/pvlrdnv/liwetun-win/actions/runs/43854899728):
+18 service checks, actual adapter/DNS observation, complete route/DNS/adapter
+snapshot restoration, no deadline intervention. [Evidence](evidence/general-lifecycle-7055a15.json).
+However, only DNS/multicast/local route categories appeared. Source inspection
+of pinned SDK `a1ce3f9` confirmed `parse_tun_listener_config` leaves omitted
+route arrays empty and `make_tun_listener` passes them directly instead of the
+documented OS defaults. The service was omitting them in its production branch.
+This is an actual routing defect, not successful general-mode traffic evidence.
+Production config now explicitly includes IPv4 0/0 and IPv6 2000::/3 with the
+pinned SDK's recommended private/link-local/multicast IPv4 exclusions. Bounded
+CI branches are unchanged. The new fixture requires own-adapter CIDRs covering
+fixed IPv4/IPv6 samples; native lifecycle observation allows six seconds. This
+fix and the stricter route criterion require fresh Windows qualification.
 
 ## Current stage
 

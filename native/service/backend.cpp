@@ -140,7 +140,11 @@ void Backend::Run() {
           // probe sockets explicitly bind IP_UNICAST_IF to it.
           config += "included_routes=[\"198.18.0.0/15\"]\nexcluded_routes=[]\nchange_system_dns=true\n";
 #else
-          config += "change_system_dns=true\n";
+          // The pinned TOML parser leaves omitted route arrays empty. Its
+          // documented defaults are not copied into TunListener automatically.
+          config += "included_routes=[\"0.0.0.0/0\",\"2000::/3\"]\n"
+              "excluded_routes=[\"10.0.0.0/8\",\"169.254.0.0/16\",\"172.16.0.0/12\","
+              "\"192.168.0.0/16\",\"224.0.0.0/3\"]\nchange_system_dns=true\n";
 #endif
         }
         SecureZeroMemory(endpoint, size);
