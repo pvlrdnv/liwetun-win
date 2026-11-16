@@ -29,12 +29,10 @@ function SnapshotGeneral {
 }
 $before = SnapshotGeneral
 if ($before.adapter) { throw 'Preexisting task adapter' }
-$socket = [Net.Sockets.TcpClient]::new()
-try {
-    $connection = $socket.ConnectAsync('127.0.0.1',9)
-    try { [void]$connection.Wait(1000) } catch { }
-    if ($socket.Connected -or !$connection.IsCompleted) { throw 'Refused loopback endpoint required' }
-} finally { $socket.Dispose() }
+$listeners = @(Get-NetTCPConnection -State Listen -LocalPort 9 -ErrorAction SilentlyContinue)
+@{loopback_profile_port=9; listener_present=($listeners.Count -gt 0); sdk_started=$false; release_ready=$false} |
+    ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $evidence 'general-preflight.json')
+if ($listeners.Count) { throw 'Refused loopback endpoint required' }
 try {
     $done = [Threading.EventWaitHandle]::new($false,[Threading.EventResetMode]::ManualReset,('Local\LiWeTun.CI.GeneralDone.' + $env:GITHUB_RUN_ID))
     $watchdog = [Diagnostics.Process]::new()
@@ -45,6 +43,8 @@ try {
     $watchdog.StartInfo.RedirectStandardError = $true
     if (!$watchdog.Start()) { throw 'Lifecycle watchdog launch failed' }
     $watchdogStarted = $true
+    $readyLine = $watchdog.StandardOutput.ReadLineAsync()
+    if (!$readyLine.Wait(15000) -or $readyLine.Result -cne 'ready') { throw 'Independent deadline was not armed' }
     $stage = 'production_refused_endpoint_lifecycle'
     $probe = [Diagnostics.Process]::new()
     $probe.StartInfo = [Diagnostics.ProcessStartInfo]::new($Client)

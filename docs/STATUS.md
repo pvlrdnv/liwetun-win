@@ -231,6 +231,12 @@ deadline that can stop only this job's image-verified service process. SDK sourc
 run/commit and original DLL digests are enforced before CI signing. This new
 fixture is pending Windows proof and explicitly does not test Internet delivery,
 successful global routing, IPv6 traffic or a live server.
+Initial production-lifecycle run 43854172525 compiled with the intended flags and
+passed earlier service/SDK fixture steps, but stopped at the one-second TCP
+preflight before the production lifecycle was launched. No lifecycle evidence
+was produced. Preflight now records a closed no-listener observation for the
+synthetic port instead of depending on async connection timing; the independent
+watchdog must emit readiness before the SDK probe can start. Recheck pending.
 
 ## Current stage
 

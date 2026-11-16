@@ -9,6 +9,8 @@ $method = 'not_needed'
 $target = $null
 $controller = $null
 try {
+    [Console]::Out.WriteLine('ready')
+    [Console]::Out.Flush()
     if (!$done.WaitOne(30000)) {
         $triggered = $true
         $configuration = Get-CimInstance Win32_Service -Filter "Name='LiWeTun'"
