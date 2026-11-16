@@ -205,12 +205,50 @@ int Install(const std::wstring& sid) {
   CloseServiceHandle(service); CloseServiceHandle(manager);
   return valid ? 0 : 13;
 }
+int InstallDesktopOwner() {
+  // The elevated installer's account can differ from the desktop user.
+  // Resolve only this session's actual Windows shell; never guess an admin SID.
+  const HWND shell = GetShellWindow();
+  DWORD pid = 0, session = MAXDWORD, own_session = MAXDWORD;
+  if (!shell || !GetWindowThreadProcessId(shell, &pid) || !pid ||
+      !ProcessIdToSessionId(pid, &session) ||
+      !ProcessIdToSessionId(GetCurrentProcessId(), &own_session) || session != own_session) return 15;
+  Handle process(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE, pid));
+  if (!process || WaitForSingleObject(process.get(), 0) != WAIT_TIMEOUT) return 15;
+  std::vector<wchar_t> path(32768), windows(32768);
+  DWORD size = static_cast<DWORD>(path.size());
+  const UINT windows_size = GetWindowsDirectoryW(windows.data(), static_cast<UINT>(windows.size()));
+  if (!windows_size || windows_size >= windows.size() ||
+      !QueryFullProcessImageNameW(process.get(), 0, path.data(), &size) ||
+      !EqualPath(std::wstring(path.data(), size), std::wstring(windows.data(), windows_size) + L"\\explorer.exe")) return 15;
+  HANDLE raw = nullptr;
+  if (!OpenProcessToken(process.get(), TOKEN_QUERY, &raw)) return 15;
+  Handle token(raw);
+  DWORD bytes = 0;
+  GetTokenInformation(token.get(), TokenUser, nullptr, 0, &bytes);
+  if (!bytes || bytes > 65536) return 15;
+  std::vector<unsigned char> user(bytes);
+  if (!GetTokenInformation(token.get(), TokenUser, user.data(), bytes, &bytes)) return 15;
+  LPWSTR text = nullptr;
+  if (!ConvertSidToStringSidW(reinterpret_cast<TOKEN_USER*>(user.data())->User.Sid, &text)) return 15;
+  const std::wstring sid(text);
+  LocalFree(text);
+  DWORD current_pid = 0;
+  if (GetShellWindow() != shell || !GetWindowThreadProcessId(shell, &current_pid) ||
+      current_pid != pid || WaitForSingleObject(process.get(), 0) != WAIT_TIMEOUT) return 15;
+  return Install(sid);
+}
 int Uninstall() {
   Image self;
   if (!OpenTrustedImage(SelfPath(), self)) return 10;
   SC_HANDLE manager = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
   SC_HANDLE service = manager ? OpenServiceW(manager, kServiceName, SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS | SERVICE_STOP | DELETE) : nullptr;
-  if (!service) { if (manager) CloseServiceHandle(manager); return 11; }
+  if (!service) {
+    const DWORD error = GetLastError();
+    const bool absent = manager && error == ERROR_SERVICE_DOES_NOT_EXIST;
+    if (manager) CloseServiceHandle(manager);
+    return absent ? 0 : 11;
+  }
   DWORD bytes = 0;
   QueryServiceConfigW(service, nullptr, 0, &bytes);
   std::vector<unsigned char> config(bytes);
@@ -237,6 +275,7 @@ int Uninstall() {
 int wmain(int argc, wchar_t** argv) {
   using namespace liwetun;
   if (argc == 3 && std::wstring(argv[1]) == L"--install") return Install(argv[2]);
+  if (argc == 2 && std::wstring(argv[1]) == L"--install-desktop-owner") return InstallDesktopOwner();
   if (argc == 2 && std::wstring(argv[1]) == L"--uninstall") return Uninstall();
   if (argc != 3 || std::wstring(argv[1]) != L"--service" || !UserSid(argv[2])) return 2;
   owner_sid = argv[2];

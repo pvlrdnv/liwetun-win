@@ -15,7 +15,7 @@ add_compile_definitions(UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WIN
 include("${CMAKE_CURRENT_SOURCE_DIR}/control.cmake")
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../windows" "${CMAKE_CURRENT_BINARY_DIR}/rust")
 add_executable(liwetun_service main.cpp backend.cpp)
-target_link_libraries(liwetun_service PRIVATE liwetun_control liwetun_native wtsapi32)
+target_link_libraries(liwetun_service PRIVATE liwetun_control liwetun_native wtsapi32 user32)
 if(LIWETUN_TEST_NO_GLOBAL_ROUTES)
   target_compile_definitions(liwetun_service PRIVATE LIWETUN_TEST_NO_GLOBAL_ROUTES=1)
 endif()

@@ -1,3 +1,4 @@
+param([switch]$Installer)
 # Disposable CI only. Production-mode binaries, read-only IPC; no tunnel start.
 $ErrorActionPreference = 'Stop'
 if ($env:GITHUB_ACTIONS -ne 'true' -or $env:GITHUB_RUN_ID -notmatch '^[0-9]{1,20}$') { throw 'Disposable GitHub runner required' }
@@ -10,6 +11,7 @@ $installed = $false
 $certificate = $null
 $stage = 'verify_gui_input'
 $passed = $false
+$installerPassed = $false
 $checks = [System.Collections.Generic.List[string]]::new()
 New-Item -ItemType Directory -Force $evidence | Out-Null
 function Snapshot {
@@ -102,6 +104,10 @@ try {
     New-Item -ItemType Directory (Join-Path $payload 'notices') | Out-Null
     Copy-Item third_party/sdk (Join-Path $payload 'notices') -Recurse
     Copy-Item third_party/rust (Join-Path $payload 'notices') -Recurse
+    if ($Installer) {
+        if (!$env:LIWETUN_NSIS_ROOT) { throw 'Pinned NSIS compiler was not prepared' }
+        Copy-Item (Join-Path $env:LIWETUN_NSIS_ROOT 'COPYING') (Join-Path $payload 'notices/NSIS-COPYING.txt')
+    }
     foreach ($file in Get-ChildItem $payload -File | Where-Object { $_.Extension -in @('.exe','.dll') }) {
         $stream = [IO.File]::OpenRead($file.FullName)
         $reader = [IO.BinaryReader]::new($stream)
@@ -176,6 +182,17 @@ try {
     })
     @{gui_source=$provenance.source_commit; sdk_source_run=$pin.source_run; service_source=$env:GITHUB_SHA; signing='ephemeral_ci_only'; release_ready=$false; network_test_modes_enabled=$false; tunnel_started=$false; files=$files} |
         ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $evidence 'payload-manifest.json')
+    if ($Installer) {
+        $stage = 'installer_qualification'
+        & $service --uninstall
+        if ($LASTEXITCODE -ne 0) { throw 'Payload fixture removal before installer failed' }
+        $installed = $false
+        Remove-Item $root -Recurse -Force
+        $created = $false
+        & (Join-Path $PSScriptRoot 'installer-test.ps1') -CertificateThumbprint $certificate.Thumbprint
+        $installerPassed = $true
+        $checks.Add('fresh_installer_rollback_medium_query_and_uninstall')
+    }
     $passed = $true
 } finally {
     $cleanup = $true
@@ -194,7 +211,7 @@ try {
     }
     $after = Snapshot
     $restored = !$after.adapter -and $after.dns -eq $before.dns -and $after.routes -eq $before.routes
-    @{passed=($passed -and $cleanup -and $restored); stage=$stage; checks=$checks.ToArray(); cleanup_passed=$cleanup; network_unchanged=$restored; release_ready=$false; installer_tested=$false} |
+    @{passed=($passed -and $cleanup -and $restored); stage=$stage; checks=$checks.ToArray(); cleanup_passed=$cleanup; network_unchanged=$restored; release_ready=$false; installer_tested=$installerPassed} |
         ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $evidence 'qualification.json')
     if (!$cleanup -or !$restored) { throw 'Payload fixture cleanup or network restoration failed' }
 }

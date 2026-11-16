@@ -6,6 +6,11 @@ on:
         description: Successful Windows native import run with unsigned GUI runtime artifact
         required: true
         type: string
+      qualify_installer:
+        description: Also qualify fresh NSIS installation/rollback/uninstall on disposable CI
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -58,8 +63,15 @@ jobs:
           }
           python tools/sdk/verify_notices.py
           if ($LASTEXITCODE -ne 0) { throw 'Candidate notice integrity failed' }
+      - name: Prepare pinned installer compiler
+        if: inputs.qualify_installer
+        run: ./tools/packaging/prepare-nsis.ps1
       - name: Assemble and test signed payload without starting any tunnel
-        run: ./tools/packaging/qualify.ps1
+        env:
+          QUALIFY_INSTALLER: ${{ inputs.qualify_installer }}
+        run: |
+          if ($env:QUALIFY_INSTALLER -eq 'true') { ./tools/packaging/qualify.ps1 -Installer }
+          else { ./tools/packaging/qualify.ps1 }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

@@ -141,6 +141,16 @@ the pending payload qualification above. It does not qualify an installer,
 ordinary desktop account, Win10/11 or normal-mode traffic. The temporary CI
 signer is not a release signer or an owner-test package.
 
+Fresh-installer continuation: pinned NSIS 3.13 source, optional disposable
+qualification, signed embedded uninstaller, fixed protected x64 installation,
+fresh-only admission, explicit owner validation, native same-session Explorer
+owner selection, owned rollback and exact-list uninstall are implemented as a
+prototype. The fixture includes invalid-owner rollback, preserved unknown files,
+installed medium-integrity GUI checks and normal uninstaller bootstrap. Native
+uninstall now treats an absent service idempotently after trusted-image admission.
+All new installer/native changes require Windows qualification; see
+[installer boundaries](INSTALLER.md). No installer is uploaded for owner use.
+
 ## Current stage
 
 LOCAL development in independent private repository
