@@ -60,6 +60,10 @@ DPAPI/ACL/concurrency/reparse/current-user tests and LocalSystem denial.
 
 Local analyze and **118 Dart tests PASS**, including 16 journal persistence,
 retention, timer, clear/load/write race, corruption, raw-error canary and disposal
-cases. Actual Flutter/Windows journal-channel roundtrip is pending on the updated
-source. Non-elevated installed desktop acceptance and power-loss/disk-full fault
+cases. Actual Flutter/Windows journal-channel roundtrip **PASS** on `c7b6f3d`:
+[run 43812996533](https://github.com/pvlrdnv/liwetun-win/actions/runs/43812996533),
+[safe build evidence](evidence/windows-journal-c7b6f3d.json). Release build,
+analyze, 118 Dart + 6 Rust tests and 3 actual desktop tests passed. The journal
+test proves restart/clear and an unchanged real encrypted profile slot.
+Non-elevated installed desktop acceptance and power-loss/disk-full fault
 injection remain separate gates.

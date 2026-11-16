@@ -58,6 +58,9 @@ function SaveFailure([string]$Stage, $Reply) {
     $failure | ConvertTo-Json | Set-Content -Encoding utf8 build/service-evidence/service-failure.json
 }
 try {
+    $discard = & (Join-Path $Build 'liwetun_service_probe.exe') --disconnect-regression
+    if ($LASTEXITCODE -ne 0 -or $discard.Trim() -ne 'unread_reply_discard_reproduced') { throw 'Unread pipe reply regression not reproduced' }
+    $checks.Add('old_disconnect_discards_unread_reply_reproduced')
     & (Join-Path $Build 'liwetun_service_probe.exe') --protocol
     if ($LASTEXITCODE -ne 0) { throw 'Protocol bounds check failed' }
     $checks.Add('protocol_bounds')
@@ -110,6 +113,9 @@ try {
         $holding.Dispose()
     }
     $checks.Add('busy_pipe_waits_without_resending')
+    $delayed = & $client --delayed-read-query
+    if ($LASTEXITCODE -ne 0 -or $delayed.Trim() -ne 'delayed_reply_received') { throw 'Delayed client lost its service reply' }
+    $checks.Add('delayed_client_consumes_reply_before_disconnect')
     $invalid = (& $client --invalid-profile | ConvertFrom-Json)
     if ($LASTEXITCODE -ne 0 -or $invalid.code -ne 5) { throw 'Malformed profile was not rejected before core execution' }
     $checks.Add('invalid_profile_denied')

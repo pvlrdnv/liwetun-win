@@ -122,7 +122,14 @@ void WINAPI Main(DWORD, LPWSTR*) {
           }
         }
         if (!payload.empty()) SecureZeroMemory(payload.data(), payload.size());
-        PipeIo(pipe.get(), stopping.get(), &reply, sizeof(reply), true);
+        if (PipeIo(pipe.get(), stopping.get(), &reply, sizeof(reply), true)) {
+          // Write completion only queues the reply. DisconnectNamedPipe would
+          // discard it if the client has not read yet. Wait for this one-shot
+          // client to close after consuming/validating the reply; PipeIo keeps
+          // the wait bounded/cancellable instead of an unbounded flush.
+          unsigned char extra = 0;
+          PipeIo(pipe.get(), stopping.get(), &extra, 1, false);
+        }
       }
       DisconnectNamedPipe(pipe.get());
     }

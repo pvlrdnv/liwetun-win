@@ -20,6 +20,40 @@ std::optional<bool> AdapterPresent(const wchar_t* alias) {
 }
 int wmain(int argc, wchar_t** argv) {
   const std::wstring mode = argc >= 2 ? argv[1] : L"";
+  if (mode == L"--disconnect-regression") {
+    // Synthetic local transport reproducer: old disconnect-after-write loses
+    // an unread reply. No service, credentials, SCM or network configuration.
+    wchar_t environment[8]{};
+    if (GetEnvironmentVariableW(L"GITHUB_ACTIONS", environment, 8) != 4 || std::wstring(environment) != L"true") return 60;
+    const auto name = L"\\\\.\\pipe\\LiWeTun-CI-Reply-" + std::to_wstring(GetCurrentProcessId()) + L"-" + std::to_wstring(GetTickCount64());
+    Handle server(CreateNamedPipeW(name.c_str(), PIPE_ACCESS_OUTBOUND | FILE_FLAG_OVERLAPPED | FILE_FLAG_FIRST_PIPE_INSTANCE,
+        PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS, 1, 16384, 16384, 0, nullptr));
+    if (!server || server.get() == INVALID_HANDLE_VALUE) return 61;
+    Handle client(CreateFileW(name.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, nullptr));
+    if (!client || client.get() == INVALID_HANDLE_VALUE) return 62;
+    Handle event(CreateEventW(nullptr, TRUE, FALSE, nullptr));
+    OVERLAPPED connection{}; connection.hEvent = event.get();
+    if (!event || (ConnectNamedPipe(server.get(), &connection) == FALSE && GetLastError() != ERROR_PIPE_CONNECTED)) return 63;
+    Reply sent{}, received{};
+    if (!PipeIo(server.get(), nullptr, &sent, sizeof(sent), true) || !DisconnectNamedPipe(server.get())) return 64;
+    if (PipeIo(client.get(), nullptr, &received, sizeof(received), false)) return 65;
+    std::cout << "unread_reply_discard_reproduced\n";
+    return 0;
+  }
+  if (mode == L"--delayed-read-query") {
+    Image self;
+    if (!OpenTrustedImage(SelfPath(), self)) return 66;
+    Handle pipe = OpenControlPipe();
+    if (!pipe || !VerifyServer(pipe.get(), self)) return 67;
+    Request request{}; request.command = Command::Query; request.nonce = 37;
+    if (!PipeIo(pipe.get(), nullptr, &request, sizeof(request), true)) return 68;
+    Sleep(350); // Force server completion before this authenticated client reads.
+    Reply reply{};
+    if (!PipeIo(pipe.get(), nullptr, &reply, sizeof(reply), false) || reply.magic != kMagic ||
+        reply.version != kVersion || reply.nonce != request.nonce || reply.code != Code::Ok) return 69;
+    std::cout << "delayed_reply_received\n";
+    return 0;
+  }
   if (mode == L"--hold-pipe") {
     Handle pipe = OpenControlPipe();
     if (!pipe) return 52;

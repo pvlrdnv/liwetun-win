@@ -1,0 +1,18 @@
+{
+  "run_id": 43813238392,
+  "source_commit": "e663c8c0b6eb63bcaa6c8bcfe4c941dd7f2ee3de",
+  "sdk_source_run": 43752644532,
+  "release_ready": false,
+  "diagnostic_failure": true,
+  "result": {
+    "state": 0,
+    "stage": "idempotent_stop",
+    "code": 8,
+    "core_state": 4294967295,
+    "native_exit": 0,
+    "core_state_observed": null,
+    "runtime_ready": 0,
+    "stopped_and_cleaned": null,
+    "adapter_seen": null
+  }
+}

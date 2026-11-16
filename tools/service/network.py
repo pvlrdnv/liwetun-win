@@ -414,6 +414,11 @@ def main():
         result['all_passed'] = len(result['cases']) == len(required_cases) and all(case['passed'] for case in result['cases'])
     except Exception as error:
         result['failed_stage'] = stage  # Closed enum; never a raw exception.
+        reasons = {'fixture_system_command_failed', 'missing_tun_routes_or_dns',
+                   'fixture_child_timeout', 'fixture_child_closed', 'metrics_unavailable',
+                   'endpoint_not_ready', 'service_start_rejected', 'cleanup_failed'}
+        candidate = error.args[0] if isinstance(error, RuntimeError) and error.args else None
+        result['failure_reason'] = candidate if isinstance(candidate, str) and candidate in reasons else 'unknown'
         result['error_type'] = type(error).__name__
     finally:
         if session:

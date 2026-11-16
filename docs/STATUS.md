@@ -51,8 +51,17 @@ storage, with a different protection purpose and fixed bounded pending file.
 Native profile/journal isolation, cross-purpose denial and crash-orphan checks
 passed on `53bd51d`, [run 43754557047](https://github.com/pvlrdnv/liwetun-win/actions/runs/43754557047).
 GUI persistence, seven-day/1000-event retention, serialized saves and explicit
-clear are implemented; actual Windows GUI checks are pending. Local analyze and
-**118 Dart tests PASS**. [Journal design/evidence](JOURNAL_STORAGE.md).
+clear **PASS** on Windows `c7b6f3d`,
+[run 43812996533](https://github.com/pvlrdnv/liwetun-win/actions/runs/43812996533):
+**118 Dart + 6 Rust + 3 actual desktop tests**, release build and analyze PASS.
+[Journal design/evidence](JOURNAL_STORAGE.md).
+
+New SDK network continuation on `e663c8c` failed: one preflight stop lost its reply;
+the other run passed H2/H3/DNS and auth/CA negatives before failing at UI-death.
+These runs do not establish complete new-SDK qualification. A server-side pipe
+race was found: disconnect after completed write can discard unread reply bytes.
+Bounded/cancellable peer-close waiting and a deliberately delayed-reader
+regression check are implemented; updated Windows service/network checks pending.
 
 ## Current stage
 

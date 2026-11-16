@@ -2,6 +2,19 @@
 
 LOCAL development only. No owner-machine installation or production changes.
 
+## Reply lifetime continuation
+
+Repeated qualification exposed lost service replies before a caller consumed
+them. The old server disconnected immediately after writing, but
+[DisconnectNamedPipe](https://learn.microsoft.com/en-us/windows/win32/api/namedpipeapi/nf-namedpipeapi-disconnectnamedpipe)
+discards unread data. Write completion does not prove peer consumption.
+The service now waits for its one-shot client to close after reading/validating
+the reply, using the existing bounded/cancellable overlapped read. No unbounded
+flush or duplicate request retry is introduced. A CI-only local reproducer
+demonstrates old unread-data loss; an authenticated client deliberately delays
+reading by 350 ms to verify the actual service preserves its response. Updated
+Windows qualification of this fix is pending.
+
 ## Implemented
 
 The Flutter service channel queues bounded start/query/stop requests on a worker
