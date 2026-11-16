@@ -13,6 +13,8 @@ $dnsConfigured = $false
 $prefixCounts = @{}
 $ipv4RoutesSeen = $false
 $ipv6RoutesSeen = $false
+$dynamicWfpSeen = $false
+$wfpRestored = $false
 $coreObserved = $false
 $nativeClean = $false
 $nativeExit = $null
@@ -50,12 +52,20 @@ function RouteCovers([string]$Address, $Routes) {
     }
     return $false
 }
+function ReadOwnedWfp {
+    $raw = & $Client --wfp-state
+    if ($LASTEXITCODE -ne 0) { throw 'Owned WFP observation failed' }
+    try { $reply = $raw | ConvertFrom-Json } catch { throw 'Invalid closed WFP observation' }
+    if (!$reply.passed -or $reply.sdk_sessions -lt 0 -or $reply.sdk_sessions -gt 4096 -or $reply.sdk_dynamic_sessions -lt 0 -or $reply.sdk_dynamic_sessions -gt $reply.sdk_sessions) { throw 'Unexpected WFP session observation' }
+    return $reply
+}
 $before = SnapshotGeneral
 if ($before.adapter) { throw 'Preexisting task adapter' }
 $listeners = @(Get-NetTCPConnection -State Listen -LocalPort 9 -ErrorAction SilentlyContinue)
 @{loopback_profile_port=9; listener_present=($listeners.Count -gt 0); sdk_started=$false; release_ready=$false} |
     ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $evidence 'general-preflight.json')
 if ($listeners.Count) { throw 'Refused loopback endpoint required' }
+$wfpBefore = ReadOwnedWfp
 try {
     $done = [Threading.EventWaitHandle]::new($false,[Threading.EventResetMode]::ManualReset,('Local\LiWeTun.CI.GeneralDone.' + $env:GITHUB_RUN_ID))
     $watchdog = [Diagnostics.Process]::new()
@@ -98,6 +108,8 @@ try {
             $ipv4RoutesSeen = $ipv4RoutesSeen -or $v4Covered
             $ipv6RoutesSeen = $ipv6RoutesSeen -or ((RouteCovers '2001:db8::1' $routes) -and (RouteCovers '3001:db8::1' $routes))
             if (@(Get-DnsClientServerAddress -InterfaceIndex $index | Where-Object { $_.ServerAddresses.Count -gt 0 }).Count) { $dnsConfigured = $true }
+            $wfp = ReadOwnedWfp
+            $dynamicWfpSeen = $dynamicWfpSeen -or ($wfp.sdk_dynamic_sessions -gt $wfpBefore.sdk_dynamic_sessions -and $wfp.sdk_sessions -eq $wfp.sdk_dynamic_sessions)
         }
     }
     $nativeExit = $probe.ExitCode
@@ -114,7 +126,9 @@ try {
         if ($restored) { break }
         Start-Sleep -Milliseconds 200
     }
-    $passed = $nativeExit -eq 0 -and $coreObserved -and $nativeClean -and $restored -and $ipv4RoutesSeen -and $ipv6RoutesSeen
+    $wfpAfter = ReadOwnedWfp
+    $wfpRestored = $wfpAfter.sdk_sessions -eq $wfpBefore.sdk_sessions -and $wfpAfter.sdk_dynamic_sessions -eq $wfpBefore.sdk_dynamic_sessions
+    $passed = $nativeExit -eq 0 -and $coreObserved -and $nativeClean -and $restored -and $ipv4RoutesSeen -and $ipv6RoutesSeen -and $dynamicWfpSeen -and $wfpRestored
 } finally {
     $bodyPassed = $passed
     $passed = $false
@@ -137,7 +151,7 @@ try {
     } finally {
         if ($watchdog) { $watchdog.Dispose() }
         if ($done) { $done.Dispose() }
-        @{passed=$passed; stage=$stage; native_exit=$nativeExit; core_state_observed=$coreObserved; adapter_seen=$adapterSeen; adapter_dns_configured_seen=$dnsConfigured; adapter_route_prefix_lengths=@($prefixCounts.Keys | Sort-Object); ipv4_sample_route_coverage_seen=$ipv4RoutesSeen; ipv6_sample_route_coverage_seen=$ipv6RoutesSeen; routes_dns_adapter_restored=$restored; network_test_modes_enabled=$false; internet_delivery_tested=$false; profile='synthetic_refused_loopback'; release_ready=$false} |
+        @{passed=$passed; stage=$stage; native_exit=$nativeExit; core_state_observed=$coreObserved; adapter_seen=$adapterSeen; adapter_dns_configured_seen=$dnsConfigured; adapter_route_prefix_lengths=@($prefixCounts.Keys | Sort-Object); ipv4_sample_route_coverage_seen=$ipv4RoutesSeen; ipv6_sample_route_coverage_seen=$ipv6RoutesSeen; sdk_dynamic_wfp_seen=$dynamicWfpSeen; sdk_wfp_sessions_restored=$wfpRestored; routes_dns_adapter_restored=$restored; network_test_modes_enabled=$false; internet_delivery_tested=$false; profile='synthetic_refused_loopback'; release_ready=$false} |
             ConvertTo-Json -Depth 3 | Set-Content -Encoding utf8 (Join-Path $evidence 'general-lifecycle.json')
     }
 }

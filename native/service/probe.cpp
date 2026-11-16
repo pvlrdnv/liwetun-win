@@ -3,6 +3,7 @@
 #include <ws2tcpip.h>
 #include "client.h"
 #include "pipe_io.h"
+#include "wfp_probe.h"
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -20,6 +21,7 @@ std::optional<bool> AdapterPresent(const wchar_t* alias) {
 }
 int wmain(int argc, wchar_t** argv) {
   const std::wstring mode = argc >= 2 ? argv[1] : L"";
+  if (mode == L"--wfp-state" && argc == 2) return InspectOwnedWfpSessions();
   if (mode == L"--disconnect-regression") {
     // Synthetic local transport reproducer: old disconnect-after-write loses
     // an unread reply. No service, credentials, SCM or network configuration.

@@ -251,6 +251,15 @@ pinned SDK's recommended private/link-local/multicast IPv4 exclusions. Bounded
 CI branches are unchanged. The new fixture requires own-adapter CIDRs covering
 fixed IPv4/IPv6 samples; native lifecycle observation allows six seconds. This
 fix and the stricter route criterion require fresh Windows qualification.
+Explicit-route production lifecycle **PASS** on `0c211b1`,
+[run 43856182784](https://github.com/pvlrdnv/liwetun-win/actions/runs/43856182784):
+18 service checks, IPv4/IPv6 sample CIDR coverage, adapter DNS and complete
+snapshot restoration, without watchdog intervention. This supersedes the
+pending route fix above. [Evidence](evidence/general-routes-0c211b1.json).
+Source inspection also confirmed SDK DNS restrictions use a dynamic WFP session;
+a CI-only read-only probe now requires owned SDK dynamic sessions to appear and
+return to baseline after stop. This extra check is pending. No Internet/IPv6
+payload or DNS-leak prevention claim. [Routing boundaries](PRODUCTION_ROUTING.md).
 
 ## Current stage
 

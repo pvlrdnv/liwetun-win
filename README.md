@@ -53,6 +53,7 @@ DNS/IPv6 и приёмка на чистой Windows остаются отдел
 - [Нативный импорт и его границы](docs/NATIVE_IMPORT.md)
 - [Windows-служба и границы проверки](docs/WINDOWS_SERVICE.md)
 - [Приёмка реального TUN-трафика](docs/TUN_NETWORK_ACCEPTANCE.md)
+- [Обычные маршруты и границы их проверки](docs/PRODUCTION_ROUTING.md)
 - [Защищённое хранение профилей](docs/PROFILE_STORAGE.md)
 - [Хранение и ограничение журнала](docs/JOURNAL_STORAGE.md)
 - [Зависимости и лицензионный комплект](docs/DEPENDENCY_CLOSURE.md)
