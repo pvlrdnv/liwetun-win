@@ -21,10 +21,11 @@ class StorageChannel {
   enum class Command { Load, Save, Clear };
   struct Job {
     Command command;
+    liwetun::storage::Area area;
     std::string payload, revision;
     Result result;
-    Job(Command c, std::string p, std::string v, Result r)
-        : command(c), payload(std::move(p)), revision(std::move(v)), result(std::move(r)) {}
+    Job(Command c, liwetun::storage::Area a, std::string p, std::string v, Result r)
+        : command(c), area(a), payload(std::move(p)), revision(std::move(v)), result(std::move(r)) {}
     Job(Job&&) = default;
     ~Job() { if (!payload.empty()) SecureZeroMemory(payload.data(), payload.size()); }
   };

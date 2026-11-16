@@ -17,9 +17,11 @@ StorageChannel::StorageChannel(flutter::BinaryMessenger* messenger, HWND window)
   channel_->SetMethodCallHandler([this](const auto& call, auto result) {
     Command command;
     std::string payload, revision;
-    if (call.method_name() == "load") command = Command::Load;
-    else if (call.method_name() == "save") command = Command::Save;
-    else if (call.method_name() == "clear") command = Command::Clear;
+    const auto& name = call.method_name();
+    const auto area = name == "loadJournal" || name == "saveJournal" || name == "clearJournal" ? st::Area::Journal : st::Area::Profiles;
+    if (name == "load" || name == "loadJournal") command = Command::Load;
+    else if (name == "save" || name == "saveJournal") command = Command::Save;
+    else if (name == "clear" || name == "clearJournal") command = Command::Clear;
     else { result->NotImplemented(); return; }
     const auto* args = call.arguments();
     bool valid = !args || std::holds_alternative<std::monostate>(*args);
@@ -45,7 +47,7 @@ StorageChannel::StorageChannel(flutter::BinaryMessenger* messenger, HWND window)
       if (!payload.empty()) SecureZeroMemory(payload.data(), payload.size());
       result->Success(Encode(st::Snapshot(st::Code::Busy), false)); return;
     }
-    jobs_.emplace_back(command, std::move(payload), std::move(revision), std::move(result));
+    jobs_.emplace_back(command, area, std::move(payload), std::move(revision), std::move(result));
     wake_.notify_one();
   });
   worker_ = std::thread([this] { Run(); });
@@ -63,8 +65,8 @@ void StorageChannel::Run() {
     if (stopping_) return;
     Job job = std::move(jobs_.front()); jobs_.pop_front();
     lock.unlock();
-    auto snapshot = job.command == Command::Load ? st::Load() :
-        job.command == Command::Save ? st::Save(std::move(job.payload), job.revision) : st::Clear(job.revision);
+    auto snapshot = job.command == Command::Load ? st::Load(job.area) :
+        job.command == Command::Save ? st::Save(std::move(job.payload), job.revision, job.area) : st::Clear(job.revision, job.area);
     lock.lock();
     if (stopping_) return;
     completions_.push_back({Completion{std::move(job.result), std::move(snapshot)}, job.command == Command::Load});

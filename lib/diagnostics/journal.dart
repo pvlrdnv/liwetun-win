@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -7,6 +8,9 @@ import 'package:archive/archive.dart';
 import '../domain/import_link.dart';
 import '../native/environment.dart';
 import '../native/service.dart';
+import '../native/storage.dart';
+
+part 'journal_persistence.dart';
 
 enum EventId {
   appStarted,
@@ -68,7 +72,7 @@ final class ReportPreview {
   final DateTime? end;
 }
 
-/// Memory-only first slice; no raw logger/stdout/file intermediate exists.
+/// Closed typed events only; no raw logger/stdout/file intermediate exists.
 final class Journal {
   Journal({DateTime Function()? clock, this.maxEvents = 1000})
     : assert(maxEvents > 0),
@@ -77,6 +81,22 @@ final class Journal {
   final DateTime Function() _clock;
   final int maxEvents;
   final Queue<DiagnosticEvent> _events = Queue();
+  late final _JournalDisk _disk = _JournalDisk(this);
+  void Function()? onPersistenceChanged;
+  JournalPersistenceState get persistenceState => _disk.state;
+  Future<void> initializePersistence(StorageGateway storage) =>
+      _disk.initialize(storage);
+  void disposePersistence() => _disk.dispose();
+  String get persistenceNotice => switch (_disk.state) {
+    JournalPersistenceState.loading => 'Загружаем историю диагностики…',
+    JournalPersistenceState.saving => 'Сохраняем журнал…',
+    JournalPersistenceState.saved =>
+      'Журнал защищён в Windows: до 7 дней и 1000 событий.',
+    JournalPersistenceState.blocked =>
+      'Запись журнала недоступна. Текущие события доступны в памяти; состояние файла не подтверждено.',
+    JournalPersistenceState.memoryOnly =>
+      'Журнал только в памяти текущего сеанса: до 1000 событий.',
+  };
   ClientEnvironment environment = const ClientEnvironment();
   ServiceStatus? _serviceObservation;
   DateTime? _serviceObservedAt;
@@ -101,16 +121,29 @@ final class Journal {
     while (_events.length > maxEvents) {
       _events.removeFirst();
     }
+    _disk.changed();
   }
 
-  List<DiagnosticEvent> get events => List.unmodifiable(_events);
-  ReportPreview get preview => ReportPreview(
-    _events.length,
-    _events.isEmpty ? null : _events.first.at,
-    _events.isEmpty ? null : _events.last.at,
-  );
+  List<DiagnosticEvent> get events {
+    final cutoff = _clock().toUtc().subtract(const Duration(days: 7));
+    return List.unmodifiable(
+      _events.where((event) => event.at.isAfter(cutoff)),
+    );
+  }
 
-  void clear() => _events.clear();
+  ReportPreview get preview {
+    final snapshot = events;
+    return ReportPreview(
+      snapshot.length,
+      snapshot.isEmpty ? null : snapshot.first.at,
+      snapshot.isEmpty ? null : snapshot.last.at,
+    );
+  }
+
+  void clear() {
+    _events.clear();
+    _disk.clear();
+  }
 
   Uint8List exportZip() {
     final snapshot = events;
@@ -118,6 +151,9 @@ final class Journal {
       'schema_version': 2,
       'app_version': '0.1.0+1',
       'environment': environment.toJson(),
+      'journal_storage': _disk.state.name,
+      'journal_retention_days': 7,
+      'journal_event_limit': maxEvents < 1000 ? maxEvents : 1000,
       'service_observation': {
         'observed_at': _serviceObservedAt?.toIso8601String(),
         'code': _serviceObservation?.code.name,

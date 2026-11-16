@@ -8,6 +8,7 @@ import 'native/environment.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   final controller = AppController();
+  unawaited(controller.initializeJournal());
   unawaited(controller.initializeStorage());
   unawaited(
     const WindowsEnvironment().read().then((value) {

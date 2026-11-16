@@ -466,7 +466,7 @@ class _HomeState extends State<_Home> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Событий в текущем сеансе: ${widget.controller.journal.events.length}. До 1000 событий в памяти.',
+                'Событий: ${widget.controller.journal.events.length}. ${widget.controller.journal.persistenceNotice}',
               ),
               const SizedBox(height: 12),
               const Text(

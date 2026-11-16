@@ -32,12 +32,17 @@ final class AppController extends ChangeNotifier {
        _service = service ?? const WindowsService(),
        _storage = storage ?? const WindowsStorage() {
     this.journal.record(EventId.appStarted);
+    this.journal.onPersistenceChanged = () {
+      if (!_disposed) notifyListeners();
+    };
   }
 
   final Journal journal;
   final TrustTunnelInspector _inspector;
   final ServiceGateway _service;
   final StorageGateway _storage;
+  Future<void> initializeJournal() =>
+      journal.initializePersistence(const WindowsStorage.journal());
   ProfileStorageState storageState = ProfileStorageState.memoryOnly;
   StorageCode storageCode = StorageCode.unavailable;
   bool _storageInitialized = false, _storageWritable = false;
@@ -56,7 +61,7 @@ final class AppController extends ChangeNotifier {
     ProfileStorageState.blocked =>
       storageCode == StorageCode.conflict
           ? 'Другое окно изменило подключения. Новые изменения только в памяти; откройте приложение заново.'
-        : 'Сохранение не подтверждено. Новые изменения могут остаться только в этом сеансе; проверьте их после перезапуска.',
+          : 'Сохранение не подтверждено. Новые изменения могут остаться только в этом сеансе; проверьте их после перезапуска.',
   };
 
   Future<void> initializeStorage() async {
@@ -459,6 +464,8 @@ final class AppController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _pollTimer?.cancel();
+    journal.onPersistenceChanged = null;
+    journal.disposePersistence();
     super.dispose();
   }
 }

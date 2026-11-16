@@ -34,7 +34,9 @@ abstract interface class StorageGateway {
 }
 
 final class WindowsStorage implements StorageGateway {
-  const WindowsStorage();
+  const WindowsStorage() : _journal = false;
+  const WindowsStorage.journal() : _journal = true;
+  final bool _journal;
   static const channel = MethodChannel('top.likeweb.liwetun/storage');
   static bool _revision(String value) =>
       value.isEmpty || RegExp(r'^[0-9a-f]{64}$').hasMatch(value);
@@ -63,7 +65,10 @@ final class WindowsStorage implements StorageGateway {
   Future<StorageReply> _call(String method, [Map<String, Object>? args]) async {
     try {
       final value = await channel
-          .invokeMapMethod<String, dynamic>(method, args)
+          .invokeMapMethod<String, dynamic>(
+            _journal ? '${method}Journal' : method,
+            args,
+          )
           .timeout(const Duration(seconds: 15));
       if (value == null ||
           value.length != 3 ||

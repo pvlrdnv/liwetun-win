@@ -54,7 +54,9 @@ can be influenced by compatibility mode; it is diagnostic metadata, not a featur
 gate or proof of desktop qualification. Compare it to the owner's `winver` build
 when accepting the package. Missing/malformed native results remain unknown.
 
-The journal is still memory-only, at most 1000 events; persistence/rotation and
-crash-history recovery remain open. The report does not yet replace all manual
+Protected journal persistence and seven-day/1000-event retention are implemented;
+actual Windows GUI roundtrip is pending. In-flight events can be lost on a hard
+crash, and a failed write leaves new events in memory. See JOURNAL_STORAGE.md.
+The report does not yet replace all manual
 observations. No arbitrary shell scripts or corporate software modifications
 are part of this owner workflow.

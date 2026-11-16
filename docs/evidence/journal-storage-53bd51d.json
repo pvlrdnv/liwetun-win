@@ -1,0 +1,65 @@
+{
+  "source_commit": "53bd51da2a70cf7d3636fc3a424234716b1dc2ba",
+  "run_id": 43754557047,
+  "runner_os": "windows-2022",
+  "release_ready": false,
+  "user": {
+    "passed": true,
+    "checks": [
+      "fresh_task_directory",
+      "missing_load_creates_no_files",
+      "current_user_dpapi_save",
+      "current_user_roundtrip",
+      "no_plaintext_in_file",
+      "stale_revision_preserves_data",
+      "oversized_save_preserves_data",
+      "locked_file_fails_without_fallback",
+      "readonly_fixture",
+      "failed_replace_reported",
+      "failed_replace_keeps_previous_file",
+      "no_failed_write_temporary_file",
+      "concurrent_compare_and_swap",
+      "concurrent_result_complete",
+      "broad_acl_fixture",
+      "broad_acl_denied",
+      "private_acl_restored",
+      "tampering_denied",
+      "corrupt_file_not_overwritten",
+      "explicit_corrupt_reset",
+      "save_after_reset",
+      "unknown_version_preserved",
+      "explicit_version_reset",
+      "reparse_target_ready",
+      "real_reparse_fixture",
+      "reparse_file_denied",
+      "reparse_target_unchanged",
+      "clear_before_cross_context",
+      "cross_context_fixture_ready",
+      "journal_profile_storage_isolation",
+      "journal_profile_ciphertext_not_interchangeable",
+      "journal_clear_preserves_profiles",
+      "journal_pending_fixture_ready",
+      "journal_pending_private_owner",
+      "valid_orphan_pending_recovered",
+      "corrupt_pending_private_owner",
+      "corrupt_pending_preserved_without_overwrite",
+      "explicit_journal_clear_removes_pending_only"
+    ]
+  },
+  "system": {
+    "input_valid": true,
+    "wrong_context_denied": true
+  },
+  "qualification": {
+    "checks": [
+      "user_probe_passed",
+      "valid_user_ciphertext_denied_to_local_system",
+      "cross_context_ciphertext_unchanged",
+      "original_user_can_still_decrypt_and_remove"
+    ],
+    "passed": true,
+    "stage": "user_cleanup",
+    "release_ready": false,
+    "cleanup_passed": true
+  }
+}

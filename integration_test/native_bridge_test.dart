@@ -10,6 +10,7 @@ import 'package:liwetun/native/service.dart';
 import 'package:liwetun/native/storage.dart';
 import 'package:liwetun/domain/profile_cache.dart';
 import 'package:liwetun/native/environment.dart';
+import 'package:liwetun/diagnostics/journal.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -134,6 +135,59 @@ void main() {
         if (revision.isNotEmpty) {
           expect((await storage.clear(revision)).code, StorageCode.ok);
           expect((await storage.load()).code, StorageCode.missing);
+        }
+      }
+    },
+  );
+  testWidgets(
+    'actual protected journal restores and clears without touching profiles',
+    (tester) async {
+      expect(Platform.environment['GITHUB_ACTIONS'], 'true');
+      const profiles = WindowsStorage();
+      const storage = WindowsStorage.journal();
+      expect((await profiles.load()).code, StorageCode.missing);
+      expect((await storage.load()).code, StorageCode.missing);
+      var profileRevision = '';
+      final first = Journal()..record(EventId.appStarted);
+      final second = Journal()..record(EventId.profilesRestored);
+      addTearDown(first.disposePersistence);
+      addTearDown(second.disposePersistence);
+      try {
+        final fixture = parseLink(
+          const String.fromEnvironment('SYNTHETIC_TT_HTTP2'),
+        );
+        final profile = await profiles.save(
+          ProfileCache(links: [fixture]).encode(),
+          '',
+        );
+        expect(profile.code, StorageCode.ok);
+        profileRevision = profile.revision;
+        await first.initializePersistence(storage);
+        expect((await storage.load()).code, StorageCode.ok);
+        expect(first.persistenceState, JournalPersistenceState.saved);
+        first.disposePersistence();
+        await second.initializePersistence(storage);
+        expect((await storage.load()).code, StorageCode.ok);
+        expect(second.events.map((event) => event.event), [
+          EventId.appStarted,
+          EventId.profilesRestored,
+        ]);
+        second.clear();
+        expect((await storage.load()).code, StorageCode.missing);
+        expect(second.persistenceState, JournalPersistenceState.saved);
+        expect((await profiles.load()).revision, profileRevision);
+      } finally {
+        first.disposePersistence();
+        second.disposePersistence();
+        final remaining = await storage.load();
+        if (remaining.revision.isNotEmpty) {
+          expect(
+            (await storage.clear(remaining.revision)).code,
+            StorageCode.ok,
+          );
+        }
+        if (profileRevision.isNotEmpty) {
+          expect((await profiles.clear(profileRevision)).code, StorageCode.ok);
         }
       }
     },

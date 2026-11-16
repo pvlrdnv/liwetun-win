@@ -40,12 +40,15 @@ Windows release build PASS on `ddef944`:
 [run 43753564027](https://github.com/pvlrdnv/liwetun-win/actions/runs/43753564027),
 [build evidence](evidence/windows-report-ddef944.json).
 [Prepared scenario](OWNER_WINDOWS_TEST.md), no installer available
-yet. Journal persistence/rotation remains open.
+yet.
 
 Journal continuation: a separate current-user DPAPI slot is implemented in native
 storage, with a different protection purpose and fixed bounded pending file.
-New native checks cover profile/journal isolation and crash-orphan handling;
-Windows qualification is pending. It is not wired to GUI journal persistence yet.
+Native profile/journal isolation, cross-purpose denial and crash-orphan checks
+passed on `53bd51d`, [run 43754557047](https://github.com/pvlrdnv/liwetun-win/actions/runs/43754557047).
+GUI persistence, seven-day/1000-event retention, serialized saves and explicit
+clear are implemented; actual Windows GUI checks are pending. Local analyze and
+**118 Dart tests PASS**. [Journal design/evidence](JOURNAL_STORAGE.md).
 
 ## Current stage
 

@@ -38,8 +38,10 @@ details, and separate unknown service/entitlement observations.
 Closed structured local events; preview archive composition and time range;
 user chooses where to save ZIP. Archive contains summary.json and events.jsonl,
 never profile names, URLs, addresses, configs or raw exceptions. No automatic
-upload or support messaging. Clear-log action removes current in-memory events.
-Persistent rotated journal is a later step; limits are explicit in STATUS.
+upload or support messaging. Clear-log action removes current events and requests
+protected disk deletion. Storage status distinguishes pending, confirmed and
+failed writes/clear; history is bounded to seven days/1000 events. Windows GUI
+persistence verification is pending; see JOURNAL_STORAGE.md.
 
 ## Accessibility and states
 
