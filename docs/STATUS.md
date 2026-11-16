@@ -207,6 +207,21 @@ A kill-on-close job plus exact-child fallback bounds failure cleanup. Installer
 fixture expects code 43 while the window is open and verifies every payload
 digest, service running PID and registration remain unchanged before closing.
 This is implemented but still requires the new GUI artifact and Windows proof.
+Updated GUI **PASS** on `4ab70e9`,
+[run 43850065637](https://github.com/pvlrdnv/liwetun-win/actions/runs/43850065637):
+118 Dart + 6 Rust + 3 actual desktop tests, analyze, release build and staging.
+[GUI evidence](evidence/windows-lifetime-4ab70e9.json).
+Installed visible GUI/uninstall continuation **PASS** on `9688b98`,
+[run 43850964866](https://github.com/pvlrdnv/liwetun-win/actions/runs/43850964866):
+14 installer groups and enclosing payload qualification passed with that GUI.
+A real visible Flutter window ran with Administrators disabled at medium
+integrity; uninstall returned 43 before any payload digest, service running PID
+or registration changed. WM_CLOSE ended the exact created GUI successfully and
+released presence; subsequent full uninstall/retry/bootstrap passed. Both network
+test modes were OFF, no tunnel was started, network snapshots and cleanup passed.
+[Evidence](evidence/installer-visible-gui-9688b98.json). This establishes bounded
+CI in-use rejection, not desktop acceptance, loader/antivirus sharing-race recovery,
+a transactional uninstall, or Windows 10/11 qualification.
 
 ## Current stage
 

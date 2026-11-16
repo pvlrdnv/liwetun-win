@@ -1,0 +1,99 @@
+{
+  "signing": "ephemeral_ci_only",
+  "invocations": [
+    {
+      "stage": "preexisting_directory_denial",
+      "exit_code": 21
+    },
+    {
+      "stage": "preexisting_setup_mutex_denial",
+      "exit_code": 25
+    },
+    {
+      "stage": "preexisting_service_denial",
+      "exit_code": 22
+    },
+    {
+      "stage": "preexisting_registration_denial",
+      "exit_code": 23
+    },
+    {
+      "stage": "preexisting_registration_denial",
+      "exit_code": 23
+    },
+    {
+      "stage": "invalid_owner_rollback",
+      "exit_code": 31
+    },
+    {
+      "stage": "fresh_install",
+      "exit_code": 0
+    },
+    {
+      "stage": "fresh_install",
+      "exit_code": 21
+    },
+    {
+      "stage": "open_medium_gui_denies_uninstall",
+      "exit_code": 43
+    },
+    {
+      "stage": "uninstall_preserves_unknown_file",
+      "exit_code": 41
+    },
+    {
+      "stage": "uninstall_preserves_unknown_file",
+      "exit_code": 0
+    },
+    {
+      "stage": "normal_uninstaller_bootstrap",
+      "exit_code": 0
+    },
+    {
+      "stage": "normal_uninstaller_bootstrap",
+      "exit_code": 0
+    }
+  ],
+  "release_ready": false,
+  "cleanup_passed": true,
+  "desktop_owner_selection_tested": false,
+  "tunnel_started": false,
+  "stage": "normal_uninstaller_bootstrap",
+  "passed": true,
+  "checks": [
+    "pinned_compiler_and_signed_installer",
+    "preexisting_directory_preserved",
+    "preexisting_setup_mutex_denied",
+    "preexisting_service_preserved_without_starting",
+    "preexisting_registration_and_shortcut_preserved",
+    "invalid_owner_rolls_back_fresh_files_and_service",
+    "fresh_install_preserves_payload_and_signed_uninstaller",
+    "duplicate_install_denied",
+    "installed_gui_queries_production_service_at_medium_integrity",
+    "visible_medium_gui_blocks_uninstall_before_mutations",
+    "visible_medium_gui_closes_and_releases_presence",
+    "unknown_file_preserved_with_retry_uninstaller",
+    "uninstall_retry_after_service_removal",
+    "normal_uninstaller_bootstrap_and_removal"
+  ],
+  "before_fixture_cleanup": {
+    "registration": false,
+    "directory": false,
+    "shortcut": false
+  },
+  "source_commit": "9688b9826e097be594ce079fffebdc7b5a93cfe1",
+  "installer_sha256": "3ab78f52d832f9abfb1361ea37f606d1954fc269d617b4017df2ad0b686beca8",
+  "source_run": "43850964866",
+  "gui_source": "4ab70e9fd76031c21e93fa2f72234b5a883235ec",
+  "runner_os": "windows-2022",
+  "sdk_source_run": 43752644532,
+  "network_unchanged": true,
+  "network_test_modes_enabled": false,
+  "visible_gui": {
+    "passed": true,
+    "medium_integrity": true,
+    "admin_group_enabled": false,
+    "gui_window_visible": true,
+    "closed_gracefully": true
+  }
+}

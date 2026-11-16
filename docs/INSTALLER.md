@@ -46,7 +46,8 @@ payload files; directory removal is nonrecursive. Unknown files cause a partial
 removal failure while preserving those files, the marker, signed retry
 uninstaller and uninstall registration. An absent service can be retried after
 the unknown files are moved. This is not a fully transactional uninstall or
-upgrade/rollback implementation. In-use GUI behavior remains a separate gate.
+upgrade/rollback implementation. In-use GUI rejection passed the continuation
+below; loader/antivirus file-sharing failures remain explicit retry/recovery gates.
 Current-user DPAPI files outside the installation remain untouched. No shared
 driver-store cleanup or unrelated service/adapter/certificate changes occur.
 
@@ -68,7 +69,21 @@ and pinned SDK run 43752644532 were used. Setup compiled without warnings and
 both installer/uninstaller signatures passed under the temporary CI trust.
 [Safe evidence](evidence/installer-d31a0bb.json).
 
+Visible GUI continuation **PASS** with GUI `4ab70e9` / installer-helper `9688b98`,
+[run 43850964866](https://github.com/pvlrdnv/liwetun-win/actions/runs/43850964866):
+14 installer groups plus the enclosing payload fixture. The actual Flutter window
+ran at restricted medium integrity with Administrators disabled. Before COM/
+Flutter initialization, GUI admission briefly creates the setup gate, publishes
+lifetime presence and then releases the gate. Uninstall holds that gate and
+rejects any presence/unknown result with code 43 before service or file changes.
+The fixture confirmed identical payload hashes, service running PID and registry
+metadata, then closed its own GUI via WM_CLOSE and verified presence disappeared.
+Subsequent removal passed. The readonly status CLI does not create UI presence.
+These named objects carry no secrets or commands and confer no service authority;
+name squatting can deny availability. They coordinate application startup, not
+Windows loader/file-sharing transactions. [Evidence](evidence/installer-visible-gui-9688b98.json).
+
 Remaining gates:
-desktop-owner selection, in-use/reboot/failure recovery, upgrades, release
+desktop-owner selection, loader-sharing/reboot/failure recovery, upgrades, release
 signing/revocation, final notices and ordinary routing/DNS/IPv6 acceptance. Do not
 give this package to the owner or equate CI certificate trust with a public signer.

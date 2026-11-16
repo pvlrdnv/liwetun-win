@@ -26,7 +26,10 @@ service. A separate optional CI helper launches only the adjacent trusted GUI's
 fixed query under a medium-integrity restricted token with Administrators
 disabled. It uses explicit inherited handles and a fresh non-inheriting user
 environment. It cannot choose a program/command or accept profiles/credentials.
-Only the exact owned child can be terminated on timeout. This verifies a limited
+Its fixed `--hold-gui` CI mode additionally opens a real visible Flutter window
+with that token, discards GUI raw output and coordinates a bounded WM_CLOSE via
+PID-scoped ready/stop events. An owned kill-on-close job contains failure cleanup.
+Only the exact owned child/job can be terminated on timeout. This verifies a limited
 privilege boundary; it does not substitute for a separate ordinary desktop-user
 account, Windows 10/11 acceptance or a signed install/uninstall transaction.
 
@@ -65,6 +68,6 @@ See [service boundary](WINDOWS_SERVICE.md) and
 The opt-in fresh installer prototype passed its bounded Windows fixture on
 `d31a0bb`, [run 43847087250](https://github.com/pvlrdnv/liwetun-win/actions/runs/43847087250).
 See [installer scope and remaining gates](INSTALLER.md). Upgrade/rollback,
-desktop ownership selection, in-use UI handling, release signing/revocation and
+desktop ownership selection, loader-sharing/recovery, release signing/revocation and
 full distribution audit remain open. Public signing process availability has
 been asked while independent preparation continues.
