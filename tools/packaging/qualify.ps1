@@ -164,8 +164,9 @@ try {
     $medium = & $probe | ConvertFrom-Json
     $exit = $LASTEXITCODE
     $medium | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $evidence 'medium-integrity.json')
-    if ($exit -ne 0 -or !$medium.passed) { throw 'Restricted medium-integrity GUI could not query service' }
+    if ($exit -ne 0 -or !$medium.passed -or $medium.service_metadata_read_only -ne $true) { throw 'Restricted medium-integrity GUI could not query service' }
     $checks.Add('medium_integrity_without_enabled_admin_group')
+    $checks.Add('owner_can_read_service_identity_but_not_write_process_or_duplicate_token')
     $after = Snapshot
     if ($after.adapter -or $after.dns -ne $before.dns -or $after.routes -ne $before.routes) { throw 'Read-only package qualification changed networking' }
     $checks.Add('no_tunnel_start_or_network_configuration_change')

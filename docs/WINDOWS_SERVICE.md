@@ -34,6 +34,18 @@ process image, signature, owner SID and session/logon lease. UI process death or
 owner logoff initiates stop. The client verifies the pipe server against SCM's
 running service PID and LocalSystem identity before transmitting the profile.
 
+The production-payload fixture exposed a non-elevated identity-read failure.
+Before reporting Running, the service grants its configured owner only
+`PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE` on its own process and
+`TOKEN_QUERY` on its own token. Existing object DACL entries are retained;
+missing DACLs or grant failures stop initialization. This permits the unchanged
+client to prove the live System SID, process liveness and trusted image. It does
+not grant token duplication, impersonation, adjustment, process writes or access
+to another System process. These are lifetime-local object ACLs, not a machine
+policy change. The restricted-token fixture now checks seven process-control
+and eight token-control rights individually remain denied, then runs the actual
+GUI query. This continuation is pending Windows qualification.
+
 Service, client and SDK must have trusted Authenticode signatures from the same
 leaf signer in an ACL-protected Program Files directory. Writable ancestors,
 unexpected owners and unknown access-granting ACL forms fail closed. The original

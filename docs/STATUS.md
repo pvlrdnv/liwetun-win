@@ -112,6 +112,17 @@ admission now accepts those two exact Microsoft publisher names with a Valid
 Authenticode result; signatures/bytes are preserved. No generic trusted-signer
 fallback or temporary Microsoft root was added. Payload recheck pending.
 
+Payload run [43839769141](https://github.com/pvlrdnv/liwetun-win/actions/runs/43839769141)
+passed original CRT/x64/notice/signature assembly and an actual signed GUI query
+to the production-mode service. Restricted medium GUI returned Denied (code 2);
+cleanup/network-unchanged passed. The client's live System-process/token proof
+needs metadata access unavailable to that token. The service now grants its
+configured owner only QUERY_LIMITED_INFORMATION/SYNCHRONIZE on its own process
+and TOKEN_QUERY on its own token, preserving the existing DACL and the complete
+client-side proof. It changes no other process/global ACL. A restricted-token
+fixture also requires denial of seven process-control and eight token write/
+duplication/impersonation rights. Windows qualification of this fix is pending.
+
 ## Current stage
 
 LOCAL development in independent private repository

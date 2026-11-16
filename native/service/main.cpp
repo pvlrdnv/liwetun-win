@@ -39,6 +39,42 @@ bool SameLease(const Actor& actor, const Actor& lease) {
   return actor.sid == lease.sid && actor.session == lease.session &&
       actor.logon.HighPart == lease.logon.HighPart && actor.logon.LowPart == lease.logon.LowPart;
 }
+bool GrantReadFacts(HANDLE object, PSID sid, DWORD rights) {
+  PACL existing = nullptr, updated = nullptr;
+  PSECURITY_DESCRIPTOR descriptor = nullptr;
+  if (GetSecurityInfo(object, SE_KERNEL_OBJECT, DACL_SECURITY_INFORMATION,
+      nullptr, nullptr, &existing, nullptr, &descriptor) != ERROR_SUCCESS) return false;
+  EXPLICIT_ACCESSW access{};
+  access.grfAccessPermissions = rights;
+  access.grfAccessMode = GRANT_ACCESS;
+  access.grfInheritance = NO_INHERITANCE;
+  access.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+  access.Trustee.TrusteeType = TRUSTEE_IS_USER;
+  access.Trustee.ptstrName = static_cast<LPWSTR>(sid);
+  const bool valid = existing && SetEntriesInAclW(1, &access, existing, &updated) == ERROR_SUCCESS &&
+      SetSecurityInfo(object, SE_KERNEL_OBJECT, DACL_SECURITY_INFORMATION,
+          nullptr, nullptr, updated, nullptr) == ERROR_SUCCESS;
+  if (updated) LocalFree(updated);
+  if (descriptor) LocalFree(descriptor);
+  return valid;
+}
+bool AllowOwnerIdentityQuery() {
+  // Keep the client's live LocalSystem-token proof. Grant only metadata reads
+  // on this service's own process/token to its configured owner, never a token
+  // duplication/impersonation/write right or access to another system process.
+  if (!IsSystemProcess(GetCurrentProcess())) return false;
+  PSID sid = nullptr;
+  if (!ConvertStringSidToSidW(owner_sid.c_str(), &sid)) return false;
+  Handle process(OpenProcess(READ_CONTROL | WRITE_DAC, FALSE, GetCurrentProcessId()));
+  HANDLE raw_token = nullptr;
+  const bool opened = OpenProcessToken(GetCurrentProcess(), READ_CONTROL | WRITE_DAC, &raw_token) != FALSE;
+  Handle token(raw_token);
+  const bool valid = process && opened &&
+      GrantReadFacts(token.get(), sid, TOKEN_QUERY) &&
+      GrantReadFacts(process.get(), sid, PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE);
+  LocalFree(sid);
+  return valid;
+}
 void WINAPI Main(DWORD, LPWSTR*) {
   stopping.reset(CreateEventW(nullptr, TRUE, FALSE, nullptr));
   logged_off.reset(CreateEventW(nullptr, TRUE, FALSE, nullptr));
@@ -46,7 +82,7 @@ void WINAPI Main(DWORD, LPWSTR*) {
   if (!status_handle || !stopping || !logged_off) return;
   Status(SERVICE_START_PENDING);
   Image self;
-  if (!OpenTrustedImage(SelfPath(), self)) { Status(SERVICE_STOPPED, ERROR_ACCESS_DENIED); return; }
+  if (!OpenTrustedImage(SelfPath(), self) || !AllowOwnerIdentityQuery()) { Status(SERVICE_STOPPED, ERROR_ACCESS_DENIED); return; }
   if (!SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32)) {
     Status(SERVICE_STOPPED, ERROR_ACCESS_DENIED); return;
   }

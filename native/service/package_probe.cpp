@@ -26,6 +26,40 @@ struct Attributes {
   LPPROC_THREAD_ATTRIBUTE_LIST value = nullptr;
   ~Attributes() { if (value) DeleteProcThreadAttributeList(value); }
 };
+void CheckRestrictedRights(HANDLE token) {
+  SC_HANDLE manager = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
+  SC_HANDLE service = manager ? OpenServiceW(manager, L"LiWeTun", SERVICE_QUERY_STATUS) : nullptr;
+  SERVICE_STATUS_PROCESS status{};
+  DWORD bytes = 0;
+  const bool running = service && QueryServiceStatusEx(service, SC_STATUS_PROCESS_INFO,
+      reinterpret_cast<BYTE*>(&status), sizeof(status), &bytes) && status.dwCurrentState == SERVICE_RUNNING;
+  if (service) CloseServiceHandle(service);
+  if (manager) CloseServiceHandle(manager);
+  Require(running && status.dwProcessId != GetCurrentProcessId(), "query_service_pid");
+  Require(ImpersonateLoggedOnUser(token) != FALSE, "impersonate_restricted_owner");
+  struct Revert {
+    bool active = true;
+    ~Revert() { if (active) RevertToSelf(); }
+  } revert;
+  Handle process(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE, status.dwProcessId));
+  Require(process && liwetun::IsSystemProcess(process.get()), "restricted_live_system_identity_read");
+  constexpr DWORD process_rights[]{PROCESS_TERMINATE, PROCESS_CREATE_THREAD, PROCESS_VM_OPERATION,
+      PROCESS_VM_WRITE, PROCESS_DUP_HANDLE, WRITE_DAC, WRITE_OWNER};
+  for (DWORD right : process_rights) {
+    Handle forbidden(OpenProcess(right, FALSE, status.dwProcessId));
+    Require(!forbidden && GetLastError() == ERROR_ACCESS_DENIED, "restricted_process_write_denied");
+  }
+  constexpr DWORD token_rights[]{TOKEN_ASSIGN_PRIMARY, TOKEN_DUPLICATE, TOKEN_IMPERSONATE,
+      TOKEN_ADJUST_PRIVILEGES, TOKEN_ADJUST_GROUPS, TOKEN_ADJUST_DEFAULT, WRITE_DAC, WRITE_OWNER};
+  for (DWORD right : token_rights) {
+    HANDLE raw = nullptr;
+    const bool opened = OpenProcessToken(process.get(), right, &raw) != FALSE;
+    Handle forbidden(raw);
+    Require(!opened && GetLastError() == ERROR_ACCESS_DENIED, "restricted_token_privilege_denied");
+  }
+  Require(RevertToSelf() != FALSE, "revert_restricted_owner");
+  revert.active = false;
+}
 void Run() {
   wchar_t environment[8]{};
   Require(GetEnvironmentVariableW(L"GITHUB_ACTIONS", environment, 8) == 4 &&
@@ -60,6 +94,7 @@ void Run() {
     Require(!EqualSid(group_list->Groups[i].Sid, admin) || !(group_list->Groups[i].Attributes & SE_GROUP_ENABLED), "admin_group_disabled");
   }
   Require(EqualSid(reinterpret_cast<const TOKEN_MANDATORY_LABEL*>(integrity.data())->Label.Sid, medium) != FALSE, "medium_integrity_verified");
+  CheckRestrictedRights(restricted.get());
 
   SECURITY_ATTRIBUTES security{sizeof(security), nullptr, TRUE};
   HANDLE read = nullptr, write = nullptr;
@@ -113,7 +148,7 @@ void Run() {
 int wmain() {
   try {
     Run();
-    std::cout << "{\"passed\":true,\"medium_integrity\":true,\"admin_group_enabled\":false}\n";
+    std::cout << "{\"passed\":true,\"medium_integrity\":true,\"admin_group_enabled\":false,\"service_metadata_read_only\":true}\n";
     return 0;
   } catch (...) {
     std::cout << "{\"passed\":false,\"stage\":\"" << stage << "\",\"child_exit\":";
