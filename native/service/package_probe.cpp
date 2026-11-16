@@ -1,5 +1,5 @@
 // Disposable CI only. Launch only the adjacent trusted GUI's fixed read-only
-// status command with a medium-integrity token and no enabled admin group.
+// status command or bounded visible GUI fixture with a medium-integrity token.
 // No arbitrary program, command, credentials or network configuration is accepted.
 #include "security.h"
 #include <userenv.h>
@@ -26,6 +26,61 @@ struct Attributes {
   LPPROC_THREAD_ATTRIBUTE_LIST value = nullptr;
   ~Attributes() { if (value) DeleteProcThreadAttributeList(value); }
 };
+struct ChildCleanup {
+  HANDLE process = nullptr;
+  HANDLE job = nullptr;
+  bool assigned = false;
+  ~ChildCleanup() {
+    if (process && WaitForSingleObject(process, 0) != WAIT_OBJECT_0) {
+      if (assigned) TerminateJobObject(job, 70);
+      else TerminateProcess(process, 70); // Only the exact child created below.
+      WaitForSingleObject(process, 5000);
+    }
+  }
+};
+struct GuiWindow {
+  DWORD pid = 0;
+  HWND value = nullptr;
+};
+BOOL CALLBACK FindChildWindow(HWND window, LPARAM parameter) {
+  auto& child = *reinterpret_cast<GuiWindow*>(parameter);
+  DWORD pid = 0;
+  GetWindowThreadProcessId(window, &pid);
+  if (pid == child.pid && IsWindowVisible(window)) {
+    wchar_t name[64]{};
+    if (GetClassNameW(window, name, 64) && std::wstring(name) == L"FLUTTER_RUNNER_WIN32_WINDOW") {
+      child.value = window;
+      return FALSE;
+    }
+  }
+  return TRUE;
+}
+void HoldGui(HANDLE process, DWORD pid) {
+  const auto suffix = std::to_wstring(GetCurrentProcessId());
+  Handle ready(CreateEventW(nullptr, TRUE, FALSE, (L"Local\\LiWeTun.CI.GuiReady." + suffix).c_str()));
+  Handle stop(CreateEventW(nullptr, TRUE, FALSE, (L"Local\\LiWeTun.CI.GuiStop." + suffix).c_str()));
+  Require(ready && stop, "gui_control_events");
+  GuiWindow window{pid, nullptr};
+  for (unsigned i = 0; i < 200; ++i) {
+    Require(WaitForSingleObject(process, 0) == WAIT_TIMEOUT, "gui_alive_before_ready");
+    EnumWindows(FindChildWindow, reinterpret_cast<LPARAM>(&window));
+    if (window.value) break;
+    Sleep(100);
+  }
+  Require(window.value != nullptr, "visible_flutter_window");
+  {
+    Handle presence(OpenMutexW(SYNCHRONIZE, FALSE, L"Global\\LiWeTun.AppPresence.v1"));
+    Require(static_cast<bool>(presence), "gui_lifetime_presence");
+  } // Do not retain the presence object after the GUI itself closes.
+  Require(SetEvent(ready.get()) != FALSE, "signal_gui_ready");
+  Require(WaitForSingleObject(stop.get(), 90000) == WAIT_OBJECT_0, "bounded_gui_hold");
+  Require(PostMessageW(window.value, WM_CLOSE, 0, 0) != FALSE, "close_own_gui_window");
+  Require(WaitForSingleObject(process, 15000) == WAIT_OBJECT_0, "gui_closed_gracefully");
+  Require(GetExitCodeProcess(process, &child_exit) != FALSE && child_exit == 0, "gui_successful_exit");
+  Handle presence(OpenMutexW(SYNCHRONIZE, FALSE, L"Global\\LiWeTun.AppPresence.v1"));
+  const DWORD error = GetLastError();
+  Require(!presence && error == ERROR_FILE_NOT_FOUND, "gui_presence_released");
+}
 void CheckRestrictedRights(HANDLE token) {
   SC_HANDLE manager = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
   SC_HANDLE service = manager ? OpenServiceW(manager, L"LiWeTun", SERVICE_QUERY_STATUS) : nullptr;
@@ -60,7 +115,7 @@ void CheckRestrictedRights(HANDLE token) {
   Require(RevertToSelf() != FALSE, "revert_restricted_owner");
   revert.active = false;
 }
-void Run() {
+void Run(bool hold_gui) {
   wchar_t environment[8]{};
   Require(GetEnvironmentVariableW(L"GITHUB_ACTIONS", environment, 8) == 4 &&
       std::wstring(environment) == L"true", "disposable_ci");
@@ -103,6 +158,17 @@ void Run() {
   Require(SetHandleInformation(output.get(), HANDLE_FLAG_INHERIT, 0) != FALSE, "private_parent_handle");
   Handle input(CreateFileW(L"NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, &security, OPEN_EXISTING, 0, nullptr));
   Require(input && input.get() != INVALID_HANDLE_VALUE, "empty_child_input");
+  Handle discard;
+  Handle job;
+  if (hold_gui) {
+    discard.reset(CreateFileW(L"NUL", GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &security, OPEN_EXISTING, 0, nullptr));
+    Require(discard && discard.get() != INVALID_HANDLE_VALUE, "discard_gui_raw_output");
+    job.reset(CreateJobObjectW(nullptr, nullptr));
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION limit{};
+    limit.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+    Require(job && SetInformationJobObject(job.get(), JobObjectExtendedLimitInformation,
+        &limit, static_cast<DWORD>(sizeof(limit))), "owned_gui_cleanup_job");
+  }
   SIZE_T attribute_size = 0;
   InitializeProcThreadAttributeList(nullptr, 1, 0, &attribute_size);
   Require(attribute_size > 0 && attribute_size < 65536, "attribute_size");
@@ -111,23 +177,32 @@ void Run() {
   auto* attribute_list = reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(attribute_storage.data());
   Require(InitializeProcThreadAttributeList(attribute_list, 1, 0, &attribute_size) != FALSE, "attribute_list");
   attributes.value = attribute_list;
-  HANDLE inherited[]{child_output.get(), input.get()};
+  HANDLE inherited[]{hold_gui ? discard.get() : child_output.get(), input.get()};
   Require(UpdateProcThreadAttribute(attributes.value, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, inherited, sizeof(inherited), nullptr, nullptr) != FALSE, "explicit_child_handles");
   STARTUPINFOEXW startup{};
   startup.StartupInfo.cb = sizeof(startup);
   startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
   startup.StartupInfo.hStdInput = input.get();
-  startup.StartupInfo.hStdOutput = startup.StartupInfo.hStdError = child_output.get();
+  startup.StartupInfo.hStdOutput = startup.StartupInfo.hStdError = inherited[0];
   startup.lpAttributeList = attributes.value;
   Environment block;
   Require(CreateEnvironmentBlock(&block.value, restricted.get(), FALSE) != FALSE, "isolated_child_environment");
-  std::wstring command = L"\"" + executable + L"\" --service-status";
+  std::wstring command = L"\"" + executable + L"\"" + (hold_gui ? L"" : L" --service-status");
   PROCESS_INFORMATION process{};
   Require(CreateProcessAsUserW(restricted.get(), executable.c_str(), command.data(), nullptr, nullptr, TRUE,
-      EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT | CREATE_NO_WINDOW, block.value,
+      EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT | CREATE_NO_WINDOW |
+          (hold_gui ? CREATE_SUSPENDED : 0), block.value,
       directory.c_str(), &startup.StartupInfo, &process) != FALSE, "launch_restricted_gui");
   Handle process_handle(process.hProcess), thread(process.hThread);
+  ChildCleanup cleanup{process_handle.get(), job.get(), false};
   child_output.reset();
+  if (hold_gui) {
+    Require(AssignProcessToJobObject(job.get(), process_handle.get()) != FALSE, "assign_owned_gui_job");
+    cleanup.assigned = true;
+    Require(ResumeThread(thread.get()) != MAXDWORD, "resume_owned_gui");
+    HoldGui(process_handle.get(), process.dwProcessId);
+    return;
+  }
   if (WaitForSingleObject(process_handle.get(), 15000) != WAIT_OBJECT_0) {
     TerminateProcess(process_handle.get(), 70); // Exact child just created here.
     WaitForSingleObject(process_handle.get(), 5000);
@@ -145,10 +220,16 @@ void Run() {
   Require(child_exit == 0 && result == expected, "restricted_query_reply");
 }
 }  // namespace
-int wmain() {
+int wmain(int argc, wchar_t** argv) {
   try {
-    Run();
-    std::cout << "{\"passed\":true,\"medium_integrity\":true,\"admin_group_enabled\":false,\"service_metadata_read_only\":true}\n";
+    const bool gui = argc == 2 && std::wstring(argv[1]) == L"--hold-gui";
+    Require(argc == 1 || gui, "fixed_probe_mode");
+    Run(gui);
+    if (gui) {
+      std::cout << "{\"passed\":true,\"medium_integrity\":true,\"admin_group_enabled\":false,\"gui_window_visible\":true,\"closed_gracefully\":true}\n";
+    } else {
+      std::cout << "{\"passed\":true,\"medium_integrity\":true,\"admin_group_enabled\":false,\"service_metadata_read_only\":true}\n";
+    }
     return 0;
   } catch (...) {
     std::cout << "{\"passed\":false,\"stage\":\"" << stage << "\",\"child_exit\":";

@@ -199,6 +199,14 @@ holds the gate. Read-only status CLI bypasses UI presence and remains unchanged.
 Namespace objects contain no secrets/commands and do not replace service IPC
 authentication; name squatting can deny availability. Updated GUI compilation
 and real installed-window medium-integrity qualification are pending.
+The optional CI helper now has a fixed visible-GUI mode with the same restricted
+medium token, explicit inherited handles and fresh user environment. It discards
+GUI raw output, identifies only its own created child's visible Flutter window,
+uses PID-scoped local ready/stop events, and closes that window with WM_CLOSE.
+A kill-on-close job plus exact-child fallback bounds failure cleanup. Installer
+fixture expects code 43 while the window is open and verifies every payload
+digest, service running PID and registration remain unchanged before closing.
+This is implemented but still requires the new GUI artifact and Windows proof.
 
 ## Current stage
 

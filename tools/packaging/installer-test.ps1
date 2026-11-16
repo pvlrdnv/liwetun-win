@@ -130,6 +130,9 @@ try {
     }
     $uninstaller = Join-Path $root 'Uninstall.exe'
     VerifySignature $uninstaller
+    $uninstallCopy = Join-Path $output 'uninstall-body-ci.exe'
+    Copy-Item $uninstaller $uninstallCopy
+    VerifySignature $uninstallCopy
     $checks.Add('fresh_install_preserves_payload_and_signed_uninstaller')
     if ((InvokeInstaller $installer "/S /OWNER_SID=$sid") -ne 21) { throw 'Duplicate installer was admitted' }
     $checks.Add('duplicate_install_denied')
@@ -148,13 +151,50 @@ try {
     $mediumExit = $LASTEXITCODE
     $medium | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $evidence 'installer-medium-integrity.json')
     if ($mediumExit -ne 0 -or !$medium.passed -or !$medium.service_metadata_read_only) { throw 'Installed medium-integrity query failed' }
-    Remove-Item $probe
     $checks.Add('installed_gui_queries_production_service_at_medium_integrity')
 
+    $stage = 'open_medium_gui_denies_uninstall'
+    $serviceBefore = Get-CimInstance Win32_Service -Filter "Name='LiWeTun'"
+    $registrationBefore = (Get-ItemProperty $registry | Select-Object DisplayName,DisplayVersion,UninstallString,QuietUninstallString,InstallLocation,NoModify,NoRepair | ConvertTo-Json -Compress)
+    $gui = [Diagnostics.Process]::new()
+    $gui.StartInfo = [Diagnostics.ProcessStartInfo]::new($probe,'--hold-gui')
+    $gui.StartInfo.UseShellExecute = $false
+    $gui.StartInfo.RedirectStandardOutput = $true
+    $gui.StartInfo.RedirectStandardError = $true
+    $ready = $null
+    $stop = $null
+    try {
+        if (!$gui.Start()) { throw 'Restricted GUI fixture launch failed' }
+        $ready = [Threading.EventWaitHandle]::new($false,[Threading.EventResetMode]::ManualReset,('Local\LiWeTun.CI.GuiReady.' + $gui.Id))
+        $stop = [Threading.EventWaitHandle]::new($false,[Threading.EventResetMode]::ManualReset,('Local\LiWeTun.CI.GuiStop.' + $gui.Id))
+        if (!$ready.WaitOne(30000) -or $gui.HasExited) { throw 'Actual restricted Flutter window not ready' }
+        if ((InvokeInstaller $uninstallCopy ("/S _?=" + $root)) -ne 43) { throw 'Open GUI did not block uninstall' }
+        foreach ($file in $manifest.files) {
+            if ((Get-FileHash (Join-Path $root $file.file) -Algorithm SHA256).Hash.ToLowerInvariant() -ne $file.sha256) { throw 'Busy uninstall changed payload' }
+        }
+        $serviceAfter = Get-CimInstance Win32_Service -Filter "Name='LiWeTun'"
+        $registrationAfter = (Get-ItemProperty $registry | Select-Object DisplayName,DisplayVersion,UninstallString,QuietUninstallString,InstallLocation,NoModify,NoRepair | ConvertTo-Json -Compress)
+        if ($serviceAfter.State -ne 'Running' -or $serviceAfter.ProcessId -ne $serviceBefore.ProcessId -or $registrationAfter -cne $registrationBefore -or !(Test-Path $shortcut)) { throw 'Busy uninstall changed registration or service' }
+        $checks.Add('visible_medium_gui_blocks_uninstall_before_mutations')
+    } finally {
+        if ($stop) { [void]$stop.Set() }
+        try {
+            if (!$gui.WaitForExit(25000)) { $gui.Kill(); $gui.WaitForExit(); throw 'Restricted GUI helper timeout' }
+            $raw = $gui.StandardOutput.ReadToEnd()
+            if ($raw.Length -gt 2048) { throw 'Oversized closed GUI fixture result' }
+            try { $held = $raw | ConvertFrom-Json } catch { throw 'Invalid closed GUI fixture result' }
+            $held | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $evidence 'installer-visible-gui.json')
+            if ($gui.ExitCode -ne 0 -or !$held.passed -or !$held.medium_integrity -or $held.admin_group_enabled -ne $false -or !$held.gui_window_visible -or !$held.closed_gracefully) { throw 'Restricted GUI did not close successfully' }
+        } finally {
+            if ($ready) { $ready.Dispose() }
+            if ($stop) { $stop.Dispose() }
+            $gui.Dispose()
+        }
+    }
+    $checks.Add('visible_medium_gui_closes_and_releases_presence')
+    Remove-Item $probe
+
     $stage = 'uninstall_preserves_unknown_file'
-    $uninstallCopy = Join-Path $output 'uninstall-body-ci.exe'
-    Copy-Item $uninstaller $uninstallCopy
-    VerifySignature $uninstallCopy
     [IO.File]::WriteAllText($sentinel,'synthetic-preserve')
     if ((InvokeInstaller $uninstallCopy ("/S _?=" + $root)) -ne 41 -or [IO.File]::ReadAllText($sentinel) -cne 'synthetic-preserve' -or !(Test-Path $uninstaller) -or !(Test-Path $registry)) { throw 'Uninstaller removed unknown data or recovery entry' }
     $checks.Add('unknown_file_preserved_with_retry_uninstaller')
