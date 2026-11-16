@@ -51,3 +51,26 @@ now cover those sets. [third_party/sdk](../third_party/sdk/README.md) archives
 bytes against receipts and exact dependency locks, with tamper/path/membership
 guards. Local tests passed; the Windows integrity workflow remains pending.
 Coverage is not approval of nested attributions or complete release composition.
+
+## Offline application notices
+
+The actual prior GUI artifact from run 43850065637 was downloaded and all 13
+file digests checked. Its bundled Flutter notices include engine/framework/Dart
+texts, but not the native SDK/Rust inventories. The client now declares a
+generated additional-license source containing all 38 SDK/Wintun and 22 Rust
+notice bodies unchanged, and Support opens Flutter's offline license page.
+[Generation and boundaries](../third_party/client/README.md).
+
+The pinned Flutter 3.38.10 collector supports `flutter.licenses`; source inspection
+at the pinned framework revision confirms additional source inclusion. The build
+guard checks the generated native bundle verbatim inside bounded decoded
+`NOTICES.Z` and every body from the exact pinned engine license file. Framework,
+engine and engine-license digests are recorded with the GUI artifact. Package
+admission checks that provenance and the actual native notice bytes again.
+
+Local checks PASS: analyze, 118 Dart tests, complete generated native bundle,
+1594 engine license sections present in the test asset bundle; an earlier GUI
+without native notices is correctly rejected. This is local evidence only;
+updated actual Windows build/package qualification is pending. These are byte
+coverage checks, not a declaration of complete redistribution rights or closure
+of the remaining source/nested-attribution/CRT/modified-SDK review gates.

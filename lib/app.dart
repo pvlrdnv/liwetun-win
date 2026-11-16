@@ -436,7 +436,9 @@ class _HomeState extends State<_Home> {
               ),
             const ListTile(
               title: Text('Состояние модулей'),
-              subtitle: Text('TrustTunnel / Hysteria2 / Xray не интегрированы'),
+              subtitle: Text(
+                'TrustTunnel доступен в установленной сборке. Hysteria2 и Xray пока недоступны.',
+              ),
             ),
           ],
         ),
@@ -487,6 +489,14 @@ class _HomeState extends State<_Home> {
         ),
       ),
       const SizedBox(height: 20),
+      ListTile(
+        leading: const Icon(Icons.description_outlined),
+        title: const Text('Лицензии компонентов'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () =>
+            showLicensePage(context: context, applicationName: 'LiWeTun'),
+      ),
+      const SizedBox(height: 20),
       const Text(
         'Журнал текущего сеанса',
         style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
@@ -500,9 +510,7 @@ class _HomeState extends State<_Home> {
           ),
         ),
       const SizedBox(height: 20),
-      const Text(
-        'Автозапуск, трей и автоподключение появятся после интеграции и проверки службы Windows.',
-      ),
+      const Text('Автозапуск, трей и автоподключение пока недоступны.'),
     ],
   );
 

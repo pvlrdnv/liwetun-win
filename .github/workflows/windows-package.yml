@@ -63,6 +63,8 @@ jobs:
           }
           python tools/sdk/verify_notices.py
           if ($LASTEXITCODE -ne 0) { throw 'Candidate notice integrity failed' }
+          python tools/sdk/client_notices.py
+          if ($LASTEXITCODE -ne 0) { throw 'Client notice bundle drift' }
       - name: Prepare pinned installer compiler
         if: inputs.qualify_installer
         run: ./tools/packaging/prepare-nsis.ps1

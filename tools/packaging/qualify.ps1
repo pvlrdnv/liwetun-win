@@ -101,6 +101,11 @@ try {
     }
     $checks.Add('original_microsoft_app_local_crt_staged')
     $stage = 'notices_and_native_architecture'
+    $noticePin = Get-Content tools/sdk/client-notices.json -Raw | ConvertFrom-Json
+    if ($provenance.flutter_framework_revision -ne $noticePin.flutter_framework_commit -or $provenance.flutter_engine_revision -ne $noticePin.flutter_engine_commit -or $provenance.notice_verification.application_bundle.engine_notice_sha256 -ne $noticePin.engine_notice_sha256 -or $provenance.notice_verification.application_bundle.engine_notice_bodies_preserved -ne $true -or $provenance.notice_verification.license_approval -ne $false) { throw 'GUI notice/engine provenance mismatch' }
+    python tools/sdk/client_notices.py --bundle (Join-Path $payload 'data/flutter_assets/NOTICES.Z') --report (Join-Path $evidence 'client-notice-bytes.json')
+    if ($LASTEXITCODE -ne 0) { throw 'Packaged client notice bytes missing or changed' }
+    $checks.Add('native_and_engine_notice_bytes_verified_not_legal_approval')
     New-Item -ItemType Directory (Join-Path $payload 'notices') | Out-Null
     Copy-Item third_party/sdk (Join-Path $payload 'notices') -Recurse
     Copy-Item third_party/rust (Join-Path $payload 'notices') -Recurse

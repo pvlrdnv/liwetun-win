@@ -452,6 +452,15 @@ payload/TCP egress, and complete network/WFP restoration without watchdog action
 No post-refusal ordinary HTTPS probe was attempted; no kill-switch claim.
 All six basic IPv4 scenarios now have explicit evidence; this does not qualify
 the complete fault/IPv6/desktop/release matrix.
+Distribution continuation: verified all 13 files of the earlier GUI artifact;
+its Flutter notice bundle lacked the native SDK/Rust notices. Added a generated
+offline license source with all 60 original notice bodies, a Support license-page
+entry, build-time engine/native notice byte checks and package provenance guards.
+Corrected stale UI text claiming TrustTunnel was unintegrated; Hysteria2/Xray,
+tray/startup/autoconnect remain explicitly unavailable. Local analyze and 118
+Dart tests PASS, generated bundle and all 1594 pinned engine license bodies
+verified, old GUI without native notices rejected. Actual updated Windows GUI
+and package checks pending. Byte integrity is not legal/release approval.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),
