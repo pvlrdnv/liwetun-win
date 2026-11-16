@@ -39,6 +39,15 @@ on:
           - stop
           - lease-death
           - service-crash
+      production_profile:
+        description: Valid profile or isolated wrong-auth / wrong-CA startup refusal (H2 Stop only)
+        required: false
+        default: valid
+        type: choice
+        options:
+          - valid
+          - wrong-auth
+          - wrong-ca
       endpoint_version:
         description: Pinned official endpoint version to compare
         required: true
@@ -64,6 +73,7 @@ jobs:
       LIWETUN_PRODUCTION_PROBE: ${{ inputs.production_probe }}
       LIWETUN_PRODUCTION_TRANSPORT: ${{ inputs.production_transport }}
       LIWETUN_PRODUCTION_TERMINATION: ${{ inputs.production_termination }}
+      LIWETUN_PRODUCTION_PROFILE: ${{ inputs.production_profile }}
     defaults:
       run:
         shell: pwsh

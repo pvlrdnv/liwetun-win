@@ -103,7 +103,18 @@ only that retained identity's SDK sessions before/during/after the crash; it
 does not accept a PID or reattribute observations to a restarted service. Only
 query/synchronize access is used by the observer. Crash injection separately
 verifies and retains the exact run-owned SCM/process image before terminating it.
-Actual native Windows compilation and crash acceptance remain pending.
+Native Windows compilation and that crash case **PASS** on `383dfcb`,
+[run 43883716213](https://github.com/pvlrdnv/liwetun-win/actions/runs/43883716213),
+[evidence](evidence/production-service-crash-43883716213.json). Successful actual
+traffic preceded verified original-process termination; its dynamic WFP session
+returned to baseline and all network state restored without watchdog action.
+
+Pending startup negatives use `production_profile=wrong-auth` or `wrong-ca`,
+only H2 with normal Stop. They require a healthy endpoint wire preflight,
+typed CoreFailure/Error, zero endpoint data/TCP egress and complete cleanup.
+After refusal they make no ordinary direct HTTPS request and do not claim a
+kill switch. Registry credential rejection can precede SOCKS5 authentication;
+no SOCKS rejection count is invented as a server observation.
 
 Remaining gates: full ordinary-mode fault matrix, effective DNS leak prevention,
 IPv6 payload delivery, crash/network-

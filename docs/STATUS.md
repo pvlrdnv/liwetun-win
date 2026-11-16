@@ -415,6 +415,20 @@ sessions after death. It accepts no PID/filter name and exports only counts /
 an alive boolean. Crash injection retains and checks only this run's exact
 service process before termination. No shipped service/GUI change. Python/YAML /
 diff checks PASS; native Windows compilation and crash acceptance pending.
+Ordinary H2 owned-service crash **PASS** on `383dfcb`,
+[43883716213](https://github.com/pvlrdnv/liwetun-win/actions/runs/43883716213):
+native Windows compilation, actual HTTPS/DNS with exact marker, dynamic WFP
+session observed on the retained original service, verified force termination,
+original-process death and return of its sessions to baseline; all routes/DNS /
+adapter restored without watchdog intervention.
+[Evidence](evidence/production-service-crash-43883716213.json).
+Prepared separate wrong-auth/wrong-CA production startup controls (H2 Stop only):
+calibrated healthy endpoint preflight, fixed generated negative profile, typed
+terminal CoreFailure/Error, zero endpoint payload/TCP egress, then complete WFP /
+network restoration. No ordinary direct HTTPS request is made after refusal;
+this does not claim a kill switch. Endpoint registry may reject credentials
+before SOCKS5, so SOCKS auth counters are not used as proof. Python/YAML/diff
+checks PASS; actual negative Windows cases pending.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

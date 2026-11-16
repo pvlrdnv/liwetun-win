@@ -175,7 +175,8 @@ try {
                 throw 'Real TUN network qualification failed; see safe network.json'
             }
             if ($ProductionTraffic) {
-                $checks.Add('production_single_unbound_https_dns_and_cleanup')
+                if ($env:LIWETUN_PRODUCTION_PROFILE -in @('wrong-auth','wrong-ca')) { $checks.Add('production_single_profile_refusal_and_cleanup') }
+                else { $checks.Add('production_single_unbound_https_dns_and_cleanup') }
                 $lifecycle = @{verified_by='production_single_unbound_ipv4_fixture';full_matrix_qualified=$false}
             } else {
                 $checks.Add('tun_https_dns_transport_and_cleanup')

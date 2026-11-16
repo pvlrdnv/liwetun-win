@@ -91,10 +91,15 @@ def main():
     termination = os.environ.get('LIWETUN_PRODUCTION_TERMINATION', 'stop')
     if termination not in ['stop', 'lease-death', 'service-crash']:
         raise RuntimeError('invalid_fixture_termination')
+    profile = os.environ.get('LIWETUN_PRODUCTION_PROFILE', 'valid')
+    if profile not in ['valid', 'wrong-auth', 'wrong-ca'] or (
+            profile != 'valid' and (protocol != 'http2' or termination != 'stop')):
+        raise RuntimeError('invalid_fixture_profile')
     report = ROOT / 'build/service-evidence/production-network.json'
     report.parent.mkdir(exist_ok=True, parents=True)
     result = {'passed': False, 'mode': 'single_production_unbound_ipv4', 'protocol': protocol,
               'termination': termination,
+              'profile': profile,
               'network_test_modes_enabled': False, 'client_host_routes_added': False,
               'server_https_egress_bound_physical': True,
               'endpoint_udp_relay': 'wsl_local',
@@ -176,7 +181,8 @@ def main():
             raise RuntimeError('watchdog_not_ready')
         before = totals()
         stage = 'production_session'
-        session = Child([str(client), '--network-session', str(directory / (protocol + '.uri'))])
+        profile_file = protocol if profile == 'valid' else profile
+        session = Child([str(client), '--network-session', str(directory / (profile_file + '.uri'))])
         if json.loads(session.receive())['code'] not in [0, 6]:
             raise RuntimeError('service_start_rejected')
         info = None
@@ -187,58 +193,78 @@ def main():
             info = tun()
             if info and info['dns']:
                 selected = ps(f"@(Find-NetRoute -RemoteIPAddress $env:LIWETUN_CI_ORIGIN | Where-Object InterfaceIndex -eq {int(info['index'])}).Count -gt 0 | ConvertTo-Json -Compress")
-                if selected and state['state'] == 2:
+                if selected and state['state'] == 2 and profile == 'valid':
                     break
             if state['state'] == 4:
                 break
             time.sleep(.1)
         result['ordinary_origin_route_is_tun'] = selected
-        if not info or not selected:
-            raise RuntimeError('production_route_not_selected')
-        os.environ['LIWETUN_CI_DNS_HOST'] = str(dns_host)
-        dns_physical = ps(f"@(Find-NetRoute -RemoteIPAddress $env:LIWETUN_CI_DNS_HOST | Where-Object InterfaceIndex -eq {int(physical['index'])}).Count -gt 0 | ConvertTo-Json -Compress")
-        result['fixture_dns_private_route_is_physical'] = dns_physical
-        if not dns_physical:
-            raise RuntimeError('fixture_dns_route_not_physical')
-        index = int(info['index'])
-        addresses = ps(f"@(Get-NetIPAddress -InterfaceIndex {index} -AddressFamily IPv4).IPAddress | ConvertTo-Json -Compress")
-        if isinstance(addresses, str):
-            addresses = [addresses]
-        stage = 'ordinary_https'
-        delivered, source = ordinary_https(origin, addresses)
-        result.update(tls_https_delivered=delivered, https_socket_source_is_tun=source)
-        stage = 'wsl_udp_active_sdk'
-        result['wsl_udp_active_sdk'] = udp_boundary()
-        stage = 'ordinary_dns'
-        marker_before = endpoint.command('stats')['local_forwarder_counts']
-        dns_before = totals()
-        dns, dns_source, dns_observation = ordinary_dns(info['dns'][0], addresses)
-        dns_after = totals()
-        for _ in range(10):
-            if dns_after[protocol] > dns_before[protocol]:
-                break
-            time.sleep(.1)
+        if profile == 'valid':
+            if not info or not selected:
+                raise RuntimeError('production_route_not_selected')
+            os.environ['LIWETUN_CI_DNS_HOST'] = str(dns_host)
+            dns_physical = ps(f"@(Find-NetRoute -RemoteIPAddress $env:LIWETUN_CI_DNS_HOST | Where-Object InterfaceIndex -eq {int(physical['index'])}).Count -gt 0 | ConvertTo-Json -Compress")
+            result['fixture_dns_private_route_is_physical'] = dns_physical
+            if not dns_physical:
+                raise RuntimeError('fixture_dns_route_not_physical')
+            index = int(info['index'])
+            addresses = ps(f"@(Get-NetIPAddress -InterfaceIndex {index} -AddressFamily IPv4).IPAddress | ConvertTo-Json -Compress")
+            if isinstance(addresses, str):
+                addresses = [addresses]
+            stage = 'ordinary_https'
+            delivered, source = ordinary_https(origin, addresses)
+            result.update(tls_https_delivered=delivered, https_socket_source_is_tun=source)
+            stage = 'wsl_udp_active_sdk'
+            result['wsl_udp_active_sdk'] = udp_boundary()
+            stage = 'ordinary_dns'
+            marker_before = endpoint.command('stats')['local_forwarder_counts']
+            dns_before = totals()
+            dns, dns_source, dns_observation = ordinary_dns(info['dns'][0], addresses)
             dns_after = totals()
-        after = totals()
-        delta = {key: after[key] - before[key] for key in before}
-        dns_delta = {key: dns_after[key] - dns_before[key] for key in before}
-        proxy = forwarder.command('stats')
-        endpoint_observation = endpoint.command('stats')
-        marker_after = endpoint_observation['local_forwarder_counts']
-        marker_delta = {key: marker_after[key] - marker_before[key]
-                        for key in ['synthetic_dns_requests', 'synthetic_dns_replies']}
-        result.update(dns_fixture_answer=dns, dns_socket_source_is_tun=dns_source,
-                      dns_observation=dns_observation,
-                      synthetic_dns_forwarder_delta=marker_delta,
-                      endpoint_bytes_by_transport=delta, dns_endpoint_bytes_by_transport=dns_delta,
-                      forwarder_counts=proxy, dns_fixture_counts=endpoint_observation)
-        if wfp_watch:
-            active = wfp_watch.command('query')
-            result['retained_sdk_dynamic_session_observed'] = (
-                active.get('passed') is True and active.get('retained_process_alive') is True
-                and active['sdk_dynamic_sessions'] > wfp_before['sdk_dynamic_sessions'])
-            if not result['retained_sdk_dynamic_session_observed']:
-                raise RuntimeError('active_wfp_session_not_observed')
+            for _ in range(10):
+                if dns_after[protocol] > dns_before[protocol]:
+                    break
+                time.sleep(.1)
+                dns_after = totals()
+            after = totals()
+            delta = {key: after[key] - before[key] for key in before}
+            dns_delta = {key: dns_after[key] - dns_before[key] for key in before}
+            proxy = forwarder.command('stats')
+            endpoint_observation = endpoint.command('stats')
+            marker_after = endpoint_observation['local_forwarder_counts']
+            marker_delta = {key: marker_after[key] - marker_before[key]
+                            for key in ['synthetic_dns_requests', 'synthetic_dns_replies']}
+            result.update(dns_fixture_answer=dns, dns_socket_source_is_tun=dns_source,
+                          dns_observation=dns_observation,
+                          synthetic_dns_forwarder_delta=marker_delta,
+                          endpoint_bytes_by_transport=delta, dns_endpoint_bytes_by_transport=dns_delta,
+                          forwarder_counts=proxy, dns_fixture_counts=endpoint_observation)
+            if wfp_watch:
+                active = wfp_watch.command('query')
+                result['retained_sdk_dynamic_session_observed'] = (
+                    active.get('passed') is True and active.get('retained_process_alive') is True
+                    and active['sdk_dynamic_sessions'] > wfp_before['sdk_dynamic_sessions'])
+                if not result['retained_sdk_dynamic_session_observed']:
+                    raise RuntimeError('active_wfp_session_not_observed')
+            traffic_ok = (delivered and source and dns and dns_source
+                          and delta[protocol] > 0 and dns_delta[protocol] >= 82
+                          and all(value > 0 for value in marker_delta.values())
+                          and all(delta[key] == 0 for key in delta if key != protocol)
+                          and proxy['tcp_connected'] > 0
+                          and endpoint_observation['local_forwarder_counts']['udp_replies'] > 0)
+        else:
+            stage = 'profile_refusal'
+            after_refusal = totals()
+            refusal_delta = {key: after_refusal[key] - before[key] for key in before}
+            refusal_stats = endpoint.command('stats')['local_forwarder_counts']
+            terminal_error = state['code'] == 6 and state['state'] == 4
+            traffic_ok = (terminal_error and sum(refusal_delta.values()) == 0
+                          and refusal_stats['tcp_connected'] == 0)
+            result.update(profile_refusal_observed=terminal_error,
+                          ordinary_https_probe_attempted=False,
+                          adapter_absent_at_refusal=info is None,
+                          endpoint_bytes_by_transport=refusal_delta,
+                          endpoint_tcp_connections=refusal_stats['tcp_connected'])
         stage = 'terminate_and_restore'
         # No stdin EOF/graceful Stop in this fault case: Child.close without a
         # command kills exactly its owned process. The service must detect loss
@@ -281,12 +307,7 @@ def main():
             wfp_restored = (wfp_restored and wfp_after.get('passed') is True
                             and result['retained_service_process_ended'])
         result['sdk_wfp_sessions_restored'] = wfp_restored
-        result['passed'] = (delivered and source and dns and dns_source and restored and wfp_restored
-                            and delta[protocol] > 0 and dns_delta[protocol] >= 82
-                            and all(value > 0 for value in marker_delta.values())
-                            and all(delta[key] == 0 for key in delta if key != protocol)
-                            and proxy['tcp_connected'] > 0
-                            and endpoint_observation['local_forwarder_counts']['udp_replies'] > 0)
+        result['passed'] = traffic_ok and restored and wfp_restored
     except Exception as error:
         result['failed_stage'] = stage
         result['error_type'] = type(error).__name__
