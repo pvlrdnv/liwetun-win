@@ -27,7 +27,12 @@ upstream input/output digest checks PASS. Expanded Windows exports **PASS** on
 BoringSSL override. Added optional candidate SDK build with fresh recipe export /
 recorded-lock verification. Both fresh-source preparation profiles and nine local
 source-pin/closure tests PASS; Python/YAML/diff checks PASS. Full candidate DLL
-compilation and subsequent service/network/package qualification pending.
+build is running on
+[43916079717](https://github.com/pvlrdnv/liwetun-win/actions/runs/43916079717)
+from `6ba8e0d`. Subsequent service/network/package qualification remains pending.
+Prepared explicit candidate-manifest selection for those jobs; source manifest /
+lock digests, exact build run/commit and DLL digests remain required. No candidate
+runtime manifest is generated until its successful DLL artifact is inspected.
 See [source pin scope](SDK_SOURCE_PINS.md).
 The active Conan lock and qualified DLL/runtime pins remain unchanged.
 

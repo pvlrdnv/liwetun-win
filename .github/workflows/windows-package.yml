@@ -2,6 +2,10 @@ name: Windows package payload qualification
 on:
   workflow_dispatch:
     inputs:
+      source_pins:
+        description: Qualify the separately pinned immutable-source SDK candidate
+        type: boolean
+        default: false
       gui_run_id:
         description: Successful Windows native import run with unsigned GUI runtime artifact
         required: true
@@ -18,6 +22,8 @@ jobs:
   payload:
     runs-on: windows-2022
     timeout-minutes: 25
+    env:
+      SOURCE_PINNED: ${{ inputs.source_pins }}
     defaults:
       run:
         shell: pwsh
@@ -45,7 +51,11 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'GUI provenance download failed' }
           $provenance = Get-Content build/gui-provenance/gui-runtime-provenance.json -Raw | ConvertFrom-Json
           if ($provenance.source_commit -ne $gui.head_sha -or $provenance.kind -ne 'unsigned_gui_ci_only' -or $provenance.release_ready -ne $false) { throw 'GUI provenance mismatch' }
-          $pin = Get-Content native/sdk/runtime.json -Raw | ConvertFrom-Json
+          $pinFile = if ($env:SOURCE_PINNED -eq 'true') { 'native/sdk/runtime-sources.json' } else { 'native/sdk/runtime.json' }
+          $pin = Get-Content $pinFile -Raw | ConvertFrom-Json
+          if ($env:SOURCE_PINNED -eq 'true') {
+            if ($pin.source_pin_manifest_sha256 -ne (Get-FileHash native/sdk/source-pins.json -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.conan_input_lock_sha256 -ne (Get-FileHash native/sdk/conan-sources.lock -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.source_pinned_candidate -ne $true -or $pin.release_qualified -ne $false) { throw 'Candidate SDK source receipt mismatch' }
+          }
           $sdk = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$($pin.source_run)" | ConvertFrom-Json
           if ($LASTEXITCODE -ne 0 -or $sdk.name -ne 'Windows SDK qualification' -or $sdk.conclusion -ne 'success' -or $sdk.head_sha -ne $pin.source_commit) { throw 'SDK source not qualified' }
           gh run download $pin.source_run --repo $env:GITHUB_REPOSITORY --name sdk-development-runtime-not-for-release --dir build/sdk-runtime

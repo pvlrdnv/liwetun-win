@@ -65,7 +65,9 @@ try {
     New-Item -ItemType Directory $payload | Out-Null
     Copy-Item (Join-Path $guiRoot '*') $payload -Recurse
     Copy-Item build/package-service/Release/liwetun_service.exe $payload
-    $pin = Get-Content native/sdk/runtime.json -Raw | ConvertFrom-Json
+    $pinFile = if ($env:SOURCE_PINNED -eq 'true') { 'native/sdk/runtime-sources.json' } else { 'native/sdk/runtime.json' }
+    $pin = Get-Content $pinFile -Raw | ConvertFrom-Json
+    Copy-Item $pinFile (Join-Path $evidence 'sdk-runtime-input.json')
     foreach ($file in @('trusttunnel.dll','wintun.dll')) {
         $path = Join-Path build/sdk-runtime $file
         if ((Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $pin.files.PSObject.Properties[$file].Value) { throw 'SDK file digest mismatch' }

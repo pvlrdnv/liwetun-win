@@ -2,6 +2,10 @@ name: Windows real TUN network qualification
 on:
   workflow_dispatch:
     inputs:
+      source_pins:
+        description: Qualify the separately pinned immutable-source SDK candidate
+        type: boolean
+        default: false
       sdk_run_id:
         description: Successful SDK qualification run in this repository
         required: true
@@ -72,6 +76,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 35
     env:
+      SOURCE_PINNED: ${{ inputs.source_pins }}
       SDK_RUN_ID: ${{ inputs.sdk_run_id }}
       GH_TOKEN: ${{ github.token }}
       LIWETUN_CI_DISTRO: LiWeTunCI${{ github.run_id }}
@@ -113,7 +118,11 @@ jobs:
       - name: Fetch previously qualified SDK from this repository
         run: |
           if ($env:SDK_RUN_ID -notmatch '^[0-9]{1,20}$') { throw 'Invalid SDK run ID' }
-          $pin = Get-Content native/sdk/runtime.json -Raw | ConvertFrom-Json
+          $pinFile = if ($env:SOURCE_PINNED -eq 'true') { 'native/sdk/runtime-sources.json' } else { 'native/sdk/runtime.json' }
+          $pin = Get-Content $pinFile -Raw | ConvertFrom-Json
+          if ($env:SOURCE_PINNED -eq 'true') {
+            if ($pin.source_pin_manifest_sha256 -ne (Get-FileHash native/sdk/source-pins.json -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.conan_input_lock_sha256 -ne (Get-FileHash native/sdk/conan-sources.lock -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.source_pinned_candidate -ne $true -or $pin.release_qualified -ne $false) { throw 'Candidate SDK source receipt mismatch' }
+          }
           if ($env:SDK_RUN_ID -ne [string]$pin.source_run) { throw 'SDK run does not match reviewed runtime manifest' }
           $run = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:SDK_RUN_ID" | ConvertFrom-Json
           if ($LASTEXITCODE -ne 0 -or $run.name -ne 'Windows SDK qualification' -or $run.conclusion -ne 'success' -or $run.head_sha -ne $pin.source_commit) { throw 'SDK run not qualified' }
@@ -123,6 +132,8 @@ jobs:
             $expected = $pin.files.PSObject.Properties[$file].Value
             if ($expected -notmatch '^[0-9a-f]{64}$' -or (Get-FileHash (Join-Path build/sdk-runtime $file) -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'SDK digest mismatch' }
           }
+          New-Item -ItemType Directory -Force build/service-evidence | Out-Null
+          Copy-Item $pinFile build/service-evidence/sdk-runtime-input.json
       - name: Prepare task-only WSL1 endpoint with pinned image and binary
         run: |
           Invoke-WebRequest https://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/ubuntu-base-22.04.5-base-amd64.tar.gz -OutFile build/ubuntu-base.tar.gz
