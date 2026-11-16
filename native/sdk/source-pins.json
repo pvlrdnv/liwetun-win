@@ -1,0 +1,40 @@
+{
+  "common_commit": "c546b329360642576cea25f10bdcbf41d52163df",
+  "conan_version": "2.12.2",
+  "modified_file_header": "# LiWeTun change: pin dependency source to an immutable revision/checksum.\n",
+  "recipes": [
+    {
+      "path": "conan/recipes/libevent/conanfile.py",
+      "old_reference": "libevent/2.1.11@adguard/oss#6b82159d85d576d2572e34ebc8dd5151",
+      "input_sha256": "a3d76762e04abfde8f3f43a8c2a161d1c4136ae2036f462ed7eb54ea5e5fdcba",
+      "patched_sha256": "81dfbd75974192b6c6565257368af2ff9701447def6802df910fd9dad2196d7a",
+      "before": "url=\"https://github.com/libevent/libevent/archive/refs/tags/release-2.1.11-stable.tar.gz\",",
+      "after": "url=\"https://codeload.github.com/libevent/libevent/tar.gz/4c908dde58ef780eeefcc9df4db3063ca62ea862\",\n            sha256=\"f25a0ea1f25fb08a27a0641025c003ea41e089339e79321fa9daaa2700e839a7\","
+    },
+    {
+      "path": "conan/recipes/libsodium/conanfile.py",
+      "old_reference": "libsodium/1.0.18@adguard/oss#f0c5cc81972f50b6f1d187f50b37f24f",
+      "input_sha256": "65cb7417d870cc0673a48a16d192d4b6dd38eb49e0aeb813407610ab879aead5",
+      "patched_sha256": "faa408e64db197489e8fedef5a800b69b86d1acf260ec282cffa7ea138bb9f69",
+      "before": "self.run(\"cd libsodium && git checkout 1.0.18\")",
+      "after": "self.run(\"cd libsodium && git checkout --detach 45b09a607d596e40adbff9ab812e47d85175c053\")"
+    },
+    {
+      "path": "conan/recipes/nghttp2-1.56.0/conanfile.py",
+      "old_reference": "nghttp2/1.56.0@adguard/oss#f16addbe8345a6441062c8986e120d97",
+      "input_sha256": "5bd7fc112fc7dd31c773c0b2203650ce96ed940dc55a44e7fadfc08b39adeb30",
+      "patched_sha256": "e9701464937008c42a6fd74c910c6bcdcfec4f5b444dcf59900e4cd119b6130b",
+      "before": "self.run(f\"cd source_subfolder && git checkout v{self.version}\")",
+      "after": "self.run(\"cd source_subfolder && git checkout --detach 80d05fe917e428923e0ab654d18f958e49b3db0a\")"
+    },
+    {
+      "path": "conan/recipes/nghttp3-1.0.0/conanfile.py",
+      "old_reference": "nghttp3/1.0.0@adguard/oss#83c5f7eadcd1a37d8bb0d535bc30a3d1",
+      "input_sha256": "0b347db57b4c01c323c8766849607b7ece33095c755c4d1c09412a2aebb624db",
+      "patched_sha256": "7caf9f9cefcabe5efd12c821287b366689d1b076efaafcbc97ae24c716452657",
+      "before": "self.run(f\"cd source_subfolder && git checkout v{self.version}\")",
+      "after": "self.run(\"cd source_subfolder && git checkout --detach 7df838fcab8f4beef9c4aa7c109c18384b801b01\")"
+    }
+  ],
+  "release_qualified": false
+}

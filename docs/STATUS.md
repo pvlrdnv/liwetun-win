@@ -1,22 +1,25 @@
 # Development checkpoint — 2026-11-16
 
-## Paused at owner's request
+## Resumed — dependency source-pin candidate
 
-Work is paused. Latest H2/H3 synthetic IPv6 + AAAA runs completed successfully;
-the updated notice-aware installer also passed. No CI job remains active at this
-checkpoint. LikeWeb, production and the owner's network/trust configuration
+Work resumed at the owner's request. Latest H2/H3 synthetic IPv6 + AAAA runs
+completed successfully; the updated notice-aware installer also passed.
+LikeWeb, production and the owner's network/trust configuration
 remain unchanged. No owner-installable release has been produced.
 
-Resume with SDK dependency source pinning / release composition. Research only
-has begun: libevent's recipe downloads a tag archive without a checksum;
-libsodium, nghttp2 1.56.0 and nghttp3 1.0.0 check out tags. Candidate exact commits
-are recorded in the archived SDK notice provenance. No recipe, Conan lock or
-runtime pin has been changed for this stage; no new SDK build was started.
-The previously pinned bootstrap was downloaded/hash-checked under `/tmp` for
-inspection; it contains the Conan provider/profiles, not dependency recipes.
-Recipes belong to the pinned Common tree (including versioned recipe folders).
+Prepared a separate candidate for four Common recipes: libevent uses an exact
+commit archive + SHA256; libsodium, nghttp2 1.56.0 and nghttp3 1.0.0 use immutable
+Git commits from archived notice provenance. Input/output recipe digests are
+pinned, all inputs validate before writes, and each changed file is labelled.
+Three local tamper/path/lock-isolation tests and exact preparation against all
+four upstream recipe files PASS. Python/YAML/diff checks PASS. Windows Conan
+original/candidate export verification is pending; no new SDK build yet.
+The active Conan lock and qualified DLL/runtime pins remain unchanged.
 
-On resumption, verify pinned SDK/GUI/diagnostic-endpoint artifact availability;
+Pinned SDK/GUI/diagnostic endpoint artifacts were checked and remain available.
+The original SDK runtime artifact expires 2026-11-18 19:55 UTC; GUI and repaired
+diagnostic endpoint artifacts expire 2026-11-30. Before later continuation verify
+availability again;
 temporary local tools/caches and CI artifacts can expire. Preserve all digest /
 source-run checks; rebuild and requalify if needed. Trusted release signing,
 Windows 10/11 desktop acceptance and final distribution audit remain open.
