@@ -22,6 +22,7 @@ std::optional<bool> AdapterPresent(const wchar_t* alias) {
 int wmain(int argc, wchar_t** argv) {
   const std::wstring mode = argc >= 2 ? argv[1] : L"";
   if (mode == L"--wfp-state" && argc == 2) return InspectOwnedWfpSessions();
+  if (mode == L"--wfp-watch" && argc == 2) return InspectOwnedWfpSessions(true);
   if (mode == L"--disconnect-regression") {
     // Synthetic local transport reproducer: old disconnect-after-write loses
     // an unread reply. No service, credentials, SCM or network configuration.

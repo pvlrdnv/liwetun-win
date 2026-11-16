@@ -402,6 +402,19 @@ process after successful traffic, without Stop or stdin EOF. The service must
 restore routes/DNS/adapter and WFP itself. This is a native CI lease process,
 not a claim about an installed visible GUI crash. Syntax/YAML checks PASS;
 actual ordinary-mode lease-death CI pending.
+Ordinary H2 lease-client death **PASS** on `b8d84cf`,
+[43883087034](https://github.com/pvlrdnv/liwetun-win/actions/runs/43883087034):
+HTTPS/DNS and exact DNS marker passed first; the live native lease process was
+then force-terminated with nonzero exit, without Stop/EOF. The service restored
+all route/DNS/adapter and WFP baselines without watchdog intervention.
+[Evidence](evidence/production-lease-death-43883087034.json).
+Prepared the owned-service crash case. A CI-only WFP watcher authenticates the
+live service, verifies its protected signed image/System identity, retains a
+query/synchronize handle, and observes that same process's exact SDK-labelled
+sessions after death. It accepts no PID/filter name and exports only counts /
+an alive boolean. Crash injection retains and checks only this run's exact
+service process before termination. No shipped service/GUI change. Python/YAML /
+diff checks PASS; native Windows compilation and crash acceptance pending.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

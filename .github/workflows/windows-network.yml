@@ -31,13 +31,14 @@ on:
           - http2
           - http3
       production_termination:
-        description: End the production-mode session by Stop or forced death of its lease client
+        description: End the production session by Stop, forced lease-client death or owned-service crash
         required: false
         default: stop
         type: choice
         options:
           - stop
           - lease-death
+          - service-crash
       endpoint_version:
         description: Pinned official endpoint version to compare
         required: true

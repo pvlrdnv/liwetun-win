@@ -91,7 +91,19 @@ The optional `production_termination=lease-death` fault closes no stdin and send
 no Stop command. It first confirms the exact owned lease-client process is live,
 force-terminates it, requires a nonzero exit, and then observes the service's own
 cleanup under the independent deadline. This native CI lease process is not an
-installed visible GUI. Its ordinary-mode Windows check is pending.
+installed visible GUI. That ordinary H2 case **PASS** on `b8d84cf`,
+[run 43883087034](https://github.com/pvlrdnv/liwetun-win/actions/runs/43883087034),
+[evidence](evidence/production-lease-death-43883087034.json): actual successful
+traffic first, forced lease-client exit, then complete network/WFP restoration
+without watchdog intervention.
+
+The pending `production_termination=service-crash` case retains the authenticated,
+signed System-service process before SDK start. Its CI-only `--wfp-watch` counts
+only that retained identity's SDK sessions before/during/after the crash; it
+does not accept a PID or reattribute observations to a restarted service. Only
+query/synchronize access is used by the observer. Crash injection separately
+verifies and retains the exact run-owned SCM/process image before terminating it.
+Actual native Windows compilation and crash acceptance remain pending.
 
 Remaining gates: full ordinary-mode fault matrix, effective DNS leak prevention,
 IPv6 payload delivery, crash/network-

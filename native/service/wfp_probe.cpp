@@ -1,5 +1,6 @@
 #include "wfp_probe.h"
 #include "client.h"
+#include "security.h"
 #include <windows.h>
 #include <fwpmu.h>
 #include <iostream>
@@ -17,8 +18,37 @@ struct Entries {
   FWPM_SESSION0** value = nullptr;
   ~Entries() { if (value) FwpmFreeMemory0(reinterpret_cast<void**>(&value)); }
 };
+
+void PrintSessions(DWORD process_id, HANDLE retained, bool watch) {
+  Enumeration enumeration;
+  if (FwpmEngineOpen0(nullptr, RPC_C_AUTHN_WINNT, nullptr, nullptr, &enumeration.engine) != ERROR_SUCCESS ||
+      FwpmSessionCreateEnumHandle0(enumeration.engine, nullptr, &enumeration.iterator) != ERROR_SUCCESS) throw 1;
+  UINT32 total = 0, dynamic = 0;
+  bool exhausted = false;
+  for (unsigned page = 0; page < 64; ++page) {
+    Entries entries;
+    UINT32 count = 0;
+    if (FwpmSessionEnum0(enumeration.engine, enumeration.iterator, 64, &entries.value, &count) != ERROR_SUCCESS || count > 64) throw 1;
+    for (UINT32 i = 0; i < count; ++i) {
+      const auto* session = entries.value[i];
+      if (session && session->processId == process_id && session->displayData.name &&
+          std::wstring(session->displayData.name) == L"AdGuard VPN dynamic session") {
+        ++total;
+        if (session->flags & FWPM_SESSION_FLAG_DYNAMIC) ++dynamic;
+      }
+    }
+    if (count < 64) { exhausted = true; break; }
+  }
+  if (!exhausted) throw 1;
+  const DWORD wait = watch ? WaitForSingleObject(retained, 0) : WAIT_TIMEOUT;
+  if (wait != WAIT_OBJECT_0 && wait != WAIT_TIMEOUT) throw 1;
+  std::cout << "{\"passed\":true,\"sdk_sessions\":" << total
+      << ",\"sdk_dynamic_sessions\":" << dynamic;
+  if (watch) std::cout << ",\"retained_process_alive\":" << (wait == WAIT_TIMEOUT ? "true" : "false");
+  std::cout << "}" << std::endl;
 }
-int InspectOwnedWfpSessions() {
+}
+int InspectOwnedWfpSessions(bool watch) {
   using namespace liwetun;
   const char* stage = "disposable_ci";
   try {
@@ -40,32 +70,32 @@ int InspectOwnedWfpSessions() {
     if (manager) CloseServiceHandle(manager);
     stage = "owned_service_pid";
     if (!running || !status.dwProcessId) throw 1;
-    Enumeration enumeration;
-    stage = "read_wfp_sessions";
-    if (FwpmEngineOpen0(nullptr, RPC_C_AUTHN_WINNT, nullptr, nullptr, &enumeration.engine) != ERROR_SUCCESS ||
-        FwpmSessionCreateEnumHandle0(enumeration.engine, nullptr, &enumeration.iterator) != ERROR_SUCCESS) throw 1;
-    UINT32 total = 0, dynamic = 0;
-    bool exhausted = false;
-    for (unsigned page = 0; page < 64; ++page) {
-      Entries entries;
-      UINT32 count = 0;
-      if (FwpmSessionEnum0(enumeration.engine, enumeration.iterator, 64, &entries.value, &count) != ERROR_SUCCESS || count > 64) throw 1;
-      for (UINT32 i = 0; i < count; ++i) {
-        const auto* session = entries.value[i];
-        // Exact label from the pinned SDK's VpnWinTunnel/WfpFirewall source.
-        // Do not retain or print other names, SIDs, usernames or session IDs.
-        if (session && session->processId == status.dwProcessId && session->displayData.name &&
-            std::wstring(session->displayData.name) == L"AdGuard VPN dynamic session") {
-          ++total;
-          if (session->flags & FWPM_SESSION_FLAG_DYNAMIC) ++dynamic;
-        }
-      }
-      if (count < 64) { exhausted = true; break; }
+    Handle retained;
+    if (watch) {
+      stage = "retain_trusted_service";
+      retained.reset(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE, status.dwProcessId));
+      wchar_t path[32768]{};
+      DWORD length = 32768;
+      Image self, service_image;
+      if (!retained || !QueryFullProcessImageNameW(retained.get(), 0, path, &length) ||
+          !EqualPath(path, Directory(SelfPath()) + L"\\liwetun_service.exe") ||
+          !OpenTrustedImage(SelfPath(), self) || !OpenTrustedImage(path, service_image) ||
+          !SameSigner(self, service_image) || !IsSystemProcess(retained.get()) ||
+          WaitForSingleObject(retained.get(), 0) != WAIT_TIMEOUT) throw 1;
     }
-    stage = "bounded_wfp_enumeration";
-    if (!exhausted) throw 1;
-    std::cout << "{\"passed\":true,\"sdk_sessions\":" << total
-        << ",\"sdk_dynamic_sessions\":" << dynamic << "}\n";
+    stage = "read_wfp_sessions";
+    // The retained, authenticated own-service identity stays fixed across death.
+    // Never accept a PID/filter name or print unrelated WFP metadata.
+    PrintSessions(status.dwProcessId, retained.get(), watch);
+    if (watch) {
+      char command[16]{};
+      while (std::cin.getline(command, static_cast<std::streamsize>(sizeof(command)))) {
+        if (std::string(command) == "quit") break;
+        if (std::string(command) != "query") throw 1;
+        PrintSessions(status.dwProcessId, retained.get(), true);
+      }
+      if (!std::cin.eof() && std::cin.fail()) throw 1;
+    }
     return 0;
   } catch (...) {
     std::cout << "{\"passed\":false,\"stage\":\"" << stage << "\"}\n";

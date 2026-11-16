@@ -89,7 +89,7 @@ def main():
     if protocol not in ['http2', 'http3']:
         raise RuntimeError('invalid_fixture_protocol')
     termination = os.environ.get('LIWETUN_PRODUCTION_TERMINATION', 'stop')
-    if termination not in ['stop', 'lease-death']:
+    if termination not in ['stop', 'lease-death', 'service-crash']:
         raise RuntimeError('invalid_fixture_termination')
     report = ROOT / 'build/service-evidence/production-network.json'
     report.parent.mkdir(exist_ok=True, parents=True)
@@ -106,7 +106,7 @@ def main():
     if tun() is not None:
         raise RuntimeError('preexisting_adapter')
     stage = 'fixture_preparation'
-    endpoint = forwarder = session = watchdog = None
+    endpoint = forwarder = session = watchdog = wfp_watch = None
     restored = False
     try:
         physical = ps("""
@@ -146,6 +146,13 @@ def main():
                         '--locked', '--release', '--example', 'network_fixture', '--', str(directory)],
                        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
         wfp_before = owned_wfp(client)
+        if termination == 'service-crash':
+            wfp_watch = Child([str(client), '--wfp-watch'])
+            retained = json.loads(wfp_watch.receive())
+            if (retained.get('passed') is not True or retained.get('retained_process_alive') is not True
+                    or retained['sdk_sessions'] != wfp_before['sdk_sessions']
+                    or retained['sdk_dynamic_sessions'] != wfp_before['sdk_dynamic_sessions']):
+                raise RuntimeError('wfp_watch_not_ready')
         forwarder = Child([sys.executable, str(ROOT / 'tools/service/physical_forwarder.py'), str(directory)])
         if forwarder.receive() != 'ready':
             raise RuntimeError('forwarder_not_ready')
@@ -225,6 +232,13 @@ def main():
                       synthetic_dns_forwarder_delta=marker_delta,
                       endpoint_bytes_by_transport=delta, dns_endpoint_bytes_by_transport=dns_delta,
                       forwarder_counts=proxy, dns_fixture_counts=endpoint_observation)
+        if wfp_watch:
+            active = wfp_watch.command('query')
+            result['retained_sdk_dynamic_session_observed'] = (
+                active.get('passed') is True and active.get('retained_process_alive') is True
+                and active['sdk_dynamic_sessions'] > wfp_before['sdk_dynamic_sessions'])
+            if not result['retained_sdk_dynamic_session_observed']:
+                raise RuntimeError('active_wfp_session_not_observed')
         stage = 'terminate_and_restore'
         # No stdin EOF/graceful Stop in this fault case: Child.close without a
         # command kills exactly its owned process. The service must detect loss
@@ -236,13 +250,36 @@ def main():
             result['lease_client_forced_exit'] = session.process.returncode != 0
             if not result['lease_client_forced_exit']:
                 raise RuntimeError('lease_client_not_forced')
+        elif termination == 'service-crash':
+            os.environ['LIWETUN_EXPECTED_SERVICE'] = str(client.parent / 'liwetun_service.exe')
+            killed = ps("""
+            $configuration = Get-CimInstance Win32_Service -Filter "Name='LiWeTun'"
+            $expected = '"' + $env:LIWETUN_EXPECTED_SERVICE + '" --service '
+            if (!$configuration.ProcessId -or !$configuration.PathName.StartsWith($expected,[StringComparison]::OrdinalIgnoreCase)) { throw 'Unexpected service identity' }
+            $target = Get-Process -Id $configuration.ProcessId
+            try {
+              $retained = $target.SafeHandle
+              if (!$retained -or ![string]::Equals($target.Path,$env:LIWETUN_EXPECTED_SERVICE,[StringComparison]::OrdinalIgnoreCase)) { throw 'Unexpected service process image' }
+              $target.Kill()
+              if (!$target.WaitForExit(10000)) { throw 'Owned service did not exit' }
+              $true | ConvertTo-Json -Compress
+            } finally { $target.Dispose() }
+            """)
+            result['owned_service_force_terminated'] = killed is True
+            if not result['owned_service_force_terminated']:
+                raise RuntimeError('service_crash_not_observed')
+            session.close()
         else:
             session.close('stop')
         session = None
         restored = wait_clean(baseline)
-        wfp_after = owned_wfp(client)
+        wfp_after = wfp_watch.command('query') if wfp_watch else owned_wfp(client)
         wfp_restored = (wfp_after['sdk_sessions'] == wfp_before['sdk_sessions'] and
                         wfp_after['sdk_dynamic_sessions'] == wfp_before['sdk_dynamic_sessions'])
+        if wfp_watch:
+            result['retained_service_process_ended'] = wfp_after.get('retained_process_alive') is False
+            wfp_restored = (wfp_restored and wfp_after.get('passed') is True
+                            and result['retained_service_process_ended'])
         result['sdk_wfp_sessions_restored'] = wfp_restored
         result['passed'] = (delivered and source and dns and dns_source and restored and wfp_restored
                             and delta[protocol] > 0 and dns_delta[protocol] >= 82
@@ -276,6 +313,8 @@ def main():
             endpoint.close('quit')
         if forwarder:
             forwarder.close('quit')
+        if wfp_watch:
+            wfp_watch.close('quit')
         result['routes_dns_adapter_restored'] = wait_clean(baseline)
         result['passed'] = result['passed'] and result['routes_dns_adapter_restored']
         report.write_text(json.dumps(result, indent=2) + '\n')
