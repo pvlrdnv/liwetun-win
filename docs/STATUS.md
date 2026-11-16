@@ -122,6 +122,24 @@ and TOKEN_QUERY on its own token, preserving the existing DACL and the complete
 client-side proof. It changes no other process/global ACL. A restricted-token
 fixture also requires denial of seven process-control and eight token write/
 duplication/impersonation rights. Windows qualification of this fix is pending.
+Existing service/security regression **PASS** on `2c79109`,
+[run 43840736350](https://github.com/pvlrdnv/liwetun-win/actions/runs/43840736350):
+15 checks, without SDK/driver lifecycle. Unsigned/different-signer/different-owner
+denials, bounded/delayed IPC, stop and uninstall remain enforced.
+[Safe evidence](evidence/service-owner-query-2c79109.json). The separate signed
+GUI/medium-token production-payload check is still pending.
+
+Signed production-mode payload **PASS** on `2c79109`,
+[run 43841410482](https://github.com/pvlrdnv/liwetun-win/actions/runs/43841410482),
+using GUI `9d891c8` and pinned SDK run 43752644532. The actual GUI read-only query
+passed both elevated and at restricted medium integrity with Administrators
+disabled; all seven process-control and eight token-control rights remained
+denied individually. Both network test modes were OFF, no tunnel was started,
+network snapshots were unchanged, and fixture/service/trust cleanup passed.
+[Safe payload evidence](evidence/package-payload-2c79109.json). This supersedes
+the pending payload qualification above. It does not qualify an installer,
+ordinary desktop account, Win10/11 or normal-mode traffic. The temporary CI
+signer is not a release signer or an owner-test package.
 
 ## Current stage
 

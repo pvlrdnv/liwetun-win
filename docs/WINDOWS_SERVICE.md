@@ -44,7 +44,13 @@ not grant token duplication, impersonation, adjustment, process writes or access
 to another System process. These are lifetime-local object ACLs, not a machine
 policy change. The restricted-token fixture now checks seven process-control
 and eight token-control rights individually remain denied, then runs the actual
-GUI query. This continuation is pending Windows qualification.
+GUI query. The production-mode signed payload passed on `2c79109`,
+[run 43841410482](https://github.com/pvlrdnv/liwetun-win/actions/runs/43841410482):
+the actual GUI query succeeded at restricted medium integrity, all fifteen
+privileged rights were denied individually, and cleanup/network snapshots
+passed. Existing unsigned/different-signer/different-owner/protocol denials also
+passed in [run 43840736350](https://github.com/pvlrdnv/liwetun-win/actions/runs/43840736350).
+This is Server 2022 CI, not separate desktop-account or Windows 10/11 acceptance.
 
 Service, client and SDK must have trusted Authenticode signatures from the same
 leaf signer in an ACL-protected Program Files directory. Writable ancestors,

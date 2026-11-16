@@ -35,27 +35,33 @@ service, task directory and temporary trust entries are removed; safe evidence
 and a post-signing file manifest remain. There is no owner-device installation,
 temporary-root instruction, release publication or license-approval claim.
 
-Current status: GUI CLI compilation and the unsigned rejection check passed
-actual Windows qualification on `56f94e6` (run 43825848338), together with analyze,
-118 Dart, 6 Rust and 3 desktop tests. The overall workflow failed afterwards at
-the runtime staging guard; its unexpected input was not identified by that run.
-A bounded root build-file inventory now accompanies failure-independent build
-evidence. Runtime staging and the production-mode payload fixture remain pending.
+Current status: release GUI runtime staging **PASS** on `9d891c8`,
+[run 43837997739](https://github.com/pvlrdnv/liwetun-win/actions/runs/43837997739),
+with analyze, 118 Dart, 6 Rust and 3 actual desktop tests. Production-mode signed
+payload **PASS** on service `2c79109`,
+[run 43841410482](https://github.com/pvlrdnv/liwetun-win/actions/runs/43841410482),
+using that exact GUI artifact and SDK run 43752644532.
+
 Payload failures use closed assembly/signing/ACL/query stage identifiers so that
 the evidence can distinguish packaging failures without recording raw core data.
 Run 43837040458 identified Flutter's generated root `native_assets.json` as the
 unexpected input. Staging now admits only the pinned writer's empty format-1.0.0
 mapping, with a 1024-byte limit, and includes it in the hashed runtime payload.
 Nonempty native mappings require a separate dependency/path review.
-Corrected runtime staging and the complete application workflow **PASS** on
-`9d891c8`, [run 43837997739](https://github.com/pvlrdnv/liwetun-win/actions/runs/43837997739).
-The production-mode signed payload fixture is now dispatched with that exact
-GUI artifact; qualification remains pending until its checks and cleanup pass.
 Initial payload runs stopped before installation at the CRT publisher-name
 check. All ten original signatures were Valid; the captured certificate name
 was `Microsoft Windows Software Compatibility Publisher`. Admission accepts
 that exact name or `Microsoft Corporation`, still requiring Valid Authenticode.
 The CRT files retain their original signatures and bytes.
+
+An initial medium-integrity GUI query returned Denied. The service now grants
+only its configured owner metadata-read rights on its own live process/token;
+the client retains its complete LocalSystem/signature/path/PID proof. The actual
+GUI query now passes with Administrators disabled. Seven process-control and
+eight token-control permissions are checked separately and remain denied.
+See [service boundary](WINDOWS_SERVICE.md) and
+[safe payload evidence](evidence/package-payload-2c79109.json).
+
 Installer authoring, upgrade/rollback, desktop ownership selection, release
 signing/revocation and full distribution audit remain open. Public signing
 process availability has been asked while independent preparation continues.

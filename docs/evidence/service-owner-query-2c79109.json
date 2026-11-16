@@ -1,0 +1,28 @@
+{
+  "source_commit": "2c79109088ebc32edebd8bc355044713b80e6c56",
+  "source_run": "43840736350",
+  "checks": [
+    "old_disconnect_discards_unread_reply_reproduced",
+    "protocol_bounds",
+    "unsigned_service_denied",
+    "unsigned_client_denied_by_service",
+    "signed_owner_query",
+    "unknown_metrics_and_core_state_preserved",
+    "busy_pipe_waits_without_resending",
+    "delayed_client_consumes_reply_before_disconnect",
+    "invalid_profile_denied",
+    "oversized_frame_denied",
+    "idempotent_stop",
+    "different_signer_denied_by_service",
+    "different_owner_sid_denied_even_to_admin",
+    "service_uninstalled",
+    "dns_and_default_routes_unchanged"
+  ],
+  "release_ready": false,
+  "dns_and_default_routes_unchanged": true,
+  "core_runtime_ready": 0,
+  "signed_service_ipc": "verified",
+  "sdk_lifecycle": null,
+  "driver_cycle": null,
+  "test_mode_no_global_routes": true
+}

@@ -1,0 +1,29 @@
+{
+  "source_run": "43841410482",
+  "service_source": "2c79109088ebc32edebd8bc355044713b80e6c56",
+  "gui_source": "9d891c83ef847a47af3422f821bf83985316d73f",
+  "sdk_source_run": 43752644532,
+  "runner_os": "windows-2022",
+  "passed": true,
+  "checks": [
+    "original_microsoft_app_local_crt_staged",
+    "all_native_payload_images_are_x64",
+    "gui_sdk_and_notice_inputs_verified",
+    "common_ci_signer_only_for_owned_components",
+    "original_wintun_bytes_preserved",
+    "actual_signed_gui_queries_production_service",
+    "medium_integrity_without_enabled_admin_group",
+    "owner_can_read_service_identity_but_not_write_process_or_duplicate_token",
+    "no_tunnel_start_or_network_configuration_change"
+  ],
+  "medium_integrity": true,
+  "admin_group_enabled": false,
+  "service_metadata_read_only": true,
+  "cleanup_passed": true,
+  "network_unchanged": true,
+  "network_test_modes_enabled": false,
+  "tunnel_started": false,
+  "signing": "ephemeral_ci_only",
+  "installer_tested": false,
+  "release_ready": false
+}
