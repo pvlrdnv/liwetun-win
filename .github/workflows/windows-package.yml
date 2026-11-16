@@ -71,9 +71,11 @@ jobs:
           foreach ($flag in @('LIWETUN_TEST_NO_GLOBAL_ROUTES', 'LIWETUN_TEST_TUN_NETWORK')) {
             if ((Get-Content build/package-service/CMakeCache.txt) -notcontains ($flag + ':BOOL=OFF')) { throw 'Production service contains a test network mode' }
           }
-          python tools/sdk/verify_notices.py
+          $noticeArgs = @()
+          if ($env:SOURCE_PINNED -eq 'true') { $noticeArgs += '--source-pinned' }
+          python tools/sdk/verify_notices.py @noticeArgs
           if ($LASTEXITCODE -ne 0) { throw 'Candidate notice integrity failed' }
-          python tools/sdk/client_notices.py
+          python tools/sdk/client_notices.py @noticeArgs
           if ($LASTEXITCODE -ne 0) { throw 'Client notice bundle drift' }
       - name: Prepare pinned installer compiler
         if: inputs.qualify_installer

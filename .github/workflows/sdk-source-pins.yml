@@ -37,7 +37,7 @@ jobs:
           if ($actual -ne 'c546b329360642576cea25f10bdcbf41d52163df') { throw 'Common source revision mismatch' }
           $dnsActual = (git -C build/vendor/dns rev-parse HEAD).Trim()
           if ($dnsActual -ne '3d6359be7b99e2eccbfe905e970dd08a7f1d9108') { throw 'DNS source revision mismatch' }
-          python tools/sdk/pin_sources.py --source build/vendor/common --dns-source build/vendor/dns --output build/source-pin-evidence
+          python tools/sdk/pin_sources.py --source build/vendor/common --dns-source build/vendor/dns --output build/source-pin-evidence --check-archives
           if ($LASTEXITCODE -ne 0) { throw 'Candidate recipe revision qualification failed' }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()

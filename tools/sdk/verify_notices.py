@@ -3,13 +3,14 @@
 This is not a license interpretation or release approval. No network/cache
 access, source execution, source rewriting or arbitrary diagnostic text.
 """
+import argparse
 import hashlib
 import json
 from pathlib import Path
 import re
 import tomllib
 
-from closure import ROOT, GROUPS, normalized_lock, redirected
+from closure import ROOT, GROUPS, normalized_lock, redirected, reference
 
 
 def read_json(path):
@@ -76,6 +77,58 @@ def verify_sdk(root=None):
     return verify_files(root, [*packages, *components])
 
 
+def check_candidate_notices(archived, actual, replacements):
+    """Compare new packaged notice bodies; retain explicit source supplements."""
+    originals = {}
+    for item in archived['packages']:
+        originals.setdefault(item['ref'], set()).update(n['sha256'] for n in item['notices'])
+    reverse = {replacements.get(ref, ref): ref for ref in originals}
+    packages = actual['packages']
+    if (not isinstance(packages, list) or not 0 < len(packages) <= 200
+            or {reference(item['ref']) for item in packages} != set(reverse)):
+        raise ValueError('candidate_notice_dependency_drift')
+    checked = []
+    for item in packages:
+        ref = reference(item['ref'])
+        notices = item['notices']
+        if not isinstance(notices, list) or len(notices) > 500:
+            raise ValueError('candidate_notice_set_invalid')
+        digests = {notice['sha256'] for notice in notices}
+        if not digests <= originals[reverse[ref]]:
+            raise ValueError('candidate_packaged_notice_changed')
+        checked.append(dict(ref=ref, context=item['context'],
+                            packaged_notices=len(notices),
+                            archived_supplement_required=not notices))
+    return checked
+
+
+def verify_candidate_sdk():
+    from pin_sources import candidate_lock
+    from closure import check_lock
+    count = verify_sdk()
+    runtime = read_json(ROOT / 'native/sdk/runtime-sources.json')
+    original_runtime = read_json(ROOT / 'native/sdk/runtime.json')
+    data = read_json(ROOT / 'native/sdk/notice-sources.json')
+    pin = read_json(ROOT / 'native/sdk/source-pins.json')
+    candidate = normalized_lock(read_json(ROOT / 'native/sdk/conan-sources.lock'))
+    actual_refs = {ref.split('#')[0]: ref for ref in candidate['requires']}
+    replacements = {row['old_reference']: actual_refs[row['old_reference'].split('#')[0]]
+                    for row in pin['recipes']}
+    check_lock(candidate_lock(read_json(ROOT / 'native/sdk/conan.lock'), replacements), candidate)
+    if (runtime.get('source_pinned_candidate') is not True
+            or runtime['sdk_commit'] != original_runtime['sdk_commit']
+            or runtime['files']['wintun.dll'] != original_runtime['files']['wintun.dll']
+            or data['sdk_source_run'] != runtime['source_run']
+            or data['sdk_source_commit'] != runtime['source_commit']
+            or data.get('release_qualified') is not False
+            or data.get('recipe_closure_verified') is not True
+            or data['source_pin_manifest_sha256'] != hashlib.sha256((ROOT / 'native/sdk/source-pins.json').read_bytes()).hexdigest()
+            or data['conan_input_lock_sha256'] != hashlib.sha256((ROOT / 'native/sdk/conan-sources.lock').read_bytes()).hexdigest()):
+        raise ValueError('candidate_notice_provenance_mismatch')
+    check_candidate_notices(read_json(ROOT / 'third_party/sdk/inventory.json'), data, replacements)
+    return count
+
+
 def verify_rust(root=None):
     root = root or ROOT / 'third_party/rust'
     data = read_json(root / 'inventory.json')
@@ -104,8 +157,11 @@ def verify_rust(root=None):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--source-pinned', action='store_true')
+    args = parser.parse_args()
     try:
-        sdk, rust = verify_sdk(), verify_rust()
+        sdk, rust = (verify_candidate_sdk() if args.source_pinned else verify_sdk()), verify_rust()
         print(f'candidate_notice_integrity_verified:sdk={sdk}:rust={rust}:release_approval=false')
     except (ValueError, OSError, KeyError, TypeError, AttributeError):
         raise SystemExit('candidate_notice_verification_failed') from None

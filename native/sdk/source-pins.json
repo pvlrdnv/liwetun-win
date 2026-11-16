@@ -7,9 +7,10 @@
       "path": "conan/recipes/libevent/conanfile.py",
       "old_reference": "libevent/2.1.11@adguard/oss#6b82159d85d576d2572e34ebc8dd5151",
       "input_sha256": "a3d76762e04abfde8f3f43a8c2a161d1c4136ae2036f462ed7eb54ea5e5fdcba",
-      "patched_sha256": "81dfbd75974192b6c6565257368af2ff9701447def6802df910fd9dad2196d7a",
+      "patched_sha256": "547546c0bcc9b7bf73d6dae229333cd35faf2c7ed0ff1e8b4a61d924221bba37",
       "before": "url=\"https://github.com/libevent/libevent/archive/refs/tags/release-2.1.11-stable.tar.gz\",",
-      "after": "url=\"https://codeload.github.com/libevent/libevent/tar.gz/4c908dde58ef780eeefcc9df4db3063ca62ea862\",\n            sha256=\"f25a0ea1f25fb08a27a0641025c003ea41e089339e79321fa9daaa2700e839a7\","
+      "after": "url=\"https://codeload.github.com/libevent/libevent/tar.gz/4c908dde58ef780eeefcc9df4db3063ca62ea862\",\n            filename=\"libevent.tar.gz\",\n            sha256=\"f25a0ea1f25fb08a27a0641025c003ea41e089339e79321fa9daaa2700e839a7\",",
+      "archive_filename": "libevent.tar.gz"
     },
     {
       "path": "conan/recipes/libsodium/conanfile.py",
@@ -60,9 +61,10 @@
       "path": "conan/recipes/boringssl/conanfile.py",
       "old_reference": "openssl/boring-2026-05-08@adguard/oss#c48e5d03db734e05b8b7f309f23b5089",
       "input_sha256": "6c4c727483c83a77062f7df2a03c06ec2c815bb344d83c0d7f5f6469e883cccf",
-      "patched_sha256": "8981cb9556fc046a41455f038c67d9be93f79db53a7da25b235a5f023e69fc4c",
+      "patched_sha256": "3862e25864b6a909133c36363353c3397eea6c51508c123cd0a192fc95154c22",
       "before": "url=\"https://boringssl.googlesource.com/boringssl/+archive/d589045a772678d5ca131f4c8087d001b9258380.tar.gz\",\n            destination=\"source_subfolder\")",
-      "after": "url=\"https://codeload.github.com/google/boringssl/tar.gz/d589045a772678d5ca131f4c8087d001b9258380\",\n            sha256=\"159ea5cd44bc581c5cd2e063074984294cd39999ba7c5d7eaec54c278a49c297\",\n            destination=\"source_subfolder\", strip_root=True)"
+      "after": "url=\"https://codeload.github.com/google/boringssl/tar.gz/d589045a772678d5ca131f4c8087d001b9258380\",\n            filename=\"boringssl.tar.gz\",\n            sha256=\"159ea5cd44bc581c5cd2e063074984294cd39999ba7c5d7eaec54c278a49c297\",\n            destination=\"source_subfolder\", strip_root=True)",
+      "archive_filename": "boringssl.tar.gz"
     }
   ],
   "release_qualified": false,

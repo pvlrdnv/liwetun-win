@@ -92,3 +92,14 @@ the exact upstream SDK, changed Windows logging/connection-info instrumentation
 and Conan provider behavior. Original 38 notice texts are unchanged. The package
 copies that notice directory; final assembled distribution/source attribution
 review remains open.
+
+
+The isolated source-pinned successor is described in [SDK_SOURCE_PINS.md](SDK_SOURCE_PINS.md).
+A separate candidate notice check is prepared: it retains the original archived
+inventory/provenance, verifies only the reviewed recipe substitutions, requires
+exact candidate build run/commit and source/lock digests, and compares each new
+packaged notice hash with that package's archived texts. Unknown bodies or new
+dependencies fail; packages still needing source supplements remain explicit.
+The GUI notice bundle stays unchanged unless a real text change requires review.
+Twelve local integrity/source-pin/closure tests passed. Actual candidate notice
+comparison awaits successful DLL compilation; this is not distribution approval.

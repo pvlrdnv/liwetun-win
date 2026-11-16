@@ -4,10 +4,25 @@ import shutil
 import tempfile
 import unittest
 
-from verify_notices import ROOT, verify_sdk, verify_rust
+from verify_notices import ROOT, verify_sdk, verify_rust, check_candidate_notices
 
 
 class NoticeIntegrityTests(unittest.TestCase):
+    def test_candidate_notices_require_review_for_new_bodies_or_dependencies(self):
+        old = 'synthetic/1.0#' + '1' * 32
+        new = 'synthetic/1.0#' + '2' * 32
+        archived = {'packages': [{'ref': old, 'notices': [{'sha256': 'a' * 64}]}]}
+        actual = {'packages': [{'ref': new, 'context': 'host', 'notices': [{'sha256': 'a' * 64}]}]}
+        self.assertEqual(check_candidate_notices(archived, actual, {old: new})[0]['packaged_notices'], 1)
+        actual['packages'][0]['notices'] = [{'sha256': 'b' * 64}]
+        with self.assertRaisesRegex(ValueError, 'candidate_packaged_notice_changed'):
+            check_candidate_notices(archived, actual, {old: new})
+        actual['packages'][0]['notices'] = []
+        self.assertTrue(check_candidate_notices(archived, actual, {old: new})[0]['archived_supplement_required'])
+        actual['packages'][0]['ref'] = 'unreviewed/1.0#' + '3' * 32
+        with self.assertRaisesRegex(ValueError, 'candidate_notice_dependency_drift'):
+            check_candidate_notices(archived, actual, {old: new})
+
     def test_current_archived_sets_match_exact_dependency_locks(self):
         self.assertEqual(verify_sdk(), 38)
         self.assertEqual(verify_rust(), 22)

@@ -11,14 +11,14 @@ import json
 from pathlib import Path
 import zlib
 
-from verify_notices import ROOT, verify_sdk, verify_rust
+from verify_notices import ROOT, verify_sdk, verify_rust, verify_candidate_sdk
 
 TARGET = ROOT / 'third_party/client/NOTICES.txt'
 SEPARATOR = b'\n' + b'-' * 80 + b'\n'
 
 
-def native_notices():
-    counts = {'sdk': verify_sdk(), 'rust': verify_rust()}
+def native_notices(source_pinned=False):
+    counts = {'sdk': verify_candidate_sdk() if source_pinned else verify_sdk(), 'rust': verify_rust()}
     entries = []
     for kind in ['sdk', 'rust']:
         root = ROOT / 'third_party' / kind
@@ -78,12 +78,13 @@ def check_bundle(path, native, engine_license=None):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--source-pinned', action='store_true')
     parser.add_argument('--write', action='store_true')
     parser.add_argument('--bundle', type=Path)
     parser.add_argument('--engine-license', type=Path)
     parser.add_argument('--report', type=Path)
     args = parser.parse_args()
-    native, counts = native_notices()
+    native, counts = native_notices(source_pinned=args.source_pinned)
     if (ROOT / 'pubspec.yaml').read_text(encoding='utf-8').count('    - third_party/client/NOTICES.txt') != 1:
         raise ValueError('flutter_additional_notice_declaration_missing')
     if args.write:

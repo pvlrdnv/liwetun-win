@@ -27,12 +27,21 @@ upstream input/output digest checks PASS. Expanded Windows exports **PASS** on
 BoringSSL override. Added optional candidate SDK build with fresh recipe export /
 recorded-lock verification. Both fresh-source preparation profiles and nine local
 source-pin/closure tests PASS; Python/YAML/diff checks PASS. Full candidate DLL
-build is running on
+build failed during dependency source preparation on
 [43916079717](https://github.com/pvlrdnv/liwetun-win/actions/runs/43916079717)
-from `6ba8e0d`. Subsequent service/network/package qualification remains pending.
+from `6ba8e0d`: Conan verified the BoringSSL download digest but interpreted its
+extensionless saved filename as ZIP. Added explicit `.tar.gz` filenames for both
+BoringSSL and libevent and a real `conan source` archive/checksum/patch check to
+the disposable recipe job. Revised recipe exports and candidate lock refresh
+are pending before the next full build. Subsequent service/network/package
+qualification remains pending.
 Prepared explicit candidate-manifest selection for those jobs; source manifest /
 lock digests, exact build run/commit and DLL digests remain required. No candidate
 runtime manifest is generated until its successful DLL artifact is inspected.
+Prepared a candidate notice bridge that checks exact dependency substitutions
+and rejects new packaged notice bodies; source supplements remain explicit.
+Twelve local notice/source-pin/closure checks and unchanged original UI notice
+bundle PASS. Actual candidate notice comparison awaits a successful build.
 See [source pin scope](SDK_SOURCE_PINS.md).
 The active Conan lock and qualified DLL/runtime pins remain unchanged.
 
@@ -56,8 +65,9 @@ The DNS blocker was an endpoint SOCKS5 idle-socket read bug, reproduced on Linux
 without SDK/TUN and repaired only in a pinned diagnostic CI server. No application
 SDK or production endpoint change. [Diagnosis](ENDPOINT_UDP_FIXTURE.md).
 This is Server 2022 CI, not installed Windows 10/11 desktop qualification.
-IPv6 payload, network-change/sleep recovery, signing/distribution and desktop
-acceptance remain open. The owner corporate device and LikeWeb remain untouched.
+Synthetic IPv6 TCP/UDP + AAAA subsequently passed H2/H3 CI (receipts below).
+Native IPv6 egress / DNS wire transport, network-change/sleep recovery,
+signing/distribution and desktop acceptance remain open. The owner corporate device and LikeWeb remain untouched.
 
 ## TUN network stage — bounded CI PASS
 

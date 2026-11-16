@@ -88,6 +88,7 @@ def export(source, version=None):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--check-archives', action='store_true')
     parser.add_argument('--verify-recorded', action='store_true')
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--dns-source', type=Path, required=True)
@@ -132,6 +133,18 @@ def main():
                   candidate_references=replacements, active_runtime_unchanged=True,
                   compiled_or_network_qualified=False, release_qualified=False)
     (args.output / 'recipe-revisions.json').write_text(json.dumps(result, indent=2) + '\n')
+    if args.check_archives:
+        checks = []
+        for recipe in pin['recipes']:
+            if 'archive_filename' not in recipe:
+                continue
+            process = subprocess.run(['conan', 'source', str(sources[recipe.get('repository', 'common')] / Path(recipe['path']).parent)],
+                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=180)
+            checks.append(dict(recipe=replacements[recipe['old_reference']],
+                               download_checksum_extract_and_patches_passed=process.returncode == 0))
+            (args.output / 'archive-preparation.json').write_text(json.dumps(checks, indent=2) + '\n')
+            if process.returncode:
+                raise ValueError('archive_source_preparation_failed')
     print('candidate_recipe_revisions_verified:release_approval=false')
 
 
@@ -139,7 +152,7 @@ if __name__ == '__main__':
     try:
         main()
     except (OSError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired) as error:
-        allowed = {'dependency_lock_drift', 'missing_recipe_source', 'disposable_ci_required', 'fixed_candidate_paths_required', 'conan_version_mismatch',
+        allowed = {'archive_source_preparation_failed', 'dependency_lock_drift', 'missing_recipe_source', 'disposable_ci_required', 'fixed_candidate_paths_required', 'conan_version_mismatch',
                    'unreviewed_original_recipe', 'original_recipe_revision_drift', 'recipe_export_failed',
                    'recipe_input_digest_mismatch', 'recipe_output_digest_mismatch', 'recipe_anchor_mismatch',
                    'unsafe_recipe_path', 'redirected_recipe_path', 'unexpected_recipe_identity',

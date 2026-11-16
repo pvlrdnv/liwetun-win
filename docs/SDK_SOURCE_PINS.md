@@ -62,3 +62,12 @@ lock; the source profile records its SHA256 and candidate manifest SHA256.
 The default still uses the original lock. Both local preparation paths and nine
 source-pin/closure tests passed. Candidate DLL compilation is pending; the active
 runtime receipt still refers exclusively to the earlier qualified DLL.
+
+The first full candidate build
+[43916079717](https://github.com/pvlrdnv/liwetun-win/actions/runs/43916079717)
+failed before DLL production: Conan inferred an extensionless archive filename
+from the codeload URL and selected ZIP extraction after successful SHA256 checking.
+Both archive recipes now specify a `.tar.gz` filename. The recipe discovery job
+also executes real `conan source` download/checksum/extraction/upstream-patch
+checks for both recipes. Updated exports and lock refresh are pending; the
+previous seven-recipe export receipt describes the earlier candidate exactly.

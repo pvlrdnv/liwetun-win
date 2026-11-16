@@ -1,0 +1,11 @@
+{
+  "source_run": 43916079717,
+  "source_commit": "6ba8e0d52af67857e0818e22ec4b4a66ae8b2ba7",
+  "passed": false,
+  "stage": "dependency_source_preparation",
+  "reason": "extensionless_tar_archive_interpreted_as_zip",
+  "affected_recipe": "openssl/boring-2026-05-08@adguard/oss",
+  "source_pin_manifest_sha256": "4ffdf3df38426642f956b9b0a54706a2795a57fa99f21c056339964e68998b86",
+  "dll_produced": false,
+  "release_qualified": false
+}
