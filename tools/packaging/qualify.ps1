@@ -84,7 +84,10 @@ try {
             '' { 'none' }
             default { 'other' }
         }
-        @{file=$file.Name; signature_status=[int]$signature.Status; publisher=$publisher; sha256=(Get-FileHash $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}
+        # Public third-party code-signing metadata, never application/core logs.
+        # Keep the vendor name bounded; reject arbitrary certificate strings.
+        $publicName = if ($name -cmatch '^[A-Za-z0-9 .(),_-]{1,128}$') { $name } else { 'redacted' }
+        @{file=$file.Name; signature_status=[int]$signature.Status; publisher=$publisher; public_signer_name=$publicName; sha256=(Get-FileHash $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}
     })
     $crtInventory | ConvertTo-Json -Depth 3 | Set-Content -Encoding utf8 (Join-Path $evidence 'crt-inputs.json')
     foreach ($file in $crtFiles) {
