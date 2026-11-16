@@ -4,12 +4,14 @@ Status: local proposal; no LikeWeb route or server implementation exists.
 No URL endpoint is assumed. The current UI accepts a personal HTTPS URL but
 does not fetch it. The parser/cache/controller path is tested with synthetic JSON; no server feed is assumed.
 
-## Transport boundary, to be implemented
+## Transport boundary
 
+The bounded transport component is implemented; the refresh UI/scheduler is not
+wired yet. [Policy, tests and limits](SUBSCRIPTION_TRANSPORT.md).
 User explicitly imports one HTTPS personal URL; treat the full URL as a secret.
 Use system TLS, no redirects to any origin, no cookies, no credential forwarding,
-no plaintext HTTP. Body <= 1 MiB, timeout and bounded backoff. Consider SSRF and
-loopback/private targets before enabling desktop fetch. Never fetch the
+no plaintext HTTP. Body <= 1 MiB, timeout and bounded backoff. Resolve/check all addresses and pin the numeric connection; reject private /
+special-purpose targets before desktop fetch. Never fetch the
 TrustTunnel QR wrapper: its fragment is a local credential carrier.
 An HTML page or a legacy line-based feed is not this contract.
 

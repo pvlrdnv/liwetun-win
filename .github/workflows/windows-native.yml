@@ -60,7 +60,15 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Archived notice integrity failed' }
           python tools/sdk/client_notices.py
           if ($LASTEXITCODE -ne 0) { throw 'Generated client notice bundle drift' }
+      - name: Generate isolated TLS fixture without system trust changes
+        run: |
+          $openssl = Join-Path $env:ProgramFiles 'Git/usr/bin/openssl.exe'
+          if (!(Test-Path $openssl -PathType Leaf)) { throw 'Runner OpenSSL fixture tool unavailable' }
+          python tools/fixtures/subscription_tls.py --output build/subscription-tls --openssl $openssl
+          if ($LASTEXITCODE -ne 0) { throw 'Synthetic TLS fixture preparation failed' }
       - name: Run application and privacy unit tests
+        env:
+          LIWETUN_SUBSCRIPTION_TLS_FIXTURE: ${{ github.workspace }}/build/subscription-tls
         run: flutter test --no-pub --reporter expanded
       - name: Build Windows release shell with static native parser
         run: flutter build windows --release --no-pub

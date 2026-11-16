@@ -82,3 +82,12 @@ stale eligibility; a stale selection cannot start. These client checks do not
 replace server-side entitlement/revocation. HTTPS refresh and its UI action are
 not enabled yet. A fourth actual Windows desktop-channel case is prepared for
 v2 DPAPI save/restore/revoke/replay/cleanup; Windows execution remains pending.
+
+The updated actual Windows app qualification subsequently **PASS** on `b3ffc07`:
+[43929885246](https://github.com/pvlrdnv/liwetun-win/actions/runs/43929885246),
+[receipt](evidence/windows-subscription-cache-b3ffc07.json). Analyze, 150 Dart /
+6 Rust tests, release build and 4 real desktop-channel cases passed. The fourth
+case uses real user DPAPI and the official TT parser to restore a source-bound
+subscription selection without connecting, persist revoke/revision, reopen,
+reject replay and remove the synthetic cache. No HTTP fetch or tunnel start.
+This remains Server 2022 CI, not Windows 10/11 installed acceptance.

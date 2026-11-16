@@ -43,8 +43,18 @@ list; restore never auto-starts; expired profiles cannot start. Revoke/expiry or
 changed active URI queues Stop, including during a pending Start, without blind
 resend of an uncertain Stop. The UI displays derived names and stale eligibility.
 HTTPS refresh and its UI action remain unimplemented. Local analyze and
-**150 Dart tests PASS**; an additional actual Windows DPAPI subscription case is
-prepared and not yet executed. WSL evidence does not establish Windows readiness. No LikeWeb API/server change or production fetch is
+**150 Dart tests PASS**. Actual Windows build/channel qualification also **PASS**:
+[43929885246](https://github.com/pvlrdnv/liwetun-win/actions/runs/43929885246),
+150 Dart + 6 Rust + 4 desktop-channel tests, including real DPAPI v2 subscription
+save/restore/revoke/replay/cleanup without network. [Receipt](evidence/windows-subscription-cache-b3ffc07.json).
+The bounded HTTPS transport is implemented separately: 15-second absolute
+request deadline, checked/pinned numeric DNS destinations with original TLS
+hostname, no redirects/compression/cookies/credential forwarding, bounded body,
+closed cancellation/error results and disabled HTTP debug URL profiling.
+**204 local Dart tests + analyze PASS**, including 6 real synthetic loopback TLS /
+HTTP cases. [Transport policy and limits](SUBSCRIPTION_TRANSPORT.md). Windows
+transport execution pending. Refresh UI/startup/periodic scheduling is not wired;
+no client production fetch or LikeWeb API change. WSL evidence does not establish Windows readiness. No LikeWeb API/server change or production fetch is
 authorized or required for client-side development. Other open original-scope
 work includes route-bound health evidence, sleep/network-change recovery, tray,
 Hysteria2/Xray and release update handling. A readiness estimate for a basic
