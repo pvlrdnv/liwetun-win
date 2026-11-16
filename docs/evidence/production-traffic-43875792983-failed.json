@@ -1,0 +1,60 @@
+{
+  "passed": false,
+  "mode": "single_production_unbound_ipv4",
+  "protocol": "http3",
+  "network_test_modes_enabled": false,
+  "client_host_routes_added": false,
+  "server_forwarder_egress_bound_physical": true,
+  "full_matrix_qualified": false,
+  "release_ready": false,
+  "wsl_udp_preflight": {
+    "authenticated": true,
+    "associated": true,
+    "reply_received": true,
+    "relay_source_matches": true,
+    "synthetic_answer": true,
+    "passed": true
+  },
+  "ordinary_origin_route_is_tun": true,
+  "tls_https_delivered": true,
+  "https_socket_source_is_tun": true,
+  "dns_fixture_answer": false,
+  "dns_socket_source_is_tun": true,
+  "dns_observation": {
+    "reply_received": false,
+    "id_matches": false,
+    "one_answer": false,
+    "payload_matches": false,
+    "os_code": null
+  },
+  "endpoint_bytes_by_transport": {
+    "http1": 0,
+    "http2": 0,
+    "http3": 6821
+  },
+  "dns_endpoint_bytes_by_transport": {
+    "http1": 0,
+    "http2": 0,
+    "http3": 197
+  },
+  "forwarder_counts": {
+    "auth_rejected": 0,
+    "destination_denied": 1,
+    "tcp_connected": 1,
+    "tcp_bytes": 6104,
+    "udp_forwarded": 17,
+    "udp_replies": 17,
+    "errors": 0,
+    "active": 17
+  },
+  "dns_fixture_counts": {
+    "requests": 17,
+    "request_bytes": 671,
+    "synthetic_answers": 2,
+    "other_answers": 15,
+    "non_questions": 0
+  },
+  "sdk_wfp_sessions_restored": true,
+  "deadline_triggered": false,
+  "routes_dns_adapter_restored": true
+}

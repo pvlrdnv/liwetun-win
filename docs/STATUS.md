@@ -312,6 +312,15 @@ intervention. The H3 run additionally passed every WSL1 connected-UDP preflight
 observation before SDK start. Private relay binding alone did not fix DNS.
 Added the same boundary observation while the SDK is active to distinguish
 fixture/routing interference from endpoint UDP handling; Windows check pending.
+That comparison on `812a080`,
+[43876331775](https://github.com/pvlrdnv/liwetun-win/actions/runs/43876331775),
+passed the WSL1 connected-UDP boundary both before and during SDK operation.
+Ordinary HTTPS passed again; client DNS timed out and the overall case failed.
+Cleanup/WFP restoration passed. Next observation checks edge-triggered epoll
+readiness and aggregates only the owned endpoint child's UDP receive queues;
+it exports no addresses, inode IDs, descriptors or raw output. Local own-child
+queue check PASS (queued then consumed, unrelated sender excluded), syntax PASS.
+WSL1 execution of these additional observations is pending.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

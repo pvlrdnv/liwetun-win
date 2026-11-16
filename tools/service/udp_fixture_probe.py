@@ -7,6 +7,7 @@ import ipaddress
 import json
 from pathlib import Path
 import socket
+import select
 import struct
 import sys
 
@@ -18,7 +19,8 @@ def probe(directory):
     if not host.is_private or host.is_loopback:
         raise ValueError('invalid_fixture_address')
     result = dict(authenticated=False, associated=False, reply_received=False,
-                  relay_source_matches=False, synthetic_answer=False, passed=False)
+                  relay_source_matches=False, synthetic_answer=False,
+                  poll_readable=False, passed=False)
     try:
         with socket.create_connection(('127.0.0.1', 38445), timeout=3) as control:
             control.sendall(b'\x05\x01\x02')
@@ -46,6 +48,11 @@ def probe(directory):
                 question = b'\x07liwetun\x07invalid\x00\x00\x01\x00\x01'
                 packet = b'\x37\x19\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00' + question
                 udp.send(header + packet)
+                # Check edge-triggered epoll readiness, as used by Tokio/mio.
+                # Blocking recv alone would not establish reactor readiness.
+                with select.epoll() as reactor:
+                    reactor.register(udp.fileno(), select.EPOLLIN | select.EPOLLET)
+                    result['poll_readable'] = bool(reactor.poll(timeout=3))
                 answer, sender = udp.recvfrom(4096)
                 result['reply_received'] = True
                 result['relay_source_matches'] = sender == relay

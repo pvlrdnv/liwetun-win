@@ -12,6 +12,39 @@ import threading
 import time
 import sys
 import ipaddress
+import re
+
+
+def owned_udp_queues(process):
+    """Aggregate only this child endpoint's UDP queues, never addresses/inodes."""
+    observation = {'available': False, 'sockets': None, 'rx_kernel_bytes': None}
+    try:
+        descriptors = list(Path(f'/proc/{process.pid}/fd').iterdir())
+        if len(descriptors) > 512:
+            return observation
+        inodes = set()
+        for descriptor in descriptors:
+            try:
+                match = re.fullmatch(r'socket:\[([0-9]+)\]', str(descriptor.readlink()))
+                if match:
+                    inodes.add(match[1])
+            except FileNotFoundError:
+                continue
+        count = queued = 0
+        for name in ['udp', 'udp6']:
+            with Path('/proc/net', name).open() as table:
+                rows = table.read(1048577)
+            if len(rows) > 1048576:
+                return observation
+            for row in rows.splitlines()[1:]:
+                columns = row.split()
+                if len(columns) > 9 and columns[9] in inodes:
+                    count += 1
+                    queued += int(columns[4].split(':')[1], 16)
+        observation.update(available=True, sockets=count, rx_kernel_bytes=queued)
+    except (OSError, ValueError, IndexError):
+        pass
+    return observation
 
 
 def dns_server(stop, counters, sock):
@@ -112,7 +145,10 @@ def main():
         print('ready', flush=True)
         for command in sys.stdin:
             if command.strip() == 'stats':
-                print(json.dumps(counters), flush=True)
+                observation = dict(counters)
+                if forwarder:
+                    observation['owned_endpoint_udp_queues'] = owned_udp_queues(endpoint)
+                print(json.dumps(observation), flush=True)
             else:
                 break
     finally:
