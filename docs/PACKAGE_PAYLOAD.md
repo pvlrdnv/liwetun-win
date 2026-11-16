@@ -71,3 +71,13 @@ See [installer scope and remaining gates](INSTALLER.md). Upgrade/rollback,
 desktop ownership selection, loader-sharing/recovery, release signing/revocation and
 full distribution audit remain open. Public signing process availability has
 been asked while independent preparation continues.
+
+Updated GUI `eefbcf7` build 43887262100 includes all 60 SDK/Rust notice bodies in
+Flutter's offline license page and verifies every section of the pinned engine
+license text. GUI provenance records framework/engine revisions and byte-check
+receipts; package admission verifies them and the actual embedded native bytes.
+That payload plus all 14 installer groups **PASS** on `17d66b6`,
+[43888747188](https://github.com/pvlrdnv/liwetun-win/actions/runs/43888747188),
+[safe evidence](evidence/installer-notices-17d66b6.json). Visible medium GUI,
+uninstall gating, unchanged network and cleanup passed. These checks do not
+approve redistribution rights or qualify release signing/desktop acceptance.

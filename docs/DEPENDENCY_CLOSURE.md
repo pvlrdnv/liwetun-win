@@ -80,4 +80,8 @@ Actual updated Windows qualification **PASS** on `eefbcf7`,
 analyze, 118 Dart + 6 Rust + 3 real desktop-channel tests, release build/staging,
 and complete native/engine notice byte checks.
 [Windows notice receipt](evidence/notice-bytes-eefbcf7.json).
-Package/installer validation using that updated GUI remains pending.
+Package/installer validation using that GUI also **PASS** on `17d66b6`,
+[43888747188](https://github.com/pvlrdnv/liwetun-win/actions/runs/43888747188),
+including the installed native notice-byte guard and all 14 installer groups.
+[Evidence](evidence/installer-notices-17d66b6.json). Final distribution rights,
+source/nested attribution, CRT and modified-source notices remain separate gates.

@@ -1,0 +1,134 @@
+{
+  "source_run": "43888747188",
+  "source_commit": "17d66b6aa47b202a774d30e5fbc58d6a3cc21506",
+  "gui_source_run": "43887262100",
+  "payload": {
+    "release_ready": false,
+    "installer_tested": true,
+    "network_unchanged": true,
+    "passed": true,
+    "checks": [
+      "original_microsoft_app_local_crt_staged",
+      "native_and_engine_notice_bytes_verified_not_legal_approval",
+      "all_native_payload_images_are_x64",
+      "gui_sdk_and_notice_inputs_verified",
+      "common_ci_signer_only_for_owned_components",
+      "original_wintun_bytes_preserved",
+      "actual_signed_gui_queries_production_service",
+      "medium_integrity_without_enabled_admin_group",
+      "owner_can_read_service_identity_but_not_write_process_or_duplicate_token",
+      "no_tunnel_start_or_network_configuration_change",
+      "fresh_installer_rollback_medium_query_and_uninstall"
+    ],
+    "stage": "installer_qualification",
+    "cleanup_passed": true
+  },
+  "installer": {
+    "checks": [
+      "pinned_compiler_and_signed_installer",
+      "preexisting_directory_preserved",
+      "preexisting_setup_mutex_denied",
+      "preexisting_service_preserved_without_starting",
+      "preexisting_registration_and_shortcut_preserved",
+      "invalid_owner_rolls_back_fresh_files_and_service",
+      "fresh_install_preserves_payload_and_signed_uninstaller",
+      "duplicate_install_denied",
+      "installed_gui_queries_production_service_at_medium_integrity",
+      "visible_medium_gui_blocks_uninstall_before_mutations",
+      "visible_medium_gui_closes_and_releases_presence",
+      "unknown_file_preserved_with_retry_uninstaller",
+      "uninstall_retry_after_service_removal",
+      "normal_uninstaller_bootstrap_and_removal"
+    ],
+    "before_fixture_cleanup": {
+      "directory": false,
+      "shortcut": false,
+      "registration": false
+    },
+    "release_ready": false,
+    "cleanup_passed": true,
+    "invocations": [
+      {
+        "exit_code": 21,
+        "stage": "preexisting_directory_denial"
+      },
+      {
+        "exit_code": 25,
+        "stage": "preexisting_setup_mutex_denial"
+      },
+      {
+        "exit_code": 22,
+        "stage": "preexisting_service_denial"
+      },
+      {
+        "exit_code": 23,
+        "stage": "preexisting_registration_denial"
+      },
+      {
+        "exit_code": 23,
+        "stage": "preexisting_registration_denial"
+      },
+      {
+        "exit_code": 31,
+        "stage": "invalid_owner_rollback"
+      },
+      {
+        "exit_code": 0,
+        "stage": "fresh_install"
+      },
+      {
+        "exit_code": 21,
+        "stage": "fresh_install"
+      },
+      {
+        "exit_code": 43,
+        "stage": "open_medium_gui_denies_uninstall"
+      },
+      {
+        "exit_code": 41,
+        "stage": "uninstall_preserves_unknown_file"
+      },
+      {
+        "exit_code": 0,
+        "stage": "uninstall_preserves_unknown_file"
+      },
+      {
+        "exit_code": 0,
+        "stage": "normal_uninstaller_bootstrap"
+      },
+      {
+        "exit_code": 0,
+        "stage": "normal_uninstaller_bootstrap"
+      }
+    ],
+    "passed": true,
+    "tunnel_started": false,
+    "desktop_owner_selection_tested": false,
+    "signing": "ephemeral_ci_only",
+    "stage": "normal_uninstaller_bootstrap"
+  },
+  "visible_gui": {
+    "passed": true,
+    "medium_integrity": true,
+    "admin_group_enabled": false,
+    "gui_window_visible": true,
+    "closed_gracefully": true
+  },
+  "notice_bytes": {
+    "native_notice_files": {
+      "sdk": 38,
+      "rust": 22
+    },
+    "native_bundle_sha256": "bc00e0ab2903e036940bfe202be2ff47fad646f4ed285025b8d3d9808ee118b1",
+    "native_bundle_bytes": 287721,
+    "license_approval": false,
+    "release_ready": false,
+    "application_bundle": {
+      "compressed_sha256": "62b0d2f107eaaa84363ce6f8192ecf14fc1143fe150e0783ba9bbd4b943af06d",
+      "expanded_sha256": "ea473c3a4f850e4696df936783b929318126ac3e3a2930f13642787bb334f6ac",
+      "expanded_bytes": 1644153,
+      "native_notice_bytes_preserved": true
+    }
+  },
+  "release_ready": false
+}

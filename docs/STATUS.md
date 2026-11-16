@@ -472,6 +472,13 @@ traceback. Updated installer/package qualification with this GUI is pending.
 Positive ordinary-mode regression after the refusal-branch extraction **PASS**
 on `7ed30cd`, [43886214455](https://github.com/pvlrdnv/liwetun-win/actions/runs/43886214455):
 exact DNS marker/transport and full network/WFP restoration retained.
+Updated notice-aware package/installer qualification **PASS** on `17d66b6`,
+[43888747188](https://github.com/pvlrdnv/liwetun-win/actions/runs/43888747188):
+all 14 installer groups and the enclosing signed production-mode payload checks,
+actual visible medium-integrity GUI / uninstall admission, installed notice-byte
+checks, unchanged network and cleanup. GUI input was `eefbcf7` run 43887262100.
+[Evidence](evidence/installer-notices-17d66b6.json). Signing remains ephemeral CI
+only; no owner package, release/legal approval or Windows 10/11 qualification.
 
 The unchanged bounded regression on `f797465`,
 [43859092186](https://github.com/pvlrdnv/liwetun-win/actions/runs/43859092186),

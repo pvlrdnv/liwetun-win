@@ -83,6 +83,14 @@ These named objects carry no secrets or commands and confer no service authority
 name squatting can deny availability. They coordinate application startup, not
 Windows loader/file-sharing transactions. [Evidence](evidence/installer-visible-gui-9688b98.json).
 
+Notice-aware continuation **PASS** on `17d66b6`,
+[run 43888747188](https://github.com/pvlrdnv/liwetun-win/actions/runs/43888747188),
+with updated GUI `eefbcf7` (43887262100): all 14 installer groups, visible medium
+GUI/uninstall gate and enclosing payload checks, plus exact embedded native
+notice-byte checks and engine/framework GUI provenance. Network snapshots and
+fixture cleanup passed. [Evidence](evidence/installer-notices-17d66b6.json).
+This remains a temporary-CI-signed prototype, not an owner test package.
+
 Remaining gates:
 desktop-owner selection, loader-sharing/reboot/failure recovery, upgrades, release
 signing/revocation, final notices and ordinary routing/DNS/IPv6 acceptance. Do not
