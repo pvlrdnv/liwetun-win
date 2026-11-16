@@ -260,6 +260,10 @@ Source inspection also confirmed SDK DNS restrictions use a dynamic WFP session;
 a CI-only read-only probe now requires owned SDK dynamic sessions to appear and
 return to baseline after stop. This extra check is pending. No Internet/IPv6
 payload or DNS-leak prevention claim. [Routing boundaries](PRODUCTION_ROUTING.md).
+WFP observation run 43857843576 stopped during compilation of the new CI probe:
+its translation unit lacked the required windows.h include before fwpmu.h.
+The service itself compiled; no new runtime qualification was obtained. Added
+the explicit Windows header; WFP observation remains pending a fresh run.
 
 ## Current stage
 

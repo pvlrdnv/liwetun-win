@@ -1,5 +1,6 @@
 #include "wfp_probe.h"
 #include "client.h"
+#include <windows.h>
 #include <fwpmu.h>
 #include <iostream>
 
