@@ -181,12 +181,41 @@ class SchannelProbe {
     PCCERT_CHAIN_CONTEXT chain = nullptr;
     if (!CertGetCertificateChain(HCCE_LOCAL_MACHINE, certificate, nullptr, certificate->hCertStore,
           &parameters, flags, nullptr, &chain) || !chain) return TlsResult::ChainRejected;
+    struct ReleaseChain {
+      PCCERT_CHAIN_CONTEXT value;
+      ~ReleaseChain() { CertFreeCertificateChain(value); }
+    } release{chain};
     const DWORD errors = chain->TrustStatus.dwErrorStatus;
-    CertFreeCertificateChain(chain);
     if (errors & (CERT_TRUST_IS_REVOKED | CERT_TRUST_REVOCATION_STATUS_UNKNOWN | CERT_TRUST_IS_OFFLINE_REVOCATION))
       return TlsResult::RevocationRejected;
     if (errors & CERT_TRUST_IS_NOT_TIME_VALID) return TlsResult::TimeRejected;
-    return errors ? TlsResult::ChainRejected : TlsResult::Ok;
+    if (errors || chain->cChain != 1 || !chain->rgpChain || !chain->rgpChain[0]) return TlsResult::ChainRejected;
+    const auto* simple = chain->rgpChain[0];
+    if (!simple->cElement || simple->cElement > 16 || !simple->rgpElement) return TlsResult::ChainRejected;
+    struct Store {
+      HCERTSTORE value;
+      ~Store() { if (value) CertCloseStore(value, 0); }
+    } store{CertOpenStore(CERT_STORE_PROV_SYSTEM_W, 0, 0,
+        CERT_SYSTEM_STORE_LOCAL_MACHINE | CERT_STORE_OPEN_EXISTING_FLAG | CERT_STORE_READONLY_FLAG, L"CA")};
+    if (!store.value) return TlsResult::RevocationRejected;
+    // Check each non-root certificate explicitly. A zero chain error mask alone
+    // also accepted the self-issued but non-self-signed missing-CRL fixture.
+    for (DWORD i = 0; i + 1 < simple->cElement; ++i) {
+      if (!simple->rgpElement[i] || !simple->rgpElement[i + 1]) return TlsResult::ChainRejected;
+      auto* leaf = const_cast<CERT_CONTEXT*>(simple->rgpElement[i]->pCertContext);
+      if (!leaf || !simple->rgpElement[i + 1]->pCertContext) return TlsResult::ChainRejected;
+      void* contexts[] = {leaf};
+      CERT_REVOCATION_PARA revocation{};
+      revocation.cbSize = sizeof(revocation);
+      revocation.pIssuerCert = simple->rgpElement[i + 1]->pCertContext;
+      revocation.hCrlStore = store.value;
+      CERT_REVOCATION_STATUS status{};
+      status.cbSize = sizeof(status);
+      if (!CertVerifyRevocation(X509_ASN_ENCODING, CERT_CONTEXT_REVOCATION_TYPE, 1, contexts,
+            CERT_VERIFY_CACHE_ONLY_BASED_REVOCATION, &revocation, &status) || status.dwError)
+        return TlsResult::RevocationRejected;
+    }
+    return TlsResult::Ok;
   }
   TlsResult Fail(TlsResult result) { ready_ = false; return result; }
   static constexpr size_t kCipherLimit = 65536;
@@ -248,6 +277,8 @@ class SchannelProbe {
       case SEC_E_CERT_EXPIRED: return TlsResult::TimeRejected;
       case CRYPT_E_REVOCATION_OFFLINE:
       case CRYPT_E_NO_REVOCATION_CHECK:
+      case CRYPT_E_REVOKED:
+      case SEC_E_CERT_REVOKED:
       case CERT_E_REVOKED: return TlsResult::RevocationRejected;
       case SEC_I_INCOMPLETE_CREDENTIALS: return TlsResult::ClientAuthRejected;
       default: return TlsResult::TlsRejected;

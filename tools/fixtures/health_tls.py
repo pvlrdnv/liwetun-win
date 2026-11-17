@@ -75,7 +75,55 @@ keyUsage=critical,digitalSignature,keyEncipherment,keyCertSign,cRLSign
             '-CAkey', directory / 'valid.key', '-set_serial', '17', '-days', '2', '-sha256',
             '-extfile', leaf, '-out', directory / 'missing-crl.pem')
     openssl('verify', '-purpose', 'sslserver', '-CAfile', directory / 'valid.pem', directory / 'missing-crl.pem')
-    for name in ['valid', 'wrong-name', 'untrusted', 'expired']:
+    # A separate CA makes cached-revocation success/refusal independent from the
+    # missing-information control above. No URL is embedded or contacted.
+    openssl('req', '-x509', '-newkey', 'rsa:2048', '-sha256', '-nodes', '-days', '2',
+            '-config', basic, '-keyout', directory / 'crl-ca.key', '-out', directory / 'crl-ca.pem',
+            '-subj', '/CN=LiWeTun disposable revocation CA',
+            '-addext', 'basicConstraints=critical,CA:TRUE', '-addext', 'keyUsage=critical,keyCertSign,cRLSign')
+    (directory / 'crl-index').write_text('')
+    (directory / 'crl-serial').write_text('2000\n')
+    (directory / 'crl-number').write_text('1000\n')
+    crl_config = directory / 'crl-ca.cnf'
+    crl_config.write_text(f'''[ca]
+default_ca=local
+[local]
+dir="{base}"
+database=$dir/crl-index
+serial=$dir/crl-serial
+crlnumber=$dir/crl-number
+new_certs_dir=$dir/newcerts
+certificate=$dir/crl-ca.pem
+private_key=$dir/crl-ca.key
+default_md=sha256
+default_days=2
+default_crl_days=2
+unique_subject=no
+policy=names
+x509_extensions=server
+crl_extensions=crl
+[names]
+commonName=supplied
+[server]
+basicConstraints=critical,CA:FALSE
+subjectAltName=DNS:{HOST}
+authorityKeyIdentifier=keyid:always
+extendedKeyUsage=serverAuth
+keyUsage=critical,digitalSignature,keyEncipherment
+[crl]
+authorityKeyIdentifier=keyid:always
+''')
+    for name in ['crl-good', 'crl-revoked']:
+        openssl('req', '-new', '-newkey', 'rsa:2048', '-nodes', '-config', basic,
+                '-keyout', directory / (name + '.key'), '-out', directory / (name + '.csr'), '-subj', '/CN=' + HOST)
+        openssl('ca', '-batch', '-config', crl_config, '-in', directory / (name + '.csr'),
+                '-out', directory / (name + '.pem'), '-notext')
+    openssl('ca', '-config', crl_config, '-revoke', directory / 'crl-revoked.pem', '-crl_reason', 'keyCompromise')
+    openssl('ca', '-config', crl_config, '-gencrl', '-out', directory / 'fixture.crl.pem')
+    openssl('crl', '-in', directory / 'fixture.crl.pem', '-outform', 'DER', '-out', directory / 'fixture.crl.der')
+    openssl('verify', '-purpose', 'sslserver', '-crl_check', '-CAfile', directory / 'crl-ca.pem',
+            '-CRLfile', directory / 'fixture.crl.pem', directory / 'crl-good.pem')
+    for name in ['valid', 'wrong-name', 'untrusted', 'expired', 'crl-ca']:
         openssl('x509', '-in', directory / (name + '.pem'), '-outform', 'DER', '-out', directory / (name + '.der'))
 
 
@@ -101,10 +149,17 @@ class FixtureRoots:
         self.api.CertCloseStore.restype = wintypes.BOOL
         self.contexts = []
         self.hashes = []
+        self.crl_context = None
         name = ctypes.c_wchar_p('ROOT')
         self.store = self.api.CertOpenStore(ctypes.c_void_p(10), 0, None, 0x00020000 | 0x00004000, name)
         if not self.store:
             raise RuntimeError('fixture_root_store_unavailable')
+        self.api.CertAddEncodedCRLToStore.argtypes = [ctypes.c_void_p, wintypes.DWORD, ctypes.c_void_p,
+                                                   wintypes.DWORD, wintypes.DWORD, ctypes.POINTER(ctypes.c_void_p)]
+        self.api.CertAddEncodedCRLToStore.restype = wintypes.BOOL
+        self.api.CertDeleteCRLFromStore.argtypes = [ctypes.c_void_p]
+        self.api.CertDeleteCRLFromStore.restype = wintypes.BOOL
+        self.ca_store = None
 
     def contains(self, digest):
         class Blob(ctypes.Structure):
@@ -128,8 +183,26 @@ class FixtureRoots:
         self.contexts.append(context)
         self.hashes.append(digest)
 
+    def add_crl(self, path):
+        name = ctypes.c_wchar_p('CA')
+        self.ca_store = self.api.CertOpenStore(ctypes.c_void_p(10), 0, None, 0x00020000 | 0x00004000, name)
+        if not self.ca_store:
+            raise RuntimeError('fixture_crl_store_unavailable')
+        data = path.read_bytes()
+        encoded = ctypes.create_string_buffer(data)
+        context = ctypes.c_void_p()
+        if not self.api.CertAddEncodedCRLToStore(self.ca_store, 1, encoded, len(data), 1, ctypes.byref(context)):
+            raise RuntimeError('fixture_crl_add_failed')
+        self.crl_context = context
+
     def close(self):
         passed = True
+        if self.crl_context is not None:
+            passed = bool(self.api.CertDeleteCRLFromStore(self.crl_context)) and passed
+            self.crl_context = None
+        if self.ca_store is not None:
+            passed = bool(self.api.CertCloseStore(self.ca_store, 0)) and passed
+            self.ca_store = None
         for context in reversed(self.contexts):
             passed = bool(self.api.CertDeleteCertificateFromStore(context)) and passed
         self.contexts.clear()
@@ -279,13 +352,16 @@ def main():
         generate(directory)
         stage = 'fixture_roots'
         roots = FixtureRoots()
-        for certificate in ['valid', 'wrong-name', 'expired']:
+        for certificate in ['valid', 'wrong-name', 'expired', 'crl-ca']:
             roots.add(directory / (certificate + '.der'))
+        roots.add_crl(directory / 'fixture.crl.der')
         cases = [('valid', 'valid', 'echo', None), ('fragmented', 'valid', 'fragmented', None),
                  ('wrong_nonce', 'valid', 'wrong-nonce', None), ('redirect', 'valid', 'redirect', None),
                  ('oversized', 'valid', 'oversized', None), ('wrong_name', 'wrong-name', 'echo', None),
                  ('untrusted', 'untrusted', 'echo', None), ('expired', 'expired', 'echo', None),
                  ('missing_revocation', 'missing-crl', 'echo', None),
+                 ('cached_revocation_good', 'crl-good', 'echo', None),
+                 ('revoked', 'crl-revoked', 'echo', None),
                  ('deadline', 'valid', 'stall', None), ('cancel', 'valid', 'stall', 'cancel-read')]
         for name, certificate, mode, extra in cases:
             stage = name
@@ -305,7 +381,7 @@ def main():
             report['cases'].append(case)
             if not ended or counts['client_certificate_seen']:
                 raise RuntimeError('tls_fixture_not_clean')
-            if name in ['valid', 'fragmented']:
+            if name in ['valid', 'fragmented', 'cached_revocation_good']:
                 passed = value['response_verified'] and counts['requests'] == 1 and counts['replies'] == 1
             elif name in ['wrong_nonce', 'redirect', 'oversized']:
                 expected = {'wrong_nonce': 2, 'redirect': 3, 'oversized': 6}[name]
@@ -316,7 +392,7 @@ def main():
                 passed = (value['tls_result'] == expected and value['request_sent'] and not value['response_verified']
                           and counts['requests'] == 1 and counts['replies'] == 0 and elapsed < 6500)
             else:
-                expected = {'wrong_name': 7, 'untrusted': 8, 'expired': 9, 'missing_revocation': 10}[name]
+                expected = {'wrong_name': 7, 'untrusted': 8, 'expired': 9, 'missing_revocation': 10, 'revoked': 10}[name]
                 passed = (value['tls_result'] == expected and not value['handshake_verified']
                           and value['http_result'] is None and not value['request_sent']
                           and not value['response_verified'] and counts['requests'] == counts['body_bytes'] == 0)
@@ -327,7 +403,8 @@ def main():
     except Exception as error:
         report['failed_stage'] = stage
         allowed = {'tls_client_failed', 'tls_fixture_not_clean', 'tls_case_not_qualified', 'invalid_tls_client_report',
-                   'fixture_root_store_unavailable', 'preexisting_fixture_root', 'fixture_root_add_failed', 'unsupported_fixture_path'}
+                   'fixture_root_store_unavailable', 'preexisting_fixture_root', 'fixture_root_add_failed',
+                   'fixture_crl_store_unavailable', 'fixture_crl_add_failed', 'unsupported_fixture_path'}
         reason = error.args[0] if error.args else None
         report['failure_reason'] = reason if isinstance(reason, str) and reason in allowed else 'fixture_failure'
     finally:

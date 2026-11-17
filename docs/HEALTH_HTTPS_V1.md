@@ -80,3 +80,10 @@ against local-machine trust with server-auth usage, cache-only chain/revocation
 lookup and automatic root update disabled. It accepts only zero chain errors;
 unknown/offline/revoked status refuses HTTP. Automatic Schannel validation remains
 enabled. The production policy for obtaining fresh revocation data is still open.
+
+The zero-error chain gate alone also accepted the same self-issued but
+non-self-signed missing-CRL control (44167719737). Each non-root certificate now
+also requires explicit cache-only
+[CertVerifyRevocation](https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-certverifyrevocation)
+success with its verified issuer and the read-only local-machine CA store.
+A separate CI-only CA/CRL pair tests valid and actually revoked issued leaves.

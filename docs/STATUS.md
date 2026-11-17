@@ -198,6 +198,18 @@ any application request. Automatic Schannel name/chain validation remains ON.
 Certificate controls now require their specific closed refusal codes rather than
 any generic TLS rejection. Windows matrix rerun pending.
 
+Explicit chain-only run 44167719737 on `a19d493` also **FAIL** at the same
+missing-revocation control; temporary roots were removed. The fixture leaf is
+self-issued (same issuer/subject name) but signed by a different trusted key.
+A zero chain error mask was insufficient for the intended strict policy.
+[Unchanged oracle report](evidence/health-tls-chain-44167719737.json).
+The candidate now additionally requires explicit cache-only CertVerifyRevocation
+success for each non-root certificate in the verified chain. CI adds a distinct
+synthetic CA, fresh CRL, valid issued leaf and actually revoked issued leaf to
+check both acceptance and refusal; only the fixture's exact CRL context is added
+and deleted in disposable CI. Local CA/CRL generation and OpenSSL positive CRL
+verification PASS. Windows compilation and expanded TLS matrix pending.
+
 ## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the
