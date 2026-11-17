@@ -13,9 +13,8 @@ local bypass rejection now pass focused H2/H3 CI; the latter does not establish
 SDK recovery bypass selection. **39 local Python checks PASS**; actual Windows
 CI compiled and exercised the service. Six normal-package test flags remain OFF.
 The separate SDK/endpoint candidates are not a shipped health capability.
-Schannel compilation/preflight passed; real HTTPS controls exposed an unavailable
-revocation-information acceptance, now under explicit per-certificate validation
-and expanded CI. Product HTTPS/DNS health, adapter ownership, trusted signing /
+Schannel compilation/preflight and the expanded 13-case real loopback HTTPS
+matrix passed after explicit per-certificate revocation verification was added. Product HTTPS/DNS health, adapter ownership, trusted signing /
 distribution and separate Windows 10/11 desktop acceptance remain open. No
 production/LikeWeb or owner-device network/trust changes.
 
@@ -215,6 +214,28 @@ and deleted in disposable CI. Local CA/CRL generation and OpenSSL positive CRL
 verification PASS. Windows attempt 44168154406 stopped at compilation: an unsupported symbolic
 status constant was referenced; it is removed. No TLS fixture/root installation
 ran in that attempt. Expanded Windows matrix rerun pending.
+
+Expanded real TLS 1.2 loopback matrix **13/13 PASS** (44168412480), source
+`0f9fc50`: valid/fragmented response, wrong nonce, redirect/header limits,
+wrong name, untrusted/expired certificate, missing revocation information,
+valid issued certificate with cached CRL, actually revoked certificate,
+deadline (**4030 ms**) and receive cancellation (**219 ms**). Certificate negatives
+returned their exact closed category and sent no HTTP request. All fixture
+receivers ended and temporary roots were removed; the owned CRL deletion also
+succeeded. [Report and source digests](evidence/health-tls-44168412480.json).
+This is loopback Server 2022 evidence without SDK/TUN, not SDK-owned HTTPS,
+Windows 10/11 acceptance, production certificate policy or release qualification.
+The missing-revocation failures and compile-only failure remain documented.
+
+DNS source analysis is recorded separately in [HEALTH_DNS_V1.md](HEALTH_DNS_V1.md):
+the current socket ABI does not correlate Windows resolver traffic through the
+SDK DNS proxy/rewrites. A direct DNS/DoH request cannot qualify the normal
+Windows resolver. No DNS health UI/IPC capability is enabled.
+
+Additional TLS-only controls now require refusal of a server demanding a client
+certificate, refusal of a TLS-1.3-only server by the explicitly TLS-1.2 candidate,
+and rejection of a truncated encrypted HTTP body. These extend the fixture only;
+Windows execution pending. The 13-case successful receipt remains immutable.
 
 ## Development evidence and history
 

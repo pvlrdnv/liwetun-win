@@ -1,8 +1,10 @@
 # HTTPS probe candidate contract
 
-Status: bounded HTTP framing/reply reducer PASS on MSVC (44143544601). Internal
-Schannel/borrowed-socket TLS candidate implemented; compilation/preflight PASS (44165060837). Real handshake matrix initially failed
-on missing revocation information (44167373258); explicit chain gate rerun pending. Live SDK-owned HTTPS remains unimplemented. This document does not enable application health.
+Status: HTTP/socket contracts and Schannel preflight PASS (44165060837).
+Real loopback TLS 1.2 matrix **13 cases PASS** (44168412480), with explicit
+per-certificate revocation verification. [Closed evidence](evidence/health-tls-44168412480.json).
+Live SDK-owned HTTPS remains unimplemented. This document does not enable
+application health.
 
 ## Reserved fixture target and wire contract
 
@@ -68,7 +70,8 @@ revocation errors are not ignored. It separately checks the returned leaf's time
 validity, supports incomplete/extra encrypted input, caps total wire data and
 crypto iterations, and rejects renegotiation. Each context is used on one thread;
 errors make the channel unusable. No trust store is mutated by the library.
-These are implemented policies, not yet proved handshake/runtime guarantees.
+The 13-case loopback matrix qualifies these focused TLS 1.2/HTTP and certificate
+controls only, without SDK/TUN or production trust/revocation bootstrap.
 TLS 1.3, graceful TLS shutdown, OS crypto-call cancellation/bounds and production
 certificate/revocation behavior still require dedicated work/qualification.
 The module is not linked into the shipped service/UI and has no public IPC entry.

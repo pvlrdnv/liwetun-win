@@ -1,0 +1,357 @@
+{
+  "source_run": 44168412480,
+  "source_commit": "0f9fc504e25311e9b05455451978158205363279",
+  "scope": "windows_ci_loopback_schannel_tls12_no_sdk_no_tun",
+  "evidence": {
+    "schema_version": 1,
+    "passed": true,
+    "cases": [
+      {
+        "case": "valid",
+        "client": {
+          "tls_result": 0,
+          "http_result": 1,
+          "handshake_verified": true,
+          "request_sent": true,
+          "response_verified": true,
+          "synthetic_nonce": true,
+          "sdk_path_qualified": false,
+          "release_ready": false
+        },
+        "receiver": {
+          "handshake_complete": 1,
+          "handshake_failed": 0,
+          "requests": 1,
+          "body_bytes": 8,
+          "replies": 1,
+          "client_certificate_seen": false,
+          "peer_closed": true
+        },
+        "elapsed_ms": 140,
+        "receiver_stopped": true,
+        "passed": true
+      },
+      {
+        "case": "fragmented",
+        "client": {
+          "tls_result": 0,
+          "http_result": 1,
+          "handshake_verified": true,
+          "request_sent": true,
+          "response_verified": true,
+          "synthetic_nonce": true,
+          "sdk_path_qualified": false,
+          "release_ready": false
+        },
+        "receiver": {
+          "handshake_complete": 1,
+          "handshake_failed": 0,
+          "requests": 1,
+          "body_bytes": 8,
+          "replies": 1,
+          "client_certificate_seen": false,
+          "peer_closed": true
+        },
+        "elapsed_ms": 47,
+        "receiver_stopped": true,
+        "passed": true
+      },
+      {
+        "case": "wrong_nonce",
+        "client": {
+          "tls_result": 0,
+          "http_result": 2,
+          "handshake_verified": true,
+          "request_sent": true,
+          "response_verified": false,
+          "synthetic_nonce": true,
+          "sdk_path_qualified": false,
+          "release_ready": false
+        },
+        "receiver": {
+          "handshake_complete": 1,
+          "handshake_failed": 0,
+          "requests": 1,
+          "body_bytes": 8,
+          "replies": 1,
+          "client_certificate_seen": false,
+          "peer_closed": true
+        },
+        "elapsed_ms": 47,
+        "receiver_stopped": true,
+        "passed": true
+      },
+      {
+        "case": "redirect",
+        "client": {
+          "tls_result": 0,
+          "http_result": 3,
+          "handshake_verified": true,
+          "request_sent": true,
+          "response_verified": false,
+          "synthetic_nonce": true,
+          "sdk_path_qualified": false,
+          "release_ready": false
+        },
+        "receiver": {
+          "handshake_complete": 1,
+          "handshake_failed": 0,
+          "requests": 1,
+          "body_bytes": 8,
+          "replies": 1,
+          "client_certificate_seen": false,
+          "peer_closed": true
+        },
+        "elapsed_ms": 30,
+        "receiver_stopped": true,
+        "passed": true
+      },
+      {
+        "case": "oversized",
+        "client": {
+          "tls_result": 0,
+          "http_result": 6,
+          "handshake_verified": true,
+          "request_sent": true,
+          "response_verified": false,
+          "synthetic_nonce": true,
+          "sdk_path_qualified": false,
+          "release_ready": false
+        },
+        "receiver": {
+          "handshake_complete": 1,
+          "handshake_failed": 0,
+          "requests": 1,
+          "body_bytes": 8,
+          "replies": 1,
+          "client_certificate_seen": false,
+          "peer_closed": true
+        },
+        "elapsed_ms": 31,
+        "receiver_stopped": true,
+        "passed": true
+      },
+      {
+        "case": "wrong_name",
+        "client": {
+          "tls_result": 7,
+          "http_result": null,
+          "handshake_verified": false,
+          "request_sent": false,
+          "response_verified": false,
+          "synthetic_nonce": true,
+          "sdk_path_qualified": false,
+          "release_ready": false
+        },
+        "receiver": {
+          "handshake_complete": 0,
+          "handshake_failed": 1,
+          "requests": 0,
+          "body_bytes": 0,
+          "replies": 0,
+          "client_certificate_seen": false,
+          "peer_closed": false
+        },
+        "elapsed_ms": 15,
+        "receiver_stopped": true,
+        "passed": true
+      },
+      {
+        "case": "untrusted",
+        "client": {
+          "tls_result": 8,
+          "http_result": null,
+          "handshake_verified": false,
+          "request_sent": false,
+          "response_verified": false,
+          "synthetic_nonce": true,
+          "sdk_path_qualified": false,
+          "release_ready": false
+        },
+        "receiver": {
+          "handshake_complete": 0,
+          "handshake_failed": 1,
+          "requests": 0,
+          "body_bytes": 0,
+          "replies": 0,
+          "client_certificate_seen": false,
+          "peer_closed": false
+        },
+        "elapsed_ms": 15,
+        "receiver_stopped": true,
+        "passed": true
+      },
+      {
+        "case": "expired",
+        "client": {
+          "tls_result": 9,
+          "http_result": null,
+          "handshake_verified": false,
+          "request_sent": false,
+          "response_verified": false,
+          "synthetic_nonce": true,
+          "sdk_path_qualified": false,
+          "release_ready": false
+        },
+        "receiver": {
+          "handshake_complete": 0,
+          "handshake_failed": 1,
+          "requests": 0,
+          "body_bytes": 0,
+          "replies": 0,
+          "client_certificate_seen": false,
+          "peer_closed": false
+        },
+        "elapsed_ms": 16,
+        "receiver_stopped": true,
+        "passed": true
+      },
+      {
+        "case": "missing_revocation",
+        "client": {
+          "tls_result": 10,
+          "http_result": null,
+          "handshake_verified": false,
+          "request_sent": false,
+          "response_verified": false,
+          "synthetic_nonce": true,
+          "sdk_path_qualified": false,
+          "release_ready": false
+        },
+        "receiver": {
+          "handshake_complete": 1,
+          "handshake_failed": 0,
+          "requests": 0,
+          "body_bytes": 0,
+          "replies": 0,
+          "client_certificate_seen": false,
+          "peer_closed": true
+        },
+        "elapsed_ms": 61,
+        "receiver_stopped": true,
+        "passed": true
+      },
+      {
+        "case": "cached_revocation_good",
+        "client": {
+          "tls_result": 0,
+          "http_result": 1,
+          "handshake_verified": true,
+          "request_sent": true,
+          "response_verified": true,
+          "synthetic_nonce": true,
+          "sdk_path_qualified": false,
+          "release_ready": false
+        },
+        "receiver": {
+          "handshake_complete": 1,
+          "handshake_failed": 0,
+          "requests": 1,
+          "body_bytes": 8,
+          "replies": 1,
+          "client_certificate_seen": false,
+          "peer_closed": true
+        },
+        "elapsed_ms": 47,
+        "receiver_stopped": true,
+        "passed": true
+      },
+      {
+        "case": "revoked",
+        "client": {
+          "tls_result": 10,
+          "http_result": null,
+          "handshake_verified": false,
+          "request_sent": false,
+          "response_verified": false,
+          "synthetic_nonce": true,
+          "sdk_path_qualified": false,
+          "release_ready": false
+        },
+        "receiver": {
+          "handshake_complete": 0,
+          "handshake_failed": 1,
+          "requests": 0,
+          "body_bytes": 0,
+          "replies": 0,
+          "client_certificate_seen": false,
+          "peer_closed": false
+        },
+        "elapsed_ms": 0,
+        "receiver_stopped": true,
+        "passed": true
+      },
+      {
+        "case": "deadline",
+        "client": {
+          "tls_result": 2,
+          "http_result": 7,
+          "handshake_verified": true,
+          "request_sent": true,
+          "response_verified": false,
+          "synthetic_nonce": true,
+          "sdk_path_qualified": false,
+          "release_ready": false
+        },
+        "receiver": {
+          "handshake_complete": 1,
+          "handshake_failed": 0,
+          "requests": 1,
+          "body_bytes": 8,
+          "replies": 0,
+          "client_certificate_seen": false,
+          "peer_closed": false
+        },
+        "elapsed_ms": 4030,
+        "receiver_stopped": true,
+        "passed": true
+      },
+      {
+        "case": "cancel",
+        "client": {
+          "tls_result": 1,
+          "http_result": 7,
+          "handshake_verified": true,
+          "request_sent": true,
+          "response_verified": false,
+          "synthetic_nonce": true,
+          "sdk_path_qualified": false,
+          "release_ready": false
+        },
+        "receiver": {
+          "handshake_complete": 1,
+          "handshake_failed": 0,
+          "requests": 1,
+          "body_bytes": 8,
+          "replies": 0,
+          "client_certificate_seen": false,
+          "peer_closed": false
+        },
+        "elapsed_ms": 219,
+        "receiver_stopped": true,
+        "passed": true
+      }
+    ],
+    "fixture_roots_removed": true,
+    "scope": "windows_ci_loopback_schannel_tls12_no_sdk_no_tun",
+    "sdk_path_qualified": false,
+    "dns_health_qualified": false,
+    "release_ready": false
+  },
+  "source_sha256": {
+    "native/health/schannel_probe.h": "2e9a4813faa29a6e6746cf4e0b5ba7b2999b067a0328bce735918810967442f7",
+    "native/health/socket_io.h": "b1ae60db9f427f7ca61295b304f3ae7ff12aacbe32265b4ad080b3ad05335669",
+    "native/health/http_probe.h": "34c79c93dae56ec96dc1e010f96fdc931e3d0650adfac99a4ec1af202d5e7956",
+    "native/health/tls_fixture_client.cpp": "2d5d2a3e786ca18d7d4566386360c6304022fa6a766dfd291a982790bb55b1da",
+    "tools/fixtures/health_tls.py": "2812236aeeb22143676b50f319fa8398c5cf69ac83b4af765f8e59c267f455c9"
+  },
+  "tls12_loopback_matrix_qualified": true,
+  "sdk_owned_https_qualified": false,
+  "dns_health_qualified": false,
+  "tls13_qualified": false,
+  "service_admitted": false,
+  "package_admitted": false,
+  "windows_10_qualified": false,
+  "windows_11_qualified": false,
+  "release_ready": false
+}

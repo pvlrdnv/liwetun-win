@@ -221,6 +221,11 @@ class Server:
                            replies=0, client_certificate_seen=False, peer_closed=False)
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         self.context.minimum_version = self.context.maximum_version = ssl.TLSVersion.TLSv1_2
+        if mode == 'tls13-only':
+            self.context.minimum_version = self.context.maximum_version = ssl.TLSVersion.TLSv1_3
+        if mode == 'require-client-certificate':
+            self.context.verify_mode = ssl.CERT_REQUIRED
+            self.context.load_verify_locations(directory / 'valid.pem')
         self.context.load_cert_chain(directory / (certificate + '.pem'), directory / (certificate + '.key'))
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind(('127.0.0.1', 0))
@@ -278,6 +283,10 @@ class Server:
                         pass
                     return
                 reply = HEADERS + nonce
+                if self.mode == 'truncated':
+                    client.sendall(HEADERS + nonce[:4])
+                    self.counts['replies'] = 1
+                    return
                 if self.mode == 'wrong-nonce':
                     reply = HEADERS + bytes(8)
                 elif self.mode == 'redirect':
@@ -362,6 +371,9 @@ def main():
                  ('missing_revocation', 'missing-crl', 'echo', None),
                  ('cached_revocation_good', 'crl-good', 'echo', None),
                  ('revoked', 'crl-revoked', 'echo', None),
+                 ('client_auth', 'valid', 'require-client-certificate', None),
+                 ('tls13_only', 'valid', 'tls13-only', None),
+                 ('truncated', 'valid', 'truncated', None),
                  ('deadline', 'valid', 'stall', None), ('cancel', 'valid', 'stall', 'cancel-read')]
         for name, certificate, mode, extra in cases:
             stage = name
@@ -391,6 +403,15 @@ def main():
                 expected = 2 if name == 'deadline' else 1
                 passed = (value['tls_result'] == expected and value['request_sent'] and not value['response_verified']
                           and counts['requests'] == 1 and counts['replies'] == 0 and elapsed < 6500)
+            elif name == 'truncated':
+                passed = (value['handshake_verified'] and value['request_sent'] and not value['response_verified']
+                          and value['http_result'] == 7 and value['tls_result'] in [3, 14]
+                          and counts['requests'] == counts['replies'] == 1)
+            elif name in ['client_auth', 'tls13_only']:
+                expected = [11] if name == 'client_auth' else [3, 12]
+                passed = (value['tls_result'] in expected and not value['handshake_verified']
+                          and not value['request_sent'] and value['http_result'] is None
+                          and not value['response_verified'] and counts['requests'] == counts['body_bytes'] == 0)
             else:
                 expected = {'wrong_name': 7, 'untrusted': 8, 'expired': 9, 'missing_revocation': 10, 'revoked': 10}[name]
                 passed = (value['tls_result'] == expected and not value['handshake_verified']
