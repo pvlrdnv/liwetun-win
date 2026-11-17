@@ -27,6 +27,54 @@ def reports():
 
 
 class OwnedHttpsReportTests(unittest.TestCase):
+    def test_valid_https_reply_after_actual_migration_stays_unqualified(self):
+        import json
+        path, tls = reports()
+        path.update(qualified=False, snapshot_flags=33, tx_bytes=None, rx_bytes=None)
+        tls.update(qualified=False)
+        receiver = dict(empty_controls=1, client_certificate_seen=False, rejected_frames=0, owner_reset=0,
+                        handshake_complete=1, handshake_failed=0, valid_requests=1,
+                        request_bytes=len(REQUEST_HEADERS) + 8, replies_sent=1, reply_bytes=len(HEADERS) + 8,
+                        invalid_replies=0, owner_closed=1, waiting_for_owner_close=0)
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / 'owned-probe-context.json').write_text(json.dumps(path) + '\n')
+            (directory / 'owned-https-context.json').write_text(json.dumps(tls) + '\n')
+            session = SimpleNamespace(command=lambda _: dict(flags=1, tx=None, rx=None))
+            endpoint = SimpleNamespace(command=lambda _: {'owned_probe_sink': receiver})
+            result = observe_owned_https(session, endpoint, directory, 'https-migration', {})
+            self.assertTrue(result['qualified'])
+            self.assertFalse(result['owned_https_qualified'])
+            self.assertTrue(result['tls']['response_verified'])
+            path.update(snapshot_flags=15, tx_bytes=1000, rx_bytes=3000)
+            (directory / 'owned-probe-context.json').write_text(json.dumps(path) + '\n')
+            with self.assertRaises(RuntimeError):
+                observe_owned_https(session, endpoint, directory, 'https-migration', {})
+
+    def test_timeout_cannot_substitute_for_actual_epoch_change(self):
+        import json
+        path, tls = reports()
+        path.update(echo_verified=False, qualified=False, same_instance_epoch=False, state_epoch_changed=True,
+                    receive_timed_out=True, snapshot_flags=129, tx_bytes=None, rx_bytes=None)
+        tls.update(tls_result=2, http_result=7, response_verified=False, qualified=False)
+        receiver = dict(empty_controls=1, client_certificate_seen=False, rejected_frames=0, owner_reset=0,
+                        handshake_complete=1, handshake_failed=0, valid_requests=1,
+                        request_bytes=len(REQUEST_HEADERS) + 8, replies_sent=0, reply_bytes=0,
+                        owner_closed=1, waiting_for_owner_close=0)
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / 'owned-probe-context.json').write_text(json.dumps(path) + '\n')
+            (directory / 'owned-https-context.json').write_text(json.dumps(tls) + '\n')
+            session = SimpleNamespace(command=lambda _: dict(flags=1, tx=None, rx=None))
+            endpoint = SimpleNamespace(command=lambda _: {'owned_probe_sink': receiver})
+            result = observe_owned_https(session, endpoint, directory, 'https-epoch-change', {})
+            self.assertTrue(result['qualified'])
+            self.assertFalse(result['owned_https_qualified'])
+            path.update(state_epoch_changed=False)
+            (directory / 'owned-probe-context.json').write_text(json.dumps(path) + '\n')
+            with self.assertRaises(RuntimeError):
+                observe_owned_https(session, endpoint, directory, 'https-epoch-change', {})
+
     def test_broken_pipe_close_still_closes_other_stream(self):
         child = Child.__new__(Child)
         child.process = SimpleNamespace(poll=lambda: 0, stdin=Mock(), stdout=Mock())

@@ -13,7 +13,7 @@ option(LIWETUN_TEST_OWNED_PROBE "CI-only: own fixed synthetic socket and require
 option(LIWETUN_TEST_OWNED_MIGRATION "CI-only: early-ack owned socket migration negative control" OFF)
 option(LIWETUN_TEST_OWNED_BYPASS "CI-only: local reply without SDK-owned flow traversal" OFF)
 option(LIWETUN_TEST_OWNED_HTTPS "CI-only: fixed HTTPS exchange over SDK-owned socket" OFF)
-if(LIWETUN_TEST_OWNED_HTTPS AND (NOT LIWETUN_TEST_OWNED_PROBE OR LIWETUN_TEST_OWNED_BYPASS OR LIWETUN_TEST_OWNED_MIGRATION))
+if(LIWETUN_TEST_OWNED_HTTPS AND (NOT LIWETUN_TEST_OWNED_PROBE OR LIWETUN_TEST_OWNED_BYPASS))
   message(FATAL_ERROR "Owned HTTPS requires its separate owned-probe fixture")
 endif()
 if(LIWETUN_TEST_OWNED_BYPASS AND (NOT LIWETUN_TEST_OWNED_PROBE OR LIWETUN_TEST_OWNED_MIGRATION))

@@ -337,6 +337,26 @@ policy changed. **47 local Python tests PASS**, including both reproduced harnes
 races and cleanup regression; syntax/diff checks PASS. Focused Windows reruns
 pending. Positive HTTPS and seven-flag-OFF package evidence remains unchanged.
 
+H2/H3 wrong-nonce and missing-response controls **PASS** on `54533da5`:
+wrong nonce 44173655030 / 44173682426, deadline 44173669135 (**4655 ms**) /
+44173697967 (**4562 ms**), plus original raw H2 echo 44173811153. TLS/path
+success alone never admitted a wrong nonce or missing HTTP response. Negatives
+kept service observations unknown; receiver EOF preceded Stop. Network/WFP and
+exact fixture-root restoration passed without watchdog intervention.
+[All closed reports](evidence/owned-https-negatives-44173655030.json).
+
+Prepared HTTPS-specific actual migration and epoch-change controls without any
+SDK/ABI/binary change. `https-migration` combines the seventh CI flag with the
+existing default-OFF early-ack migration fixture; it requires verified TLS/HTTP
+reply and unchanged global epoch but actual SDK Migrated flag 33, null path
+counts and no qualified success. `https-epoch-change` withholds HTTP after the
+handshake and gracefully restarts only the owned endpoint; it requires actual
+changed SDK epoch, discarded proof, no reply/success and EOF before Stop.
+No state/diagnostic flags are injected. **49 local Python checks PASS**, including
+valid HTTPS after migration remaining unqualified and timeout not substituting
+for changed epoch. Python/YAML/diff PASS; actual Windows controls pending.
+All seven test flags remain excluded from ordinary packaging; no UI admission.
+
 ## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the

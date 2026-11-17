@@ -15,14 +15,14 @@ if ($cache -notcontains ('LIWETUN_TEST_ATTACHED_TUN:BOOL=' + $expectedAttachment
 $expectedOwned = if ($env:OWNED_PROBE -eq 'true') { 'ON' } else { 'OFF' }
 if ($expectedOwned -eq 'ON' -and ($expectedAttachment -ne 'ON' -or !$ProductionTraffic)) { throw 'Owned probe requires focused disposable network mode' }
 if ($cache -notcontains ('LIWETUN_TEST_OWNED_PROBE:BOOL=' + $expectedOwned)) { throw 'Owned probe compilation mode mismatch' }
-$expectedMigration = if ($env:LIWETUN_OWNED_PROBE_MODE -eq 'migration') { 'ON' } else { 'OFF' }
+$expectedMigration = if ($env:LIWETUN_OWNED_PROBE_MODE -in @('migration','https-migration')) { 'ON' } else { 'OFF' }
 if ($expectedMigration -eq 'ON' -and $expectedOwned -ne 'ON') { throw 'Migration control requires owned probe' }
 if ($cache -notcontains ('LIWETUN_TEST_OWNED_MIGRATION:BOOL=' + $expectedMigration)) { throw 'Owned migration compilation mode mismatch' }
 $expectedBypass = if ($env:LIWETUN_OWNED_PROBE_MODE -eq 'bypass') { 'ON' } else { 'OFF' }
 if ($expectedBypass -eq 'ON' -and ($expectedOwned -ne 'ON' -or $expectedMigration -ne 'OFF')) { throw 'Local bypass control requires owned probe without migration' }
 if ($cache -notcontains ('LIWETUN_TEST_OWNED_BYPASS:BOOL=' + $expectedBypass)) { throw 'Owned local bypass compilation mode mismatch' }
 $expectedHttps = if ($env:LIWETUN_OWNED_PROBE_MODE -like 'https*') { 'ON' } else { 'OFF' }
-if ($expectedHttps -eq 'ON' -and ($expectedOwned -ne 'ON' -or $expectedBypass -ne 'OFF' -or $expectedMigration -ne 'OFF')) { throw 'Owned HTTPS requires separate owned fixture' }
+if ($expectedHttps -eq 'ON' -and ($expectedOwned -ne 'ON' -or $expectedBypass -ne 'OFF')) { throw 'Owned HTTPS requires separate owned fixture' }
 if ($cache -notcontains ('LIWETUN_TEST_OWNED_HTTPS:BOOL=' + $expectedHttps)) { throw 'Owned HTTPS compilation mode mismatch' }
 $root = Join-Path $env:ProgramFiles ('LiWeTun-CI-' + $env:GITHUB_RUN_ID)
 if (Test-Path $root) { throw 'Fresh isolated installation directory required' }

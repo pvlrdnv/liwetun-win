@@ -12,7 +12,8 @@ sys.path.insert(0, str(ROOT / 'tools/fixtures'))
 from health_tls import HEADERS
 from owned_probe_fixture import validate_report
 
-MODES = ('https', 'https-wrong-nonce', 'https-untrusted', 'https-deadline', 'https-cancel')
+MODES = ('https', 'https-wrong-nonce', 'https-untrusted', 'https-deadline', 'https-cancel',
+         'https-migration', 'https-epoch-change')
 REQUEST_HEADERS = (b'POST /liwetun/health/v1 HTTP/1.1\r\nHost: health.liwetun.invalid\r\n'
                    b'Content-Type: application/octet-stream\r\nContent-Length: 8\r\n'
                    b'Cache-Control: no-store\r\nConnection: close\r\n\r\n')
@@ -91,7 +92,7 @@ class OwnedHttpsSink:
                             self.count('rejected_frames')
                             continue
                         self.count('valid_requests')
-                        if self.mode not in ['https-deadline', 'https-cancel']:
+                        if self.mode not in ['https-deadline', 'https-cancel', 'https-epoch-change']:
                             nonce = packet[-8:]
                             if self.mode == 'https-wrong-nonce':
                                 nonce = bytes(8)

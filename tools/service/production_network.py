@@ -65,13 +65,22 @@ def observe_owned_https(session, endpoint, report_path, mode, diagnostic):
         raise RuntimeError('owned_https_not_qualified')
     elapsed = int((time.monotonic() - started) * 1000)
     common = (path['stage'] == 9 and path['connected'] and path['nonexclusive_rejected']
-              and path['arm_accepted'] and path['disarmed'] and not path['state_epoch_changed']
+              and path['arm_accepted'] and path['disarmed']
               and receiver['empty_controls'] == 1 and not receiver['client_certificate_seen']
               and receiver['rejected_frames'] == receiver['owner_reset'] == 0)
     if stopping:
-        common = common and path['cancelled'] and path['receive_cancelled'] and not path['same_instance_epoch'] and path['snapshot_flags'] == 1
+        common = (common and not path['state_epoch_changed'] and path['cancelled'] and path['receive_cancelled']
+                  and not path['same_instance_epoch'] and path['snapshot_flags'] == 1)
+    elif mode == 'https-epoch-change':
+        common = (common and path['state_epoch_changed'] and not path['same_instance_epoch'] and not path['cancelled']
+                  and not path['receive_cancelled'] and path['snapshot_flags'] in [1, 129, 257, 513]
+                  and path['tx_bytes'] is None and path['rx_bytes'] is None)
+    elif mode == 'https-migration':
+        common = (common and not path['state_epoch_changed'] and path['same_instance_epoch'] and not path['cancelled']
+                  and not path['receive_cancelled'] and not path['receive_timed_out'] and path['snapshot_flags'] == 33
+                  and path['tx_bytes'] is None and path['rx_bytes'] is None)
     else:
-        common = (common and path['same_instance_epoch'] and not path['cancelled'] and not path['receive_cancelled']
+        common = (common and not path['state_epoch_changed'] and path['same_instance_epoch'] and not path['cancelled'] and not path['receive_cancelled']
                   and path['snapshot_flags'] == 15 and path['tx_bytes'] >= tls['wire_tx'] > 0
                   and path['rx_bytes'] >= tls['wire_rx'] > 0)
     if mode == 'https-untrusted':
@@ -82,19 +91,23 @@ def observe_owned_https(session, endpoint, report_path, mode, diagnostic):
         accepted = (tls['handshake_verified'] and tls['request_sent'] and receiver['handshake_complete'] == 1
                     and receiver['handshake_failed'] == 0 and receiver['valid_requests'] == 1
                     and receiver['request_bytes'] == len(REQUEST_HEADERS) + 8)
-        if mode in ['https', 'https-wrong-nonce']:
-            accepted = (accepted and tls['tls_result'] == 0 and tls['http_result'] == (1 if mode == 'https' else 2)
+        if mode in ['https', 'https-wrong-nonce', 'https-migration']:
+            accepted = (accepted and tls['tls_result'] == 0 and tls['http_result'] == (2 if mode == 'https-wrong-nonce' else 1)
                         and receiver['replies_sent'] == 1 and receiver['reply_bytes'] == len(HEADERS) + 8
                         and receiver['invalid_replies'] == int(mode == 'https-wrong-nonce'))
+        elif mode == 'https-epoch-change':
+            accepted = (accepted and tls['tls_result'] in [2, 3, 4, 12, 14] and tls['http_result'] == 7
+                        and receiver['replies_sent'] == receiver['reply_bytes'] == 0)
         else:
             accepted = (accepted and tls['tls_result'] == (1 if stopping else 2) and tls['http_result'] == 7
                         and receiver['replies_sent'] == receiver['reply_bytes'] == 0
                         and path['receive_timed_out'] == (not stopping))
     good = mode == 'https'
+    verified_response = mode in ['https', 'https-migration']
     if not stopping:
         traffic = session.command('traffic')
     unknown = not traffic.get('flags', 0) & 2 and traffic.get('tx') is None and traffic.get('rx') is None
-    if not (common and accepted and tls['qualified'] == good and tls['response_verified'] == good
+    if not (common and accepted and tls['qualified'] == good and tls['response_verified'] == verified_response
             and (good or unknown)):
         raise RuntimeError('owned_https_not_qualified')
     return dict(qualified=True, owned_https_qualified=good, path=path, tls=tls, receiver=receiver,
@@ -485,7 +498,7 @@ def main():
               'client_host_routes_added': False,
               'sdk_held_attachment_ci_guard_enabled': attachment_guard,
               'service_owned_socket_ci_probe_enabled': owned_probe,
-              'owned_migration_ci_enabled': owned_probe and owned_probe_mode == 'migration',
+              'owned_migration_ci_enabled': owned_probe and owned_probe_mode in ['migration', 'https-migration'],
               'owned_bypass_ci_enabled': owned_probe and owned_probe_mode == 'bypass',
               'owned_https_ci_enabled': owned_probe and owned_probe_mode in HTTPS_MODES,
               'owned_probe_mode': owned_probe_mode,
@@ -600,6 +613,9 @@ def main():
             session = None
         elif owned_probe_mode in HTTPS_MODES:
             stage = 'owned_https_exchange'
+            if owned_probe_mode == 'https-epoch-change':
+                result['owned_probe_endpoint_restart'] = restart_during_owned_request(
+                    endpoint, client.parent / 'owned-probe-context.json')
             result['owned_https_observation'] = {}
             result['owned_https'] = observe_owned_https(session, endpoint, client.parent, owned_probe_mode,
                                                         result['owned_https_observation'])
