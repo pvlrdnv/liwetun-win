@@ -8,6 +8,10 @@
 #include <cstdio>
 #include <string>
 #include <utility>
+#ifdef LIWETUN_TEST_OWNED_HTTPS
+#include "../health/http_probe.h"
+#include "../health/schannel_probe.h"
+#endif
 #ifdef LIWETUN_TEST_OWNED_BYPASS
 #include <iphlpapi.h>
 #include <netioapi.h>
@@ -43,6 +47,12 @@ struct Result {
   bool receive_timed_out = false;
   bool state_epoch_changed = false;
   probe::Snapshot sample;
+#ifdef LIWETUN_TEST_OWNED_HTTPS
+  health::TlsResult tls = health::TlsResult::CredentialsUnavailable;
+  std::optional<health::HttpResult> http;
+  bool handshake_verified = false, request_sent = false;
+  uint64_t wire_tx = 0, wire_rx = 0;
+#endif
 };
 enum class IoResult { Complete, Cancelled, Deadline, Failed };
 IoResult Wait(SOCKET socket, bool writing, ULONGLONG deadline, const std::atomic<bool>& cancel) {
@@ -144,7 +154,7 @@ Socket Connect(const health::AttachedTun& attachment, bool exclusive, ULONGLONG 
   return ConnectOnce(attachment, exclusive, deadline, cancel, issue);
 #endif
 }
-IoResult Transfer(SOCKET socket, std::array<char, 24>& bytes, bool writing, ULONGLONG deadline,
+[[maybe_unused]] IoResult Transfer(SOCKET socket, std::array<char, 24>& bytes, bool writing, ULONGLONG deadline,
               const std::atomic<bool>& cancel) {
   size_t offset = 0;
   while (offset < bytes.size()) {
@@ -195,6 +205,59 @@ bool WriteResult(const std::wstring& path, const Result& result) {
   DWORD written = 0;
   return WriteFile(file.get(), output, static_cast<DWORD>(length), &written, nullptr) && written == static_cast<DWORD>(length);
 }
+#ifdef LIWETUN_TEST_OWNED_HTTPS
+IoResult ExchangeHttps(SOCKET socket, uint64_t token, ULONGLONG deadline,
+                      const std::atomic<bool>& cancel, Result& result) {
+  health::SocketIo io(socket, deadline, cancel);
+  Cleanup wire_counts{[&] { result.wire_tx = io.SentBytes(); result.wire_rx = io.ReceivedBytes(); }};
+  health::SchannelProbe tls(io);
+  result.tls = tls.Handshake(L"health.liwetun.invalid");
+  result.handshake_verified = result.tls == health::TlsResult::Ok;
+  if (result.handshake_verified) {
+    health::Nonce nonce{};
+    for (unsigned i = 0; i < nonce.size(); ++i) nonce[i] = static_cast<char>((token >> (56 - 8 * i)) & 255);
+    const auto request = health::FixtureHealthRequest(nonce);
+    if (!request) return IoResult::Failed;
+    result.tls = tls.Send(*request);
+    result.request_sent = result.tls == health::TlsResult::Ok;
+    if (result.request_sent) {
+      health::HttpProbeParser parser(nonce);
+      std::vector<char> plain;
+      for (unsigned record = 0; record < 256; ++record) {
+        result.tls = tls.Receive(plain);
+        if (result.tls != health::TlsResult::Ok || parser.Feed(plain) != health::HttpResult::NeedMore) break;
+      }
+      parser.Finish(); result.http = parser.Result();
+      result.echoed = result.tls == health::TlsResult::Ok && result.http == health::HttpResult::Verified;
+    }
+  }
+  if (io.Control() == health::IoState::Cancelled) result.tls = health::TlsResult::Cancelled;
+  else if (io.Control() == health::IoState::Deadline) result.tls = health::TlsResult::Deadline;
+  if (result.tls != health::TlsResult::Ok) result.echoed = false;
+  if (result.tls == health::TlsResult::Cancelled) return IoResult::Cancelled;
+  if (result.tls == health::TlsResult::Deadline) return IoResult::Deadline;
+  return result.tls == health::TlsResult::Ok ? IoResult::Complete : IoResult::Failed;
+}
+bool WriteHttpsResult(const std::wstring& base, const Result& result) {
+  const auto boolean = [](bool value) { return value ? "true" : "false"; };
+  const std::string http = result.http ? std::to_string(static_cast<uint32_t>(*result.http)) : "null";
+  char output[1024]{};
+  const int length = std::snprintf(output, sizeof(output),
+      "{\"schema_version\":1,\"tls_result\":%u,\"http_result\":%s,\"handshake_verified\":%s,"
+      "\"request_sent\":%s,\"response_verified\":%s,\"wire_tx\":%llu,\"wire_rx\":%llu,"
+      "\"qualified\":%s,\"proves_dns\":false,\"proves_internet\":false,\"release_ready\":false}\n",
+      static_cast<uint32_t>(result.tls), http.c_str(), boolean(result.handshake_verified),
+      boolean(result.request_sent), boolean(result.echoed),
+      static_cast<unsigned long long>(result.wire_tx), static_cast<unsigned long long>(result.wire_rx), boolean(result.qualified));
+  if (length <= 0 || static_cast<size_t>(length) >= sizeof(output)) return false;
+  const auto path = base.substr(0, base.find_last_of(L"\\/") + 1) + L"owned-https-context.json";
+  Handle file(CreateFileW(path.c_str(), GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_NEW,
+      FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OPEN_REPARSE_POINT, nullptr));
+  DWORD written = 0;
+  return file && file.get() != INVALID_HANDLE_VALUE &&
+      WriteFile(file.get(), output, static_cast<DWORD>(length), &written, nullptr) && written == static_cast<DWORD>(length);
+}
+#endif
 } // namespace
 
 void Backend::CancelOwnedProbe() noexcept {
@@ -261,6 +324,13 @@ void Backend::RunOwnedProbe() noexcept {
           static_cast<uint32_t>(probe::ArmResult::Armed);
       if (!result.armed) throw 1;
     }
+#ifdef LIWETUN_TEST_OWNED_HTTPS
+    result.stage = 6;
+    const auto received = ExchangeHttps(socket.value, request.token, deadline, owned_cancel_, result);
+    result.stage = 7;
+    result.receive_cancelled = received == IoResult::Cancelled;
+    result.receive_timed_out = received == IoResult::Deadline;
+#else
     std::array<char, 24> payload{}, response{}, expected{};
     constexpr char request_prefix[] = "liwetun-path-v1:";
     constexpr char reply_prefix[] = "liwetun-path-ok:";
@@ -274,6 +344,7 @@ void Backend::RunOwnedProbe() noexcept {
     result.receive_cancelled = received == IoResult::Cancelled;
     result.receive_timed_out = received == IoResult::Deadline;
     result.echoed = received == IoResult::Complete && response == expected;
+#endif
     // Observe actual state transitions following a failed receive, without
     // changing SDK state or holding its lifetime lock over the wait. The bound
     // leaves margin inside the existing five-second arm TTL after a 4 s I/O.
@@ -308,6 +379,10 @@ void Backend::RunOwnedProbe() noexcept {
     }
     result.qualified = result.connected && result.nonexclusive_rejected && result.armed && result.echoed &&
         result.same_epoch && result.sample.flags == 15 && result.sample.tx >= 24 && result.sample.rx >= 24;
+#ifdef LIWETUN_TEST_OWNED_HTTPS
+    result.qualified = result.qualified && GetTickCount64() < deadline && result.wire_tx > 0 && result.wire_rx > 0 &&
+        result.sample.tx >= result.wire_tx && result.sample.rx >= result.wire_rx;
+#endif
     result.stage = 9;
   } catch (...) { result.qualified = false; }
   try {
@@ -318,7 +393,10 @@ void Backend::RunOwnedProbe() noexcept {
     }
     result.cancelled = owned_cancel_.load();
     if (result.cancelled) { result.qualified = false; result.sample = probe::Snapshot{}; }
-    const bool written = WriteResult(owned_report_, result);
+    bool written = WriteResult(owned_report_, result);
+#ifdef LIWETUN_TEST_OWNED_HTTPS
+    written = WriteHttpsResult(owned_report_, result) && written;
+#endif
     std::lock_guard lock(owned_publish_mutex_);
     owned_instance_ = instance; owned_epoch_ = epoch;
     owned_qualified_ = written && result.qualified && !owned_cancel_.load();

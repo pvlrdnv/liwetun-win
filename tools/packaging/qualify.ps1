@@ -43,7 +43,7 @@ function Status([string]$Executable) {
 $before = Snapshot
 if ($before.adapter) { throw 'Preexisting task adapter' }
 try {
-    foreach ($flag in @('LIWETUN_TEST_NO_GLOBAL_ROUTES', 'LIWETUN_TEST_TUN_NETWORK', 'LIWETUN_TEST_ATTACHED_TUN', 'LIWETUN_TEST_OWNED_PROBE', 'LIWETUN_TEST_OWNED_MIGRATION', 'LIWETUN_TEST_OWNED_BYPASS')) {
+    foreach ($flag in @('LIWETUN_TEST_NO_GLOBAL_ROUTES', 'LIWETUN_TEST_TUN_NETWORK', 'LIWETUN_TEST_ATTACHED_TUN', 'LIWETUN_TEST_OWNED_PROBE', 'LIWETUN_TEST_OWNED_MIGRATION', 'LIWETUN_TEST_OWNED_BYPASS', 'LIWETUN_TEST_OWNED_HTTPS')) {
         if ((Get-Content build/package-service/CMakeCache.txt) -notcontains ($flag + ':BOOL=OFF')) { throw 'Unexpected test network mode in package service' }
     }
     $provenance = Get-Content build/gui-provenance/gui-runtime-provenance.json -Raw | ConvertFrom-Json
@@ -200,7 +200,7 @@ try {
     $files = @(Get-ChildItem $payload -File -Recurse | ForEach-Object {
         @{file=[IO.Path]::GetRelativePath($payloadRoot,$_.FullName).Replace('\','/'); sha256=(Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}
     })
-    @{gui_source=$provenance.source_commit; sdk_source_run=$pin.source_run; service_source=$env:GITHUB_SHA; signing='ephemeral_ci_only'; release_ready=$false; network_test_modes_enabled=$false; attachment_context_ci_guard_enabled=$false; owned_socket_ci_probe_enabled=$false; owned_migration_ci_enabled=$false; owned_bypass_ci_enabled=$false; tunnel_started=$false; files=$files} |
+    @{gui_source=$provenance.source_commit; sdk_source_run=$pin.source_run; service_source=$env:GITHUB_SHA; signing='ephemeral_ci_only'; release_ready=$false; network_test_modes_enabled=$false; attachment_context_ci_guard_enabled=$false; owned_socket_ci_probe_enabled=$false; owned_migration_ci_enabled=$false; owned_bypass_ci_enabled=$false; owned_https_ci_enabled=$false; tunnel_started=$false; files=$files} |
         ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $evidence 'payload-manifest.json')
     if ($Installer) {
         $stage = 'installer_qualification'

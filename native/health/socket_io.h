@@ -15,6 +15,8 @@ class SocketIo {
   static constexpr size_t kWireLimit = 262144;
   SocketIo(SOCKET socket, ULONGLONG deadline, const std::atomic<bool>& cancel)
       : socket_(socket), deadline_(deadline), cancel_(cancel) {}
+  size_t SentBytes() const { return sent_; }
+  size_t ReceivedBytes() const { return received_; }
   IoState Control() const {
     if (GetTickCount64() >= deadline_) return IoState::Deadline;
     return cancel_.load() ? IoState::Cancelled : IoState::Ok;

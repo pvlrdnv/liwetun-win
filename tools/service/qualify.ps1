@@ -21,6 +21,9 @@ if ($cache -notcontains ('LIWETUN_TEST_OWNED_MIGRATION:BOOL=' + $expectedMigrati
 $expectedBypass = if ($env:LIWETUN_OWNED_PROBE_MODE -eq 'bypass') { 'ON' } else { 'OFF' }
 if ($expectedBypass -eq 'ON' -and ($expectedOwned -ne 'ON' -or $expectedMigration -ne 'OFF')) { throw 'Local bypass control requires owned probe without migration' }
 if ($cache -notcontains ('LIWETUN_TEST_OWNED_BYPASS:BOOL=' + $expectedBypass)) { throw 'Owned local bypass compilation mode mismatch' }
+$expectedHttps = if ($env:LIWETUN_OWNED_PROBE_MODE -like 'https*') { 'ON' } else { 'OFF' }
+if ($expectedHttps -eq 'ON' -and ($expectedOwned -ne 'ON' -or $expectedBypass -ne 'OFF' -or $expectedMigration -ne 'OFF')) { throw 'Owned HTTPS requires separate owned fixture' }
+if ($cache -notcontains ('LIWETUN_TEST_OWNED_HTTPS:BOOL=' + $expectedHttps)) { throw 'Owned HTTPS compilation mode mismatch' }
 $root = Join-Path $env:ProgramFiles ('LiWeTun-CI-' + $env:GITHUB_RUN_ID)
 if (Test-Path $root) { throw 'Fresh isolated installation directory required' }
 $service = Join-Path $root 'liwetun_service.exe'
@@ -206,7 +209,7 @@ try {
     $checks.Add('service_uninstalled')
     if ((DnsSnapshot) -ne $dnsBefore -or (DefaultRoutes) -ne $routesBefore) { throw 'DNS or default routes were not restored after CI fixture' }
     $checks.Add('dns_and_default_routes_unchanged')
-    $result = @{checks=@($checks); core_runtime_ready=$runtimeReady; signed_service_ipc='verified'; driver_cycle=$driver; sdk_lifecycle=$lifecycle; test_mode_no_global_routes=(!$Network -and !$ProductionLifecycle); test_mode_tun_network=($Network -and !$ProductionTraffic); test_mode_attached_tun=($expectedAttachment -eq 'ON'); test_mode_owned_probe=($expectedOwned -eq 'ON'); test_mode_owned_migration=($expectedMigration -eq 'ON'); test_mode_owned_bypass=($expectedBypass -eq 'ON'); production_refused_endpoint_lifecycle=[bool]$ProductionLifecycle; production_single_traffic_fixture=[bool]$ProductionTraffic; dns_and_default_routes_unchanged=$true; release_ready=$false}
+    $result = @{checks=@($checks); core_runtime_ready=$runtimeReady; signed_service_ipc='verified'; driver_cycle=$driver; sdk_lifecycle=$lifecycle; test_mode_no_global_routes=(!$Network -and !$ProductionLifecycle); test_mode_tun_network=($Network -and !$ProductionTraffic); test_mode_attached_tun=($expectedAttachment -eq 'ON'); test_mode_owned_probe=($expectedOwned -eq 'ON'); test_mode_owned_migration=($expectedMigration -eq 'ON'); test_mode_owned_bypass=($expectedBypass -eq 'ON'); test_mode_owned_https=($expectedHttps -eq 'ON'); production_refused_endpoint_lifecycle=[bool]$ProductionLifecycle; production_single_traffic_fixture=[bool]$ProductionTraffic; dns_and_default_routes_unchanged=$true; release_ready=$false}
     New-Item -ItemType Directory -Force build/service-evidence | Out-Null
     $result | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 build/service-evidence/qualification.json
 } finally {
@@ -214,6 +217,9 @@ try {
         if ($env:OWNED_PROBE -eq 'true' -and (Test-Path (Join-Path $root 'owned-probe-context.json'))) {
             New-Item -ItemType Directory -Force build/service-evidence | Out-Null
             Copy-Item (Join-Path $root 'owned-probe-context.json') build/service-evidence/owned-probe-context.json
+            if ($expectedHttps -eq 'ON' -and (Test-Path (Join-Path $root 'owned-https-context.json'))) {
+                Copy-Item (Join-Path $root 'owned-https-context.json') build/service-evidence/owned-https-context.json
+            }
         }
     } finally {
         try { Uninstall } finally {

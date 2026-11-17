@@ -267,6 +267,25 @@ UI capability admission. DNS correlation remains a separate guarded SDK task.
 Release certificate/revocation bootstrap policy, adapter ownership, trusted
 signing/distribution and separate desktop Windows 10/11 acceptance remain open.
 
+Implemented a seventh default-OFF CI mode `LIWETUN_TEST_OWNED_HTTPS` requiring
+the owned socket/attachment profiles and excluding migration/local-bypass modes.
+It performs the qualified reserved-host TLS/HTTP exchange after arm on the exact
+fresh exclusive descriptor, then requires the same instance/epoch, deadline,
+matching SDK endpoint TX/RX covering the actual TLS wire bytes, and disarm before
+close. A separate bounded typed HTTPS receipt is produced; no public command,
+GUI capability or production endpoint is enabled. Raw-path report v4 is retained
+and continues to make no DNS/Internet/HTTPS claim by itself.
+
+Disposable fixtures provide good HTTPS, wrong nonce, untrusted certificate,
+missing-response deadline and Stop during receive. The good leaf is issued by
+a synthetic CA with a cached fresh CRL; only CI adds/removes those exact owned
+trust objects. All seven test flags must be OFF in the ordinary installer;
+its SDK/GUI pins remain unchanged. **44 local Python checks PASS**, including
+closed-report tampering, TLS failure/path/epoch/disarm mismatch and a real
+loopback TLS receiver after the empty nonexclusive control. Python/YAML and diff
+checks PASS. Actual Windows service compilation, SDK-owned HTTPS/path controls
+and seven-flag-OFF packaging are pending. No owner-device network/trust changes.
+
 ## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the

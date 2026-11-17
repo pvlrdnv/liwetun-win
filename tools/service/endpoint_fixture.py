@@ -18,6 +18,7 @@ import re
 from endpoint_forwarder import EndpointForwarder, local_socket
 from tx_only_fixture import TxOnlySink
 from owned_probe_fixture import OwnedProbeSink
+from owned_https_fixture import OwnedHttpsSink, MODES as HTTPS_MODES
 from physical_forwarder import SYNTHETIC_IPV6, SYNTHETIC_IPV6_PAYLOAD, SYNTHETIC_IPV6_UDP_PORT
 
 
@@ -152,7 +153,7 @@ def main():
         if type(owned_probe) is not bool:
             raise RuntimeError('invalid_owned_probe_mode')
         owned_probe_mode = inputs.get('owned_probe_mode', 'echo')
-        if owned_probe_mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce', 'migration', 'epoch-change', 'bypass'] or (not owned_probe and owned_probe_mode != 'echo'):
+        if owned_probe_mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce', 'migration', 'epoch-change', 'bypass', *HTTPS_MODES] or (not owned_probe and owned_probe_mode != 'echo'):
             raise RuntimeError('invalid_owned_probe_mode')
         synthetic_ipv6 = inputs.get('synthetic_ipv6', False)
         if type(synthetic_ipv6) is not bool:
@@ -177,7 +178,10 @@ def main():
     if tx_only:
         tx_sink = TxOnlySink()
     if owned_probe:
-        owned_sink = OwnedProbeSink(mode=owned_probe_mode)
+        if owned_probe_mode in HTTPS_MODES:
+            owned_sink = OwnedHttpsSink(directory / 'owned-https', owned_probe_mode)
+        else:
+            owned_sink = OwnedProbeSink(mode=owned_probe_mode)
     stop = threading.Event()
     counters = {'requests': 0, 'request_bytes': 0, 'synthetic_answers': 0, 'synthetic_aaaa_answers': 0,
                 'other_answers': 0, 'non_questions': 0}

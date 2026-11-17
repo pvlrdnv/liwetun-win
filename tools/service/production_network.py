@@ -18,6 +18,86 @@ import time
 
 from network import Child, ROOT, ps, snapshot, totals, tun, wait_clean
 from physical_forwarder import SYNTHETIC_IPV6, SYNTHETIC_IPV6_PAYLOAD, SYNTHETIC_IPV6_UDP_PORT
+from owned_https_fixture import MODES as HTTPS_MODES
+
+
+def observe_owned_https(session, endpoint, report_path, mode, diagnostic):
+    from owned_https_fixture import read_receipt, validate_https_report, REQUEST_HEADERS, HEADERS
+    from owned_probe_fixture import validate_report
+    path_file = report_path / 'owned-probe-context.json'
+    tls_file = report_path / 'owned-https-context.json'
+    started = time.monotonic()
+    stopping = mode == 'https-cancel'
+    if stopping:
+        while time.monotonic() - started < 4:
+            receiver = endpoint.command('stats')['owned_probe_sink']
+            if path_file.exists():
+                raise RuntimeError('owned_https_not_waiting')
+            if receiver['valid_requests'] == 1 and receiver['waiting_for_owner_close'] == 1:
+                break
+            time.sleep(.025)
+        else:
+            raise RuntimeError('owned_https_not_waiting')
+        traffic = session.command('traffic')
+        if traffic.get('flags', 0) & 2 or traffic.get('tx') is not None or path_file.exists():
+            raise RuntimeError('owned_https_not_waiting')
+        started = time.monotonic()
+        stop = session.command('stop')
+        if stop.get('code') != 0:
+            raise RuntimeError('owned_https_not_qualified')
+    while time.monotonic() - started < (1.5 if stopping else 8):
+        receiver = endpoint.command('stats')['owned_probe_sink']
+        diagnostic['receiver'] = receiver
+        if path_file.exists() and tls_file.exists():
+            path = read_receipt(path_file)
+            tls = read_receipt(tls_file)
+            if path is None or tls is None:
+                time.sleep(.025)
+                continue
+            path = validate_report(path)
+            tls = validate_https_report(tls, path)
+            diagnostic.update(path=path, tls=tls)
+            if mode == 'https-untrusted' or (receiver['owner_closed'] == 1 and receiver['waiting_for_owner_close'] == 0):
+                break
+        time.sleep(.025)
+    else:
+        raise RuntimeError('owned_https_not_qualified')
+    elapsed = int((time.monotonic() - started) * 1000)
+    common = (path['stage'] == 9 and path['connected'] and path['nonexclusive_rejected']
+              and path['arm_accepted'] and path['disarmed'] and not path['state_epoch_changed']
+              and receiver['empty_controls'] == 1 and not receiver['client_certificate_seen']
+              and receiver['rejected_frames'] == receiver['owner_reset'] == 0)
+    if stopping:
+        common = common and path['cancelled'] and path['receive_cancelled'] and not path['same_instance_epoch'] and path['snapshot_flags'] == 1
+    else:
+        common = (common and path['same_instance_epoch'] and not path['cancelled'] and not path['receive_cancelled']
+                  and path['snapshot_flags'] == 15 and path['tx_bytes'] >= tls['wire_tx'] > 0
+                  and path['rx_bytes'] >= tls['wire_rx'] > 0)
+    if mode == 'https-untrusted':
+        accepted = (tls['tls_result'] == 8 and tls['http_result'] is None and not tls['handshake_verified']
+                    and not tls['request_sent'] and receiver['handshake_failed'] == 1
+                    and receiver['valid_requests'] == receiver['request_bytes'] == receiver['replies_sent'] == 0)
+    else:
+        accepted = (tls['handshake_verified'] and tls['request_sent'] and receiver['handshake_complete'] == 1
+                    and receiver['handshake_failed'] == 0 and receiver['valid_requests'] == 1
+                    and receiver['request_bytes'] == len(REQUEST_HEADERS) + 8)
+        if mode in ['https', 'https-wrong-nonce']:
+            accepted = (accepted and tls['tls_result'] == 0 and tls['http_result'] == (1 if mode == 'https' else 2)
+                        and receiver['replies_sent'] == 1 and receiver['reply_bytes'] == len(HEADERS) + 8
+                        and receiver['invalid_replies'] == int(mode == 'https-wrong-nonce'))
+        else:
+            accepted = (accepted and tls['tls_result'] == (1 if stopping else 2) and tls['http_result'] == 7
+                        and receiver['replies_sent'] == receiver['reply_bytes'] == 0
+                        and path['receive_timed_out'] == (not stopping))
+    good = mode == 'https'
+    traffic = session.command('traffic')
+    unknown = not traffic.get('flags', 0) & 2 and traffic.get('tx') is None and traffic.get('rx') is None
+    if not (common and accepted and tls['qualified'] == good and tls['response_verified'] == good
+            and (good or unknown)):
+        raise RuntimeError('owned_https_not_qualified')
+    return dict(qualified=True, owned_https_qualified=good, path=path, tls=tls, receiver=receiver,
+                elapsed_ms=elapsed, unknown_after_negative=unknown if not good else None,
+                stop_during_receive=stopping, proves_dns=False, proves_internet=False, release_ready=False)
 
 
 def owned_wfp(client):
@@ -348,13 +428,15 @@ def main():
     attachment_guard = os.environ.get('ATTACHED_TUN') == 'true'
     owned_probe = os.environ.get('OWNED_PROBE') == 'true'
     owned_probe_mode = os.environ.get('LIWETUN_OWNED_PROBE_MODE', 'echo')
-    if owned_probe_mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce', 'migration', 'epoch-change', 'bypass'] or (owned_probe_mode != 'echo' and not owned_probe):
+    if owned_probe_mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce', 'migration', 'epoch-change', 'bypass', *HTTPS_MODES] or (owned_probe_mode != 'echo' and not owned_probe):
         raise RuntimeError('invalid_owned_probe_mode')
     cancel_probe = owned_probe and owned_probe_mode == 'cancel'
     negative_probe = owned_probe and owned_probe_mode != 'echo'
     negative_key = {'cancel': 'owned_probe_cancellation', 'deadline': 'owned_probe_deadline',
                     'wrong-nonce': 'owned_probe_wrong_nonce', 'migration': 'owned_probe_migration',
                     'epoch-change': 'owned_probe_epoch_change', 'bypass': 'owned_probe_bypass'}.get(owned_probe_mode)
+    if owned_probe_mode in HTTPS_MODES:
+        negative_key = 'owned_https'
     if owned_probe and not attachment_guard:
         raise RuntimeError('invalid_owned_probe_mode')
     if attachment_guard and not traffic_required:
@@ -402,6 +484,7 @@ def main():
               'service_owned_socket_ci_probe_enabled': owned_probe,
               'owned_migration_ci_enabled': owned_probe and owned_probe_mode == 'migration',
               'owned_bypass_ci_enabled': owned_probe and owned_probe_mode == 'bypass',
+              'owned_https_ci_enabled': owned_probe and owned_probe_mode in HTTPS_MODES,
               'owned_probe_mode': owned_probe_mode,
               'attachment_context_proves_endpoint_traversal': False,
               'server_https_egress_bound_physical': True,
@@ -420,8 +503,15 @@ def main():
         raise RuntimeError('preexisting_adapter')
     stage = 'fixture_preparation'
     endpoint = forwarder = session = watchdog = wfp_watch = traffic_watch = local_receiver = None
+    https_roots = None
     restored = False
     try:
+        if owned_probe_mode in HTTPS_MODES:
+            from health_tls import generate, FixtureRoots
+            generate(directory / 'owned-https')
+            https_roots = FixtureRoots()
+            https_roots.add(directory / 'owned-https/crl-ca.der')
+            https_roots.add_crl(directory / 'owned-https/fixture.crl.der')
         physical = ps("""
         $route = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -AddressFamily IPv4 | Sort-Object RouteMetric | Select-Object -First 1
         $address = Get-NetIPAddress -InterfaceIndex $route.InterfaceIndex -AddressFamily IPv4 | Where-Object AddressState -eq 'Preferred' | Select-Object -First 1
@@ -505,6 +595,11 @@ def main():
                 session, endpoint, client.parent / 'owned-probe-context.json')
             session.close()
             session = None
+        elif owned_probe_mode in HTTPS_MODES:
+            stage = 'owned_https_exchange'
+            result['owned_https_observation'] = {}
+            result['owned_https'] = observe_owned_https(session, endpoint, client.parent, owned_probe_mode,
+                                                        result['owned_https_observation'])
         elif negative_probe:
             stage = {'deadline': 'owned_request_receive_deadline', 'wrong-nonce': 'owned_request_wrong_nonce',
                      'migration': 'owned_request_migration', 'epoch-change': 'owned_request_epoch_change',
@@ -837,6 +932,7 @@ def main():
                    'fixture_child_closed', 'lease_client_already_exited', 'lease_client_not_forced',
                    'service_crash_not_observed'}
         reasons.update({'owned_probe_not_waiting', 'owned_probe_cancellation_not_qualified',
+                        'owned_https_not_waiting', 'owned_https_not_qualified', 'invalid_owned_https_report',
                         'owned_probe_deadline_not_qualified', 'owned_probe_wrong_nonce_not_qualified',
                         'owned_probe_migration_not_qualified',
                         'owned_probe_epoch_change_not_qualified', 'endpoint_restart_failed',
@@ -887,6 +983,12 @@ def main():
             wfp_watch.close('quit')
         result['routes_dns_adapter_restored'] = wait_clean(baseline)
         result['passed'] = result['passed'] and result['routes_dns_adapter_restored']
+        if owned_probe_mode in HTTPS_MODES:
+            try:
+                result['owned_https_fixture_roots_removed'] = https_roots.close() if https_roots else False
+            except Exception:
+                result['owned_https_fixture_roots_removed'] = False
+            result['passed'] = result['passed'] and result['owned_https_fixture_roots_removed']
         report.write_text(json.dumps(result, indent=2) + '\n')
     return 0 if result['passed'] else 2
 
