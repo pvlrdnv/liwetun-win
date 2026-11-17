@@ -184,4 +184,9 @@ failed recovery evidence: HTTPS returned on the third observation, DNS did not;
 Stop still restored routes/DNS/adapter/WFP without watchdog action. The original
 report remains archived. The follow-up adds post-probe service state, elapsed
 time and a longer bounded observation window; no SDK/product recovery changes.
-Follow-up Windows execution remains pending.
+Follow-up H3 run 44030366734 **PASS**: the fifth observation at 44,812 ms has
+HTTPS + exact synthetic DNS marker growth, 82 DNS H3 bytes and post-probe state
+ready, followed by complete network/WFP restoration without watchdog. Earlier
+HTTPS-only successes with zero endpoint bytes remain explicitly unqualified.
+Independent H3 confirmation 44030999383 **PASS**, with full network/WFP
+restoration and no watchdog action. No SDK or service policy change.

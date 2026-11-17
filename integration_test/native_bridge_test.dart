@@ -483,6 +483,7 @@ void main() {
       expect((await storage.load()).code, StorageCode.missing);
       final controller = AppController();
       var owned = false;
+      var trayAvailable = false;
       try {
         await controller.initializeStorage();
         await controller.initializeDesktop();
@@ -491,7 +492,8 @@ void main() {
         expect(initial?['available'], controller.desktopAvailable);
         expect(initial?['closeToTray'], false);
         expect(initial?['visible'], true);
-        if (controller.desktopAvailable) {
+        trayAvailable = controller.desktopAvailable;
+        if (trayAvailable) {
           await controller.setCloseToTray(true);
           owned = true;
           for (
@@ -548,6 +550,19 @@ void main() {
         }
         expect((await storage.load()).code, StorageCode.missing);
       }
+      final workspace = Platform.environment['GITHUB_WORKSPACE']!;
+      await File('$workspace/build/desktop-tray-evidence.json').writeAsString(
+        jsonEncode({
+          'source_commit': Platform.environment['GITHUB_SHA'],
+          'passed': true,
+          'available': trayAvailable,
+          'hide_restore_tested': trayAvailable,
+          'dpapi_tray_preference_tested': trayAvailable,
+          'unavailable_visible_fallback_tested': !trayAvailable,
+          'desktop_owner_acceptance': false,
+          'tunnel_started': false,
+        }),
+      );
     },
   );
 }

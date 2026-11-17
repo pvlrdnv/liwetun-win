@@ -1,7 +1,8 @@
 # Desktop tray lifecycle
 
-Status: implemented; local analyze and 220 Dart tests PASS. Actual Windows
-compilation/channel qualification pending. Windows 10/11 desktop acceptance is
+Status: implemented; local analyze and 220 Dart tests PASS. Windows compilation + 6 actual desktop channel tests passed (44030695768).
+The first report does not identify which conditional branch ran; a follow-up
+adds explicit availability and per-branch evidence. Windows 10/11 desktop acceptance is
 separate, including taskbar menu keyboard interaction, DPI and Explorer restart.
 
 The native runner owns one notification icon using the existing LiWeTun resource.

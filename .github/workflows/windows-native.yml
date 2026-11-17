@@ -87,6 +87,9 @@ jobs:
           if ($engine -ne $noticePin.flutter_engine_commit) { throw 'Flutter engine revision mismatch' }
           python tools/sdk/client_notices.py --bundle build/windows/x64/runner/Release/data/flutter_assets/NOTICES.Z --engine-license (Join-Path $flutterDir 'bin/cache/pkg/sky_engine/LICENSE') --report build/gui-notice-evidence.json
           if ($LASTEXITCODE -ne 0) { throw 'Packaged native/engine notice bytes missing or changed' }
+          $tray = Get-Content build/desktop-tray-evidence.json -Raw | ConvertFrom-Json
+          if ($tray.source_commit -ne '${{ github.sha }}' -or $tray.passed -ne $true -or $tray.desktop_owner_acceptance -ne $false -or $tray.tunnel_started -ne $false -or $tray.available -isnot [bool]) { throw 'Desktop capability receipt missing or invalid' }
+          if ($tray.hide_restore_tested -ne $tray.available -or $tray.dpapi_tray_preference_tested -ne $tray.available -or $tray.unavailable_visible_fallback_tested -ne (!$tray.available)) { throw 'Desktop conditional evidence mismatch' }
           $report = [ordered]@{
             source_commit = '${{ github.sha }}'
             decoder_revision = '48f424c0874eb6f6374ee84492c5cd55aa04dca9'
@@ -94,7 +97,11 @@ jobs:
             executable_sha256 = (Get-FileHash -Algorithm SHA256 $exe).Hash.ToLowerInvariant()
             native_import = 'verified'
             protected_storage_channel = 'verified'
-            desktop_tray_contract = 'capability_gated_hide_restore_and_dpapi'
+            desktop_tray_contract = 'conditional_capability_guard_verified'
+            desktop_tray_available = $tray.available
+            desktop_tray_hide_restore_tested = $tray.hide_restore_tested
+            desktop_tray_preference_tested = $tray.dpapi_tray_preference_tested
+            desktop_tray_visible_fallback_tested = $tray.unavailable_visible_fallback_tested
             desktop_tray_owner_acceptance = $false
             profile_restore_without_autoconnect = 'verified'
             subscription_cache_revoke_replay_restore = 'verified_without_network'

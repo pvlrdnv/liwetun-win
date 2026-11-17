@@ -85,8 +85,10 @@ persists the setting while decoding v1/v2 as false and preserving subscription
 revision/selection/deadlines. Default window close still exits. Exit releases
 the service lease; hiding retains it. No startup/autoconnect. **220 local Dart
 tests + analyze PASS**, including preference/cache failure and restoration.
-Native Windows build and a sixth capability-gated real tray/DPAPI test are
-prepared; qualification pending. [Behavior and limits](DESKTOP_TRAY.md).
+Native Windows build and sixth capability-gated real tray/DPAPI test **PASS**
+(44030695768): 220 Dart + 6 Rust + 6 desktop tests. This initial report did not
+record which conditional tray branch ran; follow-up adds explicit availability,
+hide/restore/DPAPI versus unavailable fallback evidence. Desktop acceptance open. [Behavior and limits](DESKTOP_TRAY.md).
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
@@ -94,7 +96,7 @@ do not qualify those systems. New SDK artifacts retain for 14 days; GUI and
 repaired diagnostic endpoint artifacts expire 2026-11-30. Recheck availability
 and preserve all source-run/digest guards before reuse.
 
-A disposable-CI endpoint-restart recovery case is prepared (not yet qualified).
+Endpoint-restart recovery passed bounded disposable Windows CI for H2 and H3.
 Only the owned diagnostic server is stopped for two seconds; the authenticated
 client lease and SDK instance remain alive. Success requires fresh HTTPS and
 exact synthetic DNS replies from TUN sources over the selected H2/H3 transport,
@@ -105,7 +107,11 @@ reports are archived. Follow-up observes post-probe state and elapsed time over
 up to five attempts starting within 75 seconds; a 120-second independent watchdog
 applies only to this case. No desktop
 sleep/Wi-Fi-switch claim and no application recovery changes. Four oracle guards
-cover false positives; all 15 Python fixture tests PASS. Follow-up Windows execution pending.
+cover false positives; all 15 Python fixture tests PASS. Follow-up H3 **PASS** (44030366734): fifth observation at 44,812 ms proves
+HTTPS + exact synthetic DNS/82 bytes over H3, post-probe state ready, then full
+network/WFP restoration without watchdog. Independent H3 confirmation 44030999383 **PASS**, including full restoration.
+Earlier observations did not prove tunnel traffic even when HTTPS returned.
+No product/SDK recovery policy change.
 
 ## Latest checkpoint — six basic ordinary IPv4 CI cases PASS
 
