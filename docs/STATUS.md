@@ -331,9 +331,10 @@ contains booleans/enums/nullable counters, no socket/interface/flow IDs or tuple
 No service command or GUI capability is added. Only this CI mode gates ready
 counter observations on successful owned-path evidence; the normal product path
 is unchanged. The local server/allowlist/schema guards **27 Python tests PASS**;
-YAML/Python/diff checks PASS. Actual H2/H3 producer, cancellation behavior and
-four-flag package exclusion are pending on Windows. This is raw synthetic TCP
-path qualification, not an application HTTPS/DNS/Internet check or release.
+YAML/Python/diff checks PASS. Initial live H2/H3 producer and four-flag package
+exclusion were then qualified as recorded below; cancellation has its separate
+follow-up. This is raw synthetic TCP path qualification, not an application
+HTTPS/DNS/Internet check or release.
 
 Focused service-owned raw TCP path **PASS** on disposable Server 2022 CI,
 source `8056b95`: [H2 44113354047](https://github.com/pvlrdnv/liwetun-win/actions/runs/44113354047)
@@ -372,6 +373,21 @@ held over join. The cancellation oracle now requires disarm too; 29 local Python
 tests remain PASS. Earlier dispatched runs retain the weaker criterion and must
 not be used to qualify this strengthened contract. Live bypass/migration negative
 controls and product health integration remain open.
+
+Historical cancellation source `8af8a99`: H2 44115411641 passed its earlier
+criterion (16 ms Stop ACK / 172 ms receipt and remote EOF), but explicitly
+reported `disarmed=false`; H3 44115410946 failed the fixture's two-second pending
+request wait. Both final network cleanups passed without watchdog action.
+[Both original reports](evidence/owned-probe-cancel-pre-fix-44115410946.json).
+Neither qualifies the strengthened cancellation/disarm contract. After the
+teardown fix, the CI-only socket worker now also reports a closed
+`receive_cancelled` boolean from a typed I/O outcome, distinguishing cancellation
+from deadline/failure. Bootstrap gets its own bounded 10 s wait; the controller
+still requires no completed receipt before Stop, native receive cancellation,
+explicit disarm, unknown counters, remote EOF, and Stop-to-completion below 1.5 s.
+This avoids treating slow H3 connection preparation as a failed Stop or counting
+a deadline expiry as cancellation. **29 Python tests PASS**; updated Windows
+positive and cancellation qualification remains pending.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests

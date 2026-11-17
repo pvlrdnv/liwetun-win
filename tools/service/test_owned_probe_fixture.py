@@ -28,7 +28,7 @@ class OwnedProbeFixtureTests(unittest.TestCase):
     def test_cancel_oracle_rejects_timeout_success_echo_or_unclosed_socket(self):
         value = dict(schema_version=1, stage=9, connected=True, nonexclusive_rejected=True,
                      arm_accepted=True, echo_verified=False, same_instance_epoch=False, disarmed=True,
-                     cancelled=True, snapshot_flags=1, tx_bytes=None, rx_bytes=None, qualified=False,
+                     cancelled=True, receive_cancelled=True, snapshot_flags=1, tx_bytes=None, rx_bytes=None, qualified=False,
                      proves_dns=False, proves_https=False, proves_internet=False,
                      identifiers_exported=False, release_ready=False)
         receiver = dict(valid_requests=1, request_bytes=24, replies_sent=0, reply_bytes=0,
@@ -36,7 +36,7 @@ class OwnedProbeFixtureTests(unittest.TestCase):
         validate_cancel_report(value, receiver)
         for field, replacement in [('cancelled', False), ('echo_verified', True), ('arm_accepted', False),
                                    ('snapshot_flags', 7), ('tx_bytes', 24), ('same_instance_epoch', True),
-                                   ('disarmed', False)]:
+                                   ('disarmed', False), ('receive_cancelled', False)]:
             with self.assertRaises(ValueError):
                 validate_cancel_report(dict(value, **{field: replacement}), receiver)
         for field, replacement in [('owner_closed', 0), ('waiting_for_owner_close', 1),
@@ -90,7 +90,7 @@ class OwnedProbeFixtureTests(unittest.TestCase):
 
     def test_success_oracle_rejects_bypass_expiry_unknown_epoch_and_unverified_response(self):
         value = dict(schema_version=1, stage=9, connected=True, nonexclusive_rejected=True,
-                     arm_accepted=True, echo_verified=True, same_instance_epoch=True, disarmed=True, cancelled=False,
+                     arm_accepted=True, echo_verified=True, same_instance_epoch=True, disarmed=True, cancelled=False, receive_cancelled=False,
                      snapshot_flags=15, tx_bytes=24, rx_bytes=24, qualified=True, proves_dns=False,
                      proves_https=False, proves_internet=False, identifiers_exported=False, release_ready=False)
         self.assertTrue(validate_report(value)['qualified'])

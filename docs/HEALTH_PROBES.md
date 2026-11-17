@@ -323,9 +323,10 @@ using a synthetic interface context, not an SDK TUN. Five new source mutation
 guards and pinned-source preparation PASS locally. Updated race/family/socket tests,
 full SDK and all three null-export ABI checks PASS (44092512284). Thirteen emitted
 source/header digests and both downloaded DLL hashes were verified; the separate
-`runtime-probe.json` records build-only qualification, no consumer promotion. No live SDK-owned
-request/path, application DNS/HTTPS, desktop or release qualification yet; no
-service command or GUI health capability added. Socket address-entry lookup uses
+the initial SDK receipt records build-only qualification, no consumer promotion.
+Later focused live path evidence is recorded below and in `runtime-probe.json`.
+Application DNS/HTTPS, desktop and release qualification remain open; no service
+command or GUI health capability is added. Socket address-entry lookup uses
 [the read-only Microsoft API](https://learn.microsoft.com/en-us/windows/win32/api/netioapi/nf-netioapi-getunicastipaddressentry).
 
 

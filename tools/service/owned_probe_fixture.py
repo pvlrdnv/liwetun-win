@@ -111,7 +111,7 @@ class OwnedProbeSink:
 
 def validate_report(value):
     boolean_fields = {'connected', 'nonexclusive_rejected', 'arm_accepted', 'echo_verified',
-                      'same_instance_epoch', 'disarmed', 'cancelled', 'qualified', 'proves_dns',
+                      'same_instance_epoch', 'disarmed', 'cancelled', 'receive_cancelled', 'qualified', 'proves_dns',
                       'proves_https', 'proves_internet', 'identifiers_exported', 'release_ready'}
     expected = boolean_fields | {'schema_version', 'stage', 'snapshot_flags', 'tx_bytes', 'rx_bytes'}
     if not isinstance(value, dict) or set(value) != expected:
@@ -138,7 +138,7 @@ def validate_report(value):
     if any(value[key] for key in ['proves_dns', 'proves_https', 'proves_internet', 'identifiers_exported', 'release_ready']):
         raise ValueError('invalid_owned_probe_report')
     if value['qualified'] and not (
-            value['stage'] == 9 and not value['cancelled'] and value['snapshot_flags'] == 15
+            value['stage'] == 9 and not value['cancelled'] and not value['receive_cancelled'] and value['snapshot_flags'] == 15
             and all(value[key] for key in ['connected', 'nonexclusive_rejected', 'arm_accepted',
                                             'echo_verified', 'same_instance_epoch', 'disarmed'])
             and all(type(value[key]) is int and value[key] >= FRAME_BYTES for key in ['tx_bytes', 'rx_bytes'])):
@@ -149,7 +149,8 @@ def validate_report(value):
 def validate_cancel_report(value, receiver):
     validate_report(value)
     if not (value['stage'] == 9 and value['connected'] and value['nonexclusive_rejected']
-            and value['arm_accepted'] and value['disarmed'] and value['cancelled'] and not value['qualified']
+            and value['arm_accepted'] and value['disarmed'] and value['cancelled'] and value['receive_cancelled']
+            and not value['qualified']
             and not value['echo_verified'] and not value['same_instance_epoch']
             and value['snapshot_flags'] == 1 and value['tx_bytes'] is None and value['rx_bytes'] is None
             and receiver['valid_requests'] == 1 and receiver['request_bytes'] == FRAME_BYTES

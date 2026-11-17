@@ -43,10 +43,12 @@ def source_is_tun(stream, addresses):
 
 
 def cancel_owned_request(session, endpoint, report_path):
-    """Stop before the 4 s native deadline, with a receiver-held request in flight."""
+    """Wait for readiness, then require native receive cancellation before its deadline."""
     from owned_probe_fixture import validate_cancel_report
     started = time.monotonic()
-    while time.monotonic() - started < 2:
+    while time.monotonic() - started < 10:
+        if report_path.exists():
+            raise RuntimeError('owned_probe_not_waiting')
         receiver = endpoint.command('stats')['owned_probe_sink']
         if receiver['waiting_for_owner_close'] == 1 and receiver['valid_requests'] == 1:
             break
@@ -55,7 +57,7 @@ def cancel_owned_request(session, endpoint, report_path):
         raise RuntimeError('owned_probe_not_waiting')
     traffic = session.command('traffic')
     unknown = (not traffic.get('flags', 0) & 2 and traffic.get('tx') is None and traffic.get('rx') is None)
-    if not unknown or report_path.exists() or time.monotonic() - started >= 2:
+    if not unknown or report_path.exists():
         raise RuntimeError('owned_probe_not_waiting')
     stop_started = time.monotonic()
     reply = session.command('stop')
@@ -74,7 +76,7 @@ def cancel_owned_request(session, endpoint, report_path):
         raise RuntimeError('owned_probe_cancellation_not_qualified')
     elapsed_ms = int((time.monotonic() - stop_started) * 1000)
     total_ms = int((time.monotonic() - started) * 1000)
-    if reply.get('code') != 0 or ack_ms >= 1500 or elapsed_ms >= 1500 or total_ms >= 3500:
+    if reply.get('code') != 0 or ack_ms >= 1500 or elapsed_ms >= 1500:
         raise RuntimeError('owned_probe_cancellation_not_qualified')
     return dict(qualified=True, stop_ack_ms=ack_ms, worker_and_remote_close_ms=elapsed_ms,
                 observation_total_ms=total_ms, unknown_before_stop=unknown,

@@ -33,19 +33,22 @@ struct Result {
   uint32_t stage = 1;
   bool connected = false, nonexclusive_rejected = false, armed = false;
   bool echoed = false, same_epoch = false, disarmed = false, cancelled = false, qualified = false;
+  bool receive_cancelled = false;
   probe::Snapshot sample;
 };
-bool Wait(SOCKET socket, bool writing, ULONGLONG deadline, const std::atomic<bool>& cancel) {
-  while (!cancel.load() && GetTickCount64() < deadline) {
+enum class IoResult { Complete, Cancelled, Deadline, Failed };
+IoResult Wait(SOCKET socket, bool writing, ULONGLONG deadline, const std::atomic<bool>& cancel) {
+  for (;;) {
+    if (GetTickCount64() >= deadline) return IoResult::Deadline;
+    if (cancel.load()) return IoResult::Cancelled;
     fd_set ready, errors;
     FD_ZERO(&ready); FD_ZERO(&errors);
     FD_SET(socket, &ready); FD_SET(socket, &errors);
     timeval timeout{0, 50000};
     const int status = select(0, writing ? nullptr : &ready, writing ? &ready : nullptr, &errors, &timeout);
-    if (status == SOCKET_ERROR || FD_ISSET(socket, &errors)) return false;
-    if (status > 0 && FD_ISSET(socket, &ready)) return !cancel.load();
+    if (status == SOCKET_ERROR || FD_ISSET(socket, &errors)) return IoResult::Failed;
+    if (status > 0 && FD_ISSET(socket, &ready)) return IoResult::Complete;
   }
-  return false;
 }
 Socket Connect(uint32_t index, bool exclusive, ULONGLONG deadline, const std::atomic<bool>& cancel) {
   Socket socket(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP));
@@ -63,23 +66,29 @@ Socket Connect(uint32_t index, bool exclusive, ULONGLONG deadline, const std::at
   target.sin_addr.s_addr = htonl(0xc612000a); // Fixed CI receiver: 198.18.0.10:38556.
   target.sin_port = htons(38556);
   if (connect(socket.value, reinterpret_cast<sockaddr*>(&target), sizeof(target)) != 0) {
-    if (WSAGetLastError() != WSAEWOULDBLOCK || !Wait(socket.value, true, deadline, cancel)) return Socket{};
+    if (WSAGetLastError() != WSAEWOULDBLOCK || Wait(socket.value, true, deadline, cancel) != IoResult::Complete) return Socket{};
     int error = 0, size = sizeof(error);
     if (getsockopt(socket.value, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&error), &size) != 0 || error) return Socket{};
   }
   return socket;
 }
-bool Transfer(SOCKET socket, std::array<char, 24>& bytes, bool writing, ULONGLONG deadline,
+IoResult Transfer(SOCKET socket, std::array<char, 24>& bytes, bool writing, ULONGLONG deadline,
               const std::atomic<bool>& cancel) {
   size_t offset = 0;
-  while (offset < bytes.size() && !cancel.load() && GetTickCount64() < deadline) {
+  while (offset < bytes.size()) {
+    if (GetTickCount64() >= deadline) return IoResult::Deadline;
+    if (cancel.load()) return IoResult::Cancelled;
     const int left = static_cast<int>(bytes.size() - offset);
     const int count = writing ? send(socket, bytes.data() + offset, left, 0)
                               : recv(socket, bytes.data() + offset, left, 0);
     if (count > 0) offset += static_cast<size_t>(count);
-    else if (!count || WSAGetLastError() != WSAEWOULDBLOCK || !Wait(socket, writing, deadline, cancel)) return false;
+    else {
+      if (!count || WSAGetLastError() != WSAEWOULDBLOCK) return IoResult::Failed;
+      const auto waited = Wait(socket, writing, deadline, cancel);
+      if (waited != IoResult::Complete) return waited;
+    }
   }
-  return offset == bytes.size() && !cancel.load();
+  return IoResult::Complete;
 }
 bool ValidSample(const probe::Snapshot& s) {
   if (s.abi != 1 || s.size != sizeof(s) || s.reserved || !(s.flags & probe::kSupported) ||
@@ -98,11 +107,13 @@ bool WriteResult(const std::wstring& path, const Result& result) {
   const int length = std::snprintf(output, sizeof(output),
       "{\"schema_version\":1,\"stage\":%u,\"connected\":%s,\"nonexclusive_rejected\":%s,"
       "\"arm_accepted\":%s,\"echo_verified\":%s,\"same_instance_epoch\":%s,\"disarmed\":%s,\"cancelled\":%s,"
+      "\"receive_cancelled\":%s,"
       "\"snapshot_flags\":%u,\"tx_bytes\":%s,\"rx_bytes\":%s,\"qualified\":%s,"
       "\"proves_dns\":false,\"proves_https\":false,\"proves_internet\":false,"
       "\"identifiers_exported\":false,\"release_ready\":false}\n",
       result.stage, boolean(result.connected), boolean(result.nonexclusive_rejected), boolean(result.armed),
-      boolean(result.echoed), boolean(result.same_epoch), boolean(result.disarmed), boolean(result.cancelled), result.sample.flags,
+      boolean(result.echoed), boolean(result.same_epoch), boolean(result.disarmed), boolean(result.cancelled),
+      boolean(result.receive_cancelled), result.sample.flags,
       tx.c_str(), rx.c_str(), boolean(result.qualified));
   if (length <= 0 || static_cast<size_t>(length) >= sizeof(output)) return false;
   Handle file(CreateFileW(path.c_str(), GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_NEW,
@@ -184,9 +195,11 @@ void Backend::RunOwnedProbe() noexcept {
     std::copy_n(reply_prefix, 16, expected.begin());
     for (unsigned i = 0; i < 8; ++i) payload[16 + i] = expected[16 + i] = static_cast<char>((request.token >> (56 - 8 * i)) & 255);
     result.stage = 6;
-    const bool sent = Transfer(socket.value, payload, true, deadline, owned_cancel_);
+    const bool sent = Transfer(socket.value, payload, true, deadline, owned_cancel_) == IoResult::Complete;
     result.stage = 7;
-    result.echoed = sent && Transfer(socket.value, response, false, deadline, owned_cancel_) && response == expected;
+    const auto received = sent ? Transfer(socket.value, response, false, deadline, owned_cancel_) : IoResult::Failed;
+    result.receive_cancelled = received == IoResult::Cancelled;
+    result.echoed = received == IoResult::Complete && response == expected;
     result.stage = 8;
     {
       std::lock_guard lock(core_mutex_);
