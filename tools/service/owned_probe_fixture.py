@@ -149,7 +149,7 @@ def validate_report(value):
 def validate_cancel_report(value, receiver):
     validate_report(value)
     if not (value['stage'] == 9 and value['connected'] and value['nonexclusive_rejected']
-            and value['arm_accepted'] and value['cancelled'] and not value['qualified']
+            and value['arm_accepted'] and value['disarmed'] and value['cancelled'] and not value['qualified']
             and not value['echo_verified'] and not value['same_instance_epoch']
             and value['snapshot_flags'] == 1 and value['tx_bytes'] is None and value['rx_bytes'] is None
             and receiver['valid_requests'] == 1 and receiver['request_bytes'] == FRAME_BYTES

@@ -175,6 +175,12 @@ void Backend::Run() {
     }
     if (stopping || exiting) {
       intent_ = false;
+#ifdef LIWETUN_TEST_OWNED_PROBE
+      // Keep the borrowed core available for the cancelled worker's matching
+      // disarm. No SDK teardown starts until it has joined, and no core lock
+      // spans that join. Cancellation already invalidates CI observations.
+      JoinOwnedProbe();
+#endif
       {
         // Withdraw the pointer before teardown. Readers only borrow it under
         // this short lock; stop itself never holds the lock while joining SDK threads.
@@ -182,9 +188,6 @@ void Backend::Run() {
         observed_core_ = nullptr;
         instance_ = 0;
       }
-#ifdef LIWETUN_TEST_OWNED_PROBE
-      JoinOwnedProbe(); // Cancel/join outside the borrowed-core lock, before SDK stop/unload.
-#endif
       if (core) { stop_fn_(core); core = nullptr; }
       busy_ = false;
       state_ = failed ? State::Error : State::Disconnected;

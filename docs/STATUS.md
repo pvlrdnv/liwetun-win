@@ -364,8 +364,14 @@ overall observation shorter than the native 4 s deadline. Cancelled evidence mus
 have no successful echo/epoch/path facts and null counters. Network/WFP baseline
 restoration and no watchdog action remain mandatory. No SDK or product native
 behavior changed. **29 local Python tests**, Python/YAML and diff checks PASS;
-actual Windows cancellation qualification is pending. Live bypass/migration
-negative controls and product health integration remain open.
+actual Windows cancellation qualification is pending. A teardown audit then
+found that withdrawing the borrowed core before joining the cancelled worker
+could skip explicit token disarm. In the CI-only mode the worker now cancels,
+disarms and joins before pointer withdrawal and SDK teardown, with no core mutex
+held over join. The cancellation oracle now requires disarm too; 29 local Python
+tests remain PASS. Earlier dispatched runs retain the weaker criterion and must
+not be used to qualify this strengthened contract. Live bypass/migration negative
+controls and product health integration remain open.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
