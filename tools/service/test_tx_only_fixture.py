@@ -34,6 +34,10 @@ class TxOnlyFixtureTests(unittest.TestCase):
         disabled = EndpointForwarder(('127.0.0.1', 1), ('127.0.0.1', 2), 0, port=0)
         enabled = EndpointForwarder(('127.0.0.1', 1), ('127.0.0.1', 2), 0, port=0, tx_only=True)
         try:
+            self.assertEqual(base.tcp_lifetime(TARGET), 30)
+            self.assertEqual(disabled.tcp_lifetime(TARGET), 30)
+            self.assertEqual(enabled.tcp_lifetime(TARGET), 75)
+            self.assertEqual(enabled.tcp_lifetime(('198.18.0.10', TARGET[1])), 30)
             self.assertFalse(base.tcp_allowed(TARGET))
             self.assertFalse(disabled.tcp_allowed(TARGET))
             self.assertTrue(enabled.tcp_allowed(TARGET))

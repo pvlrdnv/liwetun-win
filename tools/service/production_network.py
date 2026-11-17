@@ -168,27 +168,30 @@ def observe_tx_only_and_idle(session, addresses, endpoint, protocol):
             time.sleep(.05)
             sent.append(session.command('traffic'))
         outgoing = aggregate_window(sent, tx_only=True)
-    marker = endpoint.command('stats')['tx_only_sink']
-    for _ in range(20):
-        if marker['matched_frames'] == 21:
-            break
-        time.sleep(.1)
         marker = endpoint.command('stats')['tx_only_sink']
-    # The sink's receipt proves delivery beyond the client TUN, without reply.
+        for _ in range(20):
+            if marker['matched_frames'] == 21:
+                break
+            time.sleep(.1)
+            marker = endpoint.command('stats')['tx_only_sink']
+        # Keep the flow open: connection teardown is not an idle observation.
+        idle = [session.command('traffic')]
+        started = time.monotonic()
+        for index in range(1, 22):
+            time.sleep(max(0, started + index - time.monotonic()))
+            idle.append(session.command('traffic'))
+        quiet = aggregate_window(idle, tx_only=False)
+        after_idle = endpoint.command('stats')['tx_only_sink']
     sink_ok = (marker['matched_frames'] == 21 and marker['sent_bytes'] == 0
-               and marker['received_bytes'] == 21 * len(PAYLOAD) and marker['rejected_frames'] == 0)
-    idle = [session.command('traffic')]
-    started = time.monotonic()
-    for index in range(1, 22):
-        time.sleep(max(0, started + index - time.monotonic()))
-        idle.append(session.command('traffic'))
-    quiet = aggregate_window(idle, tx_only=False)
+               and marker['received_bytes'] == 21 * len(PAYLOAD) and marker['rejected_frames'] == 0
+               and marker == after_idle)
     transport_after = totals()
     transport_delta = {key: transport_after[key] - transport_before[key] for key in transport_before}
     transport_ok = (transport_delta[protocol] >= 20 * len(PAYLOAD)
                     and all(value == 0 for key, value in transport_delta.items() if key != protocol))
     return dict(passed=bool(source_matches and sink_ok and transport_ok and outgoing['passed'] and quiet['passed']),
                 socket_source_is_tun=source_matches, owned_sink_receipt=marker,
+                sink_receipt_after_idle=after_idle, socket_kept_open_during_idle=True,
                 outgoing_window=outgoing, idle_window=quiet,
                 response_read_attempted=False, total_payload_bytes=21 * len(PAYLOAD),
                 endpoint_transport_bytes=transport_delta,

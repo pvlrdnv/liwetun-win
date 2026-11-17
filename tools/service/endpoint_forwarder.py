@@ -25,6 +25,9 @@ class EndpointForwarder(Forwarder):
     def tcp_allowed(self, destination):
         return super().tcp_allowed(destination) or (self.tx_only and destination == TARGET)
 
+    def tcp_lifetime(self, destination):
+        return 75 if self.tx_only and destination == TARGET else super().tcp_lifetime(destination)
+
     def connect_tcp(self, destination):
         if self.tx_only and destination == TARGET:
             return socket.create_connection(('127.0.0.1', TARGET[1]), timeout=5)

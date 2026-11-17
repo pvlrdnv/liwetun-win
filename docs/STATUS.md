@@ -173,7 +173,15 @@ no payload back; only an explicit endpoint-fixture mode admits its fixed benchma
 address, never the physical exit. It collects >=20-second monotonic same-instance/
 epoch windows with <=5-second gaps, checks TX growth / zero RX growth then zero
 TX/RX growth, and independently requires sink receipts / selected transport bytes.
-All 21 Python fixture tests PASS locally. Windows H2/H3 qualification pending.
+All 21 Python fixture tests PASS locally. Initial Windows H2/H3 runs
+44064465898 / 44064471948 each proved 672 TX / 0 RX bytes and 21 sink frames
+under the notification threshold, but the attempted idle interval after closing
+the stream observed another 96 TX bytes, so neither complete case passed. Cleanup
+restored the baseline without watchdog. Original failed reports are retained.
+Follow-up keeps the flow open for idle and extends only that exact diagnostic
+forwarder's lifetime to 75 seconds (others retain 30); it also requires an
+unchanged sink receipt across idle. Cause of the post-close bytes is not yet
+established. Follow-up Windows execution pending.
 The independent deadline is 120 seconds only for this longer fixture.
 
 Optional-tail parsing is factored for Windows contract tests: an old 32-byte

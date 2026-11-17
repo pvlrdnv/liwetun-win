@@ -103,6 +103,9 @@ class Forwarder:
     def tcp_allowed(self, destination):
         return destination == self.origin or (self.synthetic_ipv6 and destination == self.ipv6_origin)
 
+    def tcp_lifetime(self, destination):
+        return 30
+
     def tcp(self, client, destination):
         if not self.tcp_allowed(destination):
             self.count('destination_denied')
@@ -113,7 +116,7 @@ class Forwarder:
             self.count('tcp_connected')
             if destination == self.ipv6_origin:
                 self.count('tcp_ipv6_destination_connected')
-            deadline = time.monotonic() + 30
+            deadline = time.monotonic() + self.tcp_lifetime(destination)
             while not self.stop.is_set() and time.monotonic() < deadline:
                 readable, _, _ = select.select([client, upstream], [], [], .2)
                 for source in readable:
