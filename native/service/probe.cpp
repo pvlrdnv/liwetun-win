@@ -30,7 +30,7 @@ void PrintTraffic(const TrafficReply& data) {
       << ",\"flags\":" << sample.flags << ",\"instance\":";
   optional(data.instance, data.instance != 0);
   std::cout << ",\"epoch\":"; optional(sample.epoch, sample.epoch != 0);
-  std::cout << ",\"at_ms\":"; optional(sample.at_ms, sample.epoch != 0);
+  std::cout << ",\"at_ms\":"; optional(sample.at_ms, sample.epoch != 0 && !(sample.flags & traffic::kClockError));
   std::cout << ",\"tx\":"; optional(sample.tx, valid);
   std::cout << ",\"rx\":"; optional(sample.rx, valid);
   std::cout << ",\"last_tx_ms\":"; optional(sample.last_tx_ms, valid);

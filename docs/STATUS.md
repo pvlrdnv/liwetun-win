@@ -162,7 +162,25 @@ bodies; 13 explicit source supplements remain. The separately guarded traffic
 notice bridge and unchanged 60-text client bundle PASS locally; four notice tests
 PASS. Package assembly supports this explicit SDK variant, requires network
 requalification and includes its exact runtime/profile/notice receipts. Actual
-installer qualification with the new SDK is pending; no release approval.
+installer qualification with the new SDK **PASS** (44060362433): 14 groups,
+medium GUI/service query, rollback/uninstall/cleanup and preserved input receipts.
+[Package receipt](evidence/package-traffic-44060362433.json). Ephemeral CI signing
+only, no release approval.
+
+Next focused fixture is implemented for a tiny one-sided flow followed by idle.
+A task-owned loopback-only sink accepts only fixed synthetic frames and sends
+no payload back; only an explicit endpoint-fixture mode admits its fixed benchmark
+address, never the physical exit. It collects >=20-second monotonic same-instance/
+epoch windows with <=5-second gaps, checks TX growth / zero RX growth then zero
+TX/RX growth, and independently requires sink receipts / selected transport bytes.
+All 21 Python fixture tests PASS locally. Windows H2/H3 qualification pending.
+The independent deadline is 120 seconds only for this longer fixture.
+
+Optional-tail parsing is factored for Windows contract tests: an old 32-byte
+refusal must not read a tail or retain a previous snapshot; a partial/missing tail
+is timeout/unknown, while malformed full data is malformed/unknown. Valid data
+also requires admitted runtime state. Clock-error samples no longer expose an
+unobserved monotonic instant. New counter/wire Windows checks and GUI build pending.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests

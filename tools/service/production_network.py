@@ -113,15 +113,17 @@ def recovery_evidence_valid(protocol, state, https_ok, https_tun, dns_ok, dns_tu
                     if key != protocol))
 
 
+def valid_aggregate(value):
+    return (isinstance(value, dict) and type(value.get('code')) is int and value.get('code') == 0
+            and value.get('flags') == 3 and value.get('core_state') == 2
+            and all(type(value.get(key)) is int and 0 <= value[key] <= 2**63 - 1
+                    for key in ['instance', 'epoch', 'at_ms', 'tx', 'rx'])
+            and value['instance'] > 0 and value['epoch'] > 0)
+
+
 def aggregate_progress(before, after):
     """Closed counter evidence only; endpoint/DNS transport proof stays separate."""
-    def valid(value):
-        return (isinstance(value, dict) and type(value.get('code')) is int and value.get('code') == 0 and value.get('flags') == 3
-                and value.get('core_state') == 2
-                and all(type(value.get(key)) is int and 0 <= value[key] <= 2**63 - 1
-                        for key in ['instance', 'epoch', 'at_ms', 'tx', 'rx'])
-                and value['instance'] > 0 and value['epoch'] > 0)
-    observed = valid(before) and valid(after)
+    observed = valid_aggregate(before) and valid_aggregate(after)
     same = observed and before['instance'] == after['instance'] and before['epoch'] == after['epoch']
     monotonic = observed and after['at_ms'] > before['at_ms'] and after['tx'] >= before['tx'] and after['rx'] >= before['rx']
     tx = after['tx'] - before['tx'] if same and monotonic else None
@@ -131,6 +133,68 @@ def aggregate_progress(before, after):
                 tx_delta=tx, rx_delta=rx, proves_dns=False, proves_internet=False)
 
 
+def aggregate_window(samples, tx_only):
+    usable = len(samples) >= 2 and all(valid_aggregate(sample) for sample in samples)
+    if not usable:
+        return dict(passed=False, classification='unknown', tx_delta=None, rx_delta=None)
+    before, after = samples[0], samples[-1]
+    coherent = all(sample['instance'] == before['instance'] and sample['epoch'] == before['epoch'] for sample in samples)
+    for previous, current in zip(samples, samples[1:]):
+        coherent = (coherent and 0 < current['at_ms'] - previous['at_ms'] <= 5000
+                    and current['tx'] >= previous['tx'] and current['rx'] >= previous['rx'])
+    elapsed = after['at_ms'] - before['at_ms']
+    tx, rx = after['tx'] - before['tx'], after['rx'] - before['rx']
+    from tx_only_fixture import PAYLOAD
+    expected = (tx >= 20 * len(PAYLOAD) and rx == 0) if tx_only else (tx == 0 and rx == 0)
+    passed = coherent and 20000 <= elapsed <= 30000 and expected
+    return dict(passed=bool(passed), classification=('outgoingWithoutReply' if tx_only else 'idle') if passed else 'unknown',
+                elapsed_ms=elapsed, tx_delta=tx if coherent else None, rx_delta=rx if coherent else None,
+                samples=len(samples), proves_dns=False, proves_internet=False)
+
+
+def observe_tx_only_and_idle(session, addresses, endpoint, protocol):
+    from tx_only_fixture import TARGET, PAYLOAD
+    source_matches = False
+    transport_before = totals()
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as stream:
+        stream.settimeout(5)
+        stream.connect(TARGET)  # Ordinary route/source selection; no bind/host route.
+        source_matches = source_is_tun(stream, addresses)
+        sent = [session.command('traffic')]
+        started = time.monotonic()
+        for index in range(21):
+            time.sleep(max(0, started + index - time.monotonic()))
+            stream.sendall(PAYLOAD)
+            time.sleep(.05)
+            sent.append(session.command('traffic'))
+        outgoing = aggregate_window(sent, tx_only=True)
+    marker = endpoint.command('stats')['tx_only_sink']
+    for _ in range(20):
+        if marker['matched_frames'] == 21:
+            break
+        time.sleep(.1)
+        marker = endpoint.command('stats')['tx_only_sink']
+    # The sink's receipt proves delivery beyond the client TUN, without reply.
+    sink_ok = (marker['matched_frames'] == 21 and marker['sent_bytes'] == 0
+               and marker['received_bytes'] == 21 * len(PAYLOAD) and marker['rejected_frames'] == 0)
+    idle = [session.command('traffic')]
+    started = time.monotonic()
+    for index in range(1, 22):
+        time.sleep(max(0, started + index - time.monotonic()))
+        idle.append(session.command('traffic'))
+    quiet = aggregate_window(idle, tx_only=False)
+    transport_after = totals()
+    transport_delta = {key: transport_after[key] - transport_before[key] for key in transport_before}
+    transport_ok = (transport_delta[protocol] >= 20 * len(PAYLOAD)
+                    and all(value == 0 for key, value in transport_delta.items() if key != protocol))
+    return dict(passed=bool(source_matches and sink_ok and transport_ok and outgoing['passed'] and quiet['passed']),
+                socket_source_is_tun=source_matches, owned_sink_receipt=marker,
+                outgoing_window=outgoing, idle_window=quiet,
+                response_read_attempted=False, total_payload_bytes=21 * len(PAYLOAD),
+                endpoint_transport_bytes=transport_delta,
+                sdk_notification_threshold_bytes=102400)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--client', type=str, required=True)
@@ -138,6 +202,7 @@ def main():
     if os.name != 'nt' or os.environ.get('GITHUB_ACTIONS') != 'true':
         raise RuntimeError('disposable_windows_required')
     traffic_required = os.environ.get('TRAFFIC_METRICS') == 'true'
+    traffic_pattern = os.environ.get('LIWETUN_TRAFFIC_PATTERN', 'normal')
     run_id = os.environ['GITHUB_RUN_ID']
     distro = os.environ['LIWETUN_CI_DISTRO']
     if not re.fullmatch(r'[0-9]{1,20}', run_id) or distro != 'LiWeTunCI' + run_id:
@@ -162,11 +227,14 @@ def main():
         raise RuntimeError('invalid_fixture_family')
     if termination == 'endpoint-restart' and (profile != 'valid' or family != 'ipv4'):
         raise RuntimeError('invalid_recovery_case')
+    if traffic_pattern not in ['normal', 'tx-only'] or (traffic_pattern == 'tx-only' and
+            (not traffic_required or profile != 'valid' or family != 'ipv4' or termination != 'stop')):
+        raise RuntimeError('invalid_traffic_pattern')
     synthetic_ipv6 = family == 'synthetic-ipv6'
     report = ROOT / 'build/service-evidence/production-network.json'
     report.parent.mkdir(exist_ok=True, parents=True)
     result = {'passed': False, 'mode': 'single_production_unbound_ipv4', 'protocol': protocol,
-              'termination': termination,
+              'termination': termination, 'traffic_pattern': traffic_pattern,
               'profile': profile,
               'client_family': family,
               'network_test_modes_enabled': False, 'client_host_routes_added': False,
@@ -201,7 +269,7 @@ def main():
         (directory / 'dns-host.txt').write_text(str(dns_host))
         (directory / 'forwarder-inputs.json').write_text(json.dumps({
             'origin': origin, 'dns_host': str(dns_host), 'physical_index': physical['index'],
-            'synthetic_ipv6': synthetic_ipv6}))
+            'synthetic_ipv6': synthetic_ipv6, 'tx_only': traffic_pattern == 'tx-only'}))
         wsl = ['wsl.exe', '-d', distro, '--']
         def linux(path):
             return subprocess.check_output(wsl + ['wslpath', '-u', path.as_posix()],
@@ -251,7 +319,7 @@ def main():
         stage = 'armed_deadline'
         watchdog = Child(['pwsh', '-NoProfile', '-NonInteractive', '-File',
                           str(ROOT / 'tools/service/general-watchdog.ps1'), '-DeadlineSeconds',
-                          '120' if termination == 'endpoint-restart' else '60'])
+                          '120' if termination == 'endpoint-restart' or traffic_pattern == 'tx-only' else '60'])
         if watchdog.receive() != 'ready':
             raise RuntimeError('watchdog_not_ready')
         before = totals()
@@ -477,6 +545,10 @@ def main():
             result.update(recovery_attempts=attempts, recovered_without_new_start=recovered,
                           desktop_sleep_or_network_change_qualified=False)
             traffic_ok = traffic_ok and recovered
+        if traffic_pattern == 'tx-only':
+            stage = 'tx_only_and_idle_counter_windows'
+            result['tx_only_fixture'] = observe_tx_only_and_idle(session, addresses, endpoint, protocol)
+            traffic_ok = traffic_ok and result['tx_only_fixture']['passed']
         if traffic_required and profile == 'valid':
             stage = 'concurrent_traffic_reader'
             traffic_watch = Child([str(client), '--traffic-watch'])
@@ -559,7 +631,7 @@ def main():
                 try { [void]$event.Set() } finally { $event.Dispose() }
                 """)
             try:
-                watchdog.process.wait(timeout=145 if termination == 'endpoint-restart' else 85)
+                watchdog.process.wait(timeout=145 if termination == 'endpoint-restart' or traffic_pattern == 'tx-only' else 85)
                 guard = json.loads((report.parent / 'general-watchdog.json').read_text(encoding='utf-8-sig'))
                 result['deadline_triggered'] = guard['triggered']
                 result['passed'] = result['passed'] and not guard['triggered'] and guard['action_completed']

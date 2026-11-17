@@ -100,8 +100,11 @@ class Forwarder:
             self.count('auth_rejected')
         return accepted
 
+    def tcp_allowed(self, destination):
+        return destination == self.origin or (self.synthetic_ipv6 and destination == self.ipv6_origin)
+
     def tcp(self, client, destination):
-        if destination != self.origin and not (self.synthetic_ipv6 and destination == self.ipv6_origin):
+        if not self.tcp_allowed(destination):
             self.count('destination_denied')
             client.sendall(b'\x05\x02\x00\x01' + b'\x00' * 6)
             return

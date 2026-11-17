@@ -139,3 +139,17 @@ registered endpoint-client payload. Bypassed/internal DNS/other adapter traffic
 is outside these totals; TX-only is not evidence that the server is blocked.
 Summary schema v3 adds those scoped facts; closed event schema stays v1. Current
 state labels continue to require a separate Internet check, which is unavailable.
+
+
+## Tiny TX-only / idle observation fixture — Windows pending
+
+An explicit `traffic_pattern=tx-only` case uses a fixed benchmark TCP address
+translated only by the diagnostic endpoint's local forwarder to its owned
+loopback sink. The physical exit never admits that target. Twenty-one fixed small
+frames are sent without a read; the sink must count all frames and send zero
+payload bytes. Counter observations must span at least 20 seconds in one instance/
+epoch, with no gap over five seconds, positive TX and unchanged RX. A subsequent
+20-second window must have unchanged TX/RX. Both windows remain scoped aggregate
+counter facts, not DNS/Internet proof. The independent guard permits 120 seconds
+for this longer case; ordinary tests retain their original deadlines. Local sink,
+allowlist and observation guards pass; actual Windows execution is pending.

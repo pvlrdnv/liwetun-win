@@ -1,5 +1,7 @@
 #include "traffic_counter.h"
 #include "traffic_validate.h"
+#include "../service/traffic_client.h"
+#include <cstring>
 #include <atomic>
 #include <cstdlib>
 #include <thread>
@@ -25,6 +27,38 @@ int main() {
   bad = ready; bad.flags |= kObservationGap;
   Check(!Valid(bad));
   Check(ready.flags == (kSupported | kValid) && ready.tx == 0 && ready.rx == 0);
+  liwetun::Reply base;
+  base.state = liwetun::State::TunnelReady;
+  base.core_state = 2;
+  base.runtime_ready = 1;
+  liwetun::TrafficReply frame;
+  frame.instance = 1;
+  frame.sample = ready;
+  liwetun::TrafficReply decoded;
+  auto reader = [&](void* destination, uint32_t size) {
+    Check(size == 72);
+    std::memcpy(destination, &frame.instance, size);
+    return true;
+  };
+  Check(liwetun::ConsumeTrafficTail(base, decoded, reader).code == liwetun::Code::Ok);
+  Check(decoded.instance == 1 && Valid(decoded.sample));
+  base.code = liwetun::Code::Malformed;
+  unsigned read_calls = 0;
+  Check(liwetun::ConsumeTrafficTail(base, decoded, [&](void*, uint32_t) {
+    ++read_calls; return false;
+  }).code == liwetun::Code::Malformed);
+  Check(read_calls == 0 && decoded.sample.flags == 0); // An old 32-byte refusal has no optional tail to await.
+  base.code = liwetun::Code::Ok;
+  Check(liwetun::ConsumeTrafficTail(base, decoded, [](void* destination, uint32_t) {
+    std::memset(destination, 0x41, 5); return false;
+  }).code == liwetun::Code::Timeout);
+  Check(decoded.instance == 0 && decoded.sample.flags == 0);
+  frame.sample.abi = 99;
+  Check(liwetun::ConsumeTrafficTail(base, decoded, reader).code == liwetun::Code::Malformed);
+  Check(decoded.sample.flags == 0);
+  frame.sample = ready;
+  base.runtime_ready = 0;
+  Check(liwetun::ConsumeTrafficTail(base, decoded, reader).code == liwetun::Code::Malformed);
   counter.Add(3, 0); // Below upstream threshold; one-sided traffic is observed immediately.
   auto tx = counter.Read();
   Check(tx.tx == 3 && tx.rx == 0 && tx.last_tx_ms == now && tx.last_rx_ms == kAbsent);

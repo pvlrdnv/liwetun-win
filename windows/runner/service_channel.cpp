@@ -30,7 +30,7 @@ ServiceChannel::Value ServiceChannel::EncodeTraffic(const liwetun::TrafficReply&
       {Value("flags"), Value(static_cast<int32_t>(sample.flags))},
       {Value("instance"), number(reply.instance, supported && reply.instance != 0)},
       {Value("epoch"), number(sample.epoch, supported && sample.epoch != 0)},
-      {Value("atMs"), number(sample.at_ms, supported && sample.epoch != 0)},
+      {Value("atMs"), number(sample.at_ms, supported && sample.epoch != 0 && !(sample.flags & liwetun::traffic::kClockError))},
       {Value("tx"), number(sample.tx, valid)},
       {Value("rx"), number(sample.rx, valid)},
       {Value("lastTxMs"), number(sample.last_tx_ms, valid)},

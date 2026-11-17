@@ -15,6 +15,7 @@ import ipaddress
 import re
 
 from endpoint_forwarder import EndpointForwarder, local_socket
+from tx_only_fixture import TxOnlySink
 from physical_forwarder import SYNTHETIC_IPV6, SYNTHETIC_IPV6_PAYLOAD, SYNTHETIC_IPV6_UDP_PORT
 
 
@@ -133,17 +134,22 @@ def main():
     forwarder = ''
     local_exit = None
     synthetic_ipv6 = False
+    tx_only = False
+    tx_sink = None
     if (directory / 'forwarder-inputs.json').exists():
         inputs = json.loads((directory / 'forwarder-inputs.json').read_text())
         origin = ipaddress.IPv4Address(inputs['origin'])
         dns = ipaddress.IPv4Address(inputs['dns_host'])
+        tx_only = inputs.get('tx_only', False)
+        if type(tx_only) is not bool:
+            raise RuntimeError('invalid_tx_fixture_mode')
         synthetic_ipv6 = inputs.get('synthetic_ipv6', False)
         if type(synthetic_ipv6) is not bool:
             raise RuntimeError('invalid_fixture_mode')
         if not origin.is_global or not dns.is_private or dns.is_loopback:
             raise RuntimeError('invalid_fixture_address')
         local_exit = EndpointForwarder((str(origin), 443), (str(dns), 38553), 0,
-                                       factory=local_socket, port=38446, synthetic_ipv6=synthetic_ipv6)
+                                       factory=local_socket, port=38446, synthetic_ipv6=synthetic_ipv6, tx_only=tx_only)
         threading.Thread(target=local_exit.serve, daemon=True).start()
         forwarder = '[forward_protocol.socks5]\naddress="127.0.0.1:38446"\nextended_auth=false\n'
     # H3 case deliberately has NO H2 listener: fallback cannot pass the test.
@@ -156,6 +162,8 @@ def main():
         '[metrics]\naddress="127.0.0.1:38444"\nper_client_metrics=false\n')
     (directory / 'hosts.toml').write_text(
         '[[main_hosts]]\nhostname="localhost"\ncert_chain_path="cert.pem"\nprivate_key_path="key.pem"\n')
+    if tx_only:
+        tx_sink = TxOnlySink()
     stop = threading.Event()
     counters = {'requests': 0, 'request_bytes': 0, 'synthetic_answers': 0, 'synthetic_aaaa_answers': 0,
                 'other_answers': 0, 'non_questions': 0}
@@ -211,6 +219,8 @@ def main():
         for command in sys.stdin:
             if command.strip() == 'stats':
                 observation = dict(counters)
+                if tx_sink:
+                    observation['tx_only_sink'] = tx_sink.stats()
                 if forwarder:
                     observation['owned_endpoint_udp_queues'] = owned_udp_queues(endpoint)
                     observation['local_forwarder_counts'] = local_exit.stats()
@@ -234,6 +244,8 @@ def main():
             echo_worker.join(timeout=1)
         if local_exit:
             local_exit.close()
+        if tx_sink:
+            tx_sink.close()
 
 
 if __name__ == '__main__':

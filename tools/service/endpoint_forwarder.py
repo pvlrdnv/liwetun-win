@@ -9,6 +9,7 @@ import struct
 import ipaddress
 
 from physical_forwarder import Forwarder, exact
+from tx_only_fixture import TARGET
 
 
 def local_socket(kind, _index):
@@ -16,11 +17,17 @@ def local_socket(kind, _index):
 
 
 class EndpointForwarder(Forwarder):
-    def __init__(self, *args, physical_exit=('127.0.0.1', 38445), **kwargs):
+    def __init__(self, *args, physical_exit=('127.0.0.1', 38445), tx_only=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.physical_exit = physical_exit
+        self.tx_only = tx_only
+
+    def tcp_allowed(self, destination):
+        return super().tcp_allowed(destination) or (self.tx_only and destination == TARGET)
 
     def connect_tcp(self, destination):
+        if self.tx_only and destination == TARGET:
+            return socket.create_connection(('127.0.0.1', TARGET[1]), timeout=5)
         upstream = socket.create_connection(self.physical_exit, timeout=8)
         try:
             upstream.sendall(b'\x05\x01\x02')

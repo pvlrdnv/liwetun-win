@@ -10,6 +10,13 @@ on:
         description: Qualify the separate aggregate-traffic SDK candidate (requires source_pins)
         type: boolean
         default: false
+      traffic_pattern:
+        description: Normal traffic or a tiny TX-only native counter observation window
+        type: choice
+        default: normal
+        options:
+          - normal
+          - tx-only
       sdk_run_id:
         description: Successful SDK qualification run in this repository
         required: true
@@ -83,6 +90,7 @@ jobs:
     env:
       SOURCE_PINNED: ${{ inputs.source_pins }}
       TRAFFIC_METRICS: ${{ inputs.traffic_metrics }}
+      LIWETUN_TRAFFIC_PATTERN: ${{ inputs.traffic_pattern }}
       SDK_RUN_ID: ${{ inputs.sdk_run_id }}
       GH_TOKEN: ${{ github.token }}
       LIWETUN_CI_DISTRO: LiWeTunCI${{ github.run_id }}
