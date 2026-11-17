@@ -288,3 +288,40 @@ network I/O; acquire it briefly for arm/read/disarm and cancel on Stop. Exact AP
 source guards, migration/bypass controls and Windows qualification are still
 unimplemented. No dedicated application health endpoint is selected/contacted.
 DNS correlation needs its own design; an owned TCP proof cannot establish it.
+
+
+## Owned-socket reducer candidate — implementation, SDK qualification pending
+
+`owned_probe=true` requires all preceding SDK profiles and prepares version
+`1.1.12-liwetun.probe1`. Seven exact post-attachment source digests and six added
+file hashes guard every mutation. It preserves the no-op per-destination report
+and raw logging suppression. The private core reducer has no public generic
+browsing tuple registration export. Windows arm/read derives the local/peer key
+from the caller's held connected exclusive TCP socket and checks only its exact
+local address entry against the SDK-held interface. The caller must create a
+fresh socket, arm before application I/O, retain it through reading, disarm on
+completion/cancellation, and serialize brief SDK calls against teardown. No
+lifetime lock may span socket I/O. TTL invalidation is logical/lazy; caller
+cleanup and core teardown release the private tuple.
+
+The slot never exports a key, socket/interface/connection ID, domain or app name.
+Its 32-byte request / 56-byte snapshot carry closed token/epoch/time/flags/counts.
+Counts are observations only with Armed; inactive values cannot become observed
+zeroes. Other path, migration, epoch/socket change, expiry, overflow, clock fault
+or callback failure remove armed/evidence state. Repeated arm cannot extend an
+active/replayed attempt. Late old-token reads/disarm and foreign-flow bytes do
+not alter the next attempt. Read rechecks a concurrent callback-failure latch.
+
+The SDK adapter observes buffered upload, normal upload and client delivery,
+checking actual endpoint/listener per update; migration and non-endpoint selection
+invalidate. The slot is per Vpn instance and persists across parameter refresh
+without a global registry. Its short mutex never dispatches to the core event loop
+or acquires the core stop guard. Existing routing/recovery decisions are unchanged.
+
+Standalone MSVC concurrency and real loopback socket boundary PASS (44090062715),
+using a synthetic interface context, not an SDK TUN. Five new source mutation
+guards and pinned-source preparation PASS locally. Updated race/family tests,
+full SDK and null-export ABI checks are pending on Windows. No live SDK-owned
+request/path, application DNS/HTTPS, desktop or release qualification yet; no
+service command or GUI health capability added. Socket address-entry lookup uses
+[the read-only Microsoft API](https://learn.microsoft.com/en-us/windows/win32/api/netioapi/nf-netioapi-getunicastipaddressentry).

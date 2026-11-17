@@ -298,9 +298,25 @@ reads/disarm and foreign-flow bytes cannot alter a new attempt. Windows arm-key
 helper reads a connected exclusive TCP socket and queries only its exact local
 address entry against the supplied SDK-held LUID/index; it does not enumerate
 interfaces or change configuration. The caller must hold a fresh socket and arm
-before application I/O. New portable/concurrency and actual loopback socket
-boundary tests are prepared; Windows compilation/execution pending. No actual
+before application I/O. Standalone Windows C++ concurrency and actual loopback socket boundary **PASS**
+(44090062715), synthetic context without SDK/TUN or network configuration changes.
+[Receipt](evidence/probe-contract-44090062715.json). No actual
 SDK path, DNS/HTTPS health endpoint or application readiness is claimed.
+
+A separate opt-in `owned_probe=true` SDK profile now integrates the slot with
+seven exact post-attachment vendor inputs and six added files. It derives the
+socket key from the held TCP descriptor and exact address membership, observes
+three actual byte-transfer sites, checks endpoint/listener at every matching
+update, and invalidates on migration/other selection. No per-destination events,
+raw logs, generic tuple export or routing policy changes. Slot methods do not take
+the core stop guard or dispatch synchronously onto its event loop; callers still
+exclude SDK start/stop/destruction and never hold the lifetime lock over I/O.
+Three fixed ABI socket-arm/read/disarm exports are implemented; global state/epoch
+fences surround SDK access. A callback-failure-vs-read race is explicitly tested.
+Local full-source guarded transformation, five new atomic guard tests, **14 SDK
+profile tests**, Python/YAML and diff checks PASS. Full SDK/updated C++/null-ABI
+Windows checks are pending. No existing runtime pin, service protocol or GUI
+capability is promoted; no actual owned-request path/HTTPS/DNS health is qualified.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests

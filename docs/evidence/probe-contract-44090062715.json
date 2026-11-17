@@ -1,0 +1,11 @@
+{
+  "synthetic_context_not_sdk_tun": true,
+  "source_commit": "26e1ad6370bc204bbb9f4e05df1d2702351227fe",
+  "actual_loopback_socket_boundary_passed": true,
+  "network_configuration_changed": false,
+  "slot_contract_passed": true,
+  "live_sdk_path_qualified": false,
+  "release_ready": false,
+  "tunnel_started": false,
+  "source_run": 44090062715
+}

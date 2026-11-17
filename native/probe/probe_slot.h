@@ -35,6 +35,7 @@ class Slot {
   using Clock = std::function<uint64_t()>;
   explicit Slot(Clock clock = SteadyMillis) : clock_(std::move(clock)) {}
   bool Active() const noexcept { return armed_.load() && !fault_.load(); }
+  void ObservationFailure() noexcept { fault_ = true; armed_ = false; }
   ArmResult Arm(const Request& request, const Key& key) noexcept {
     if (!ValidRequest(request) || !ValidKey(key)) return ArmResult::Invalid;
     try {
@@ -53,6 +54,7 @@ class Slot {
       deadline_ = now + request.ttl_ms;
       key_ = key;
       armed_ = true;
+      if (fault_) { Fail(kFault); return ArmResult::NotReady; }
       return ArmResult::Armed;
     } catch (...) { fault_ = true; armed_ = false; return ArmResult::NotReady; }
   }
@@ -89,13 +91,14 @@ class Slot {
   Snapshot Read(uint64_t token, uint64_t epoch, const Key& key) noexcept {
     try {
       std::lock_guard lock(mutex_);
-      if (fault_) { Fail(kFault); return value_; }
       if (!token || token != value_.token) return Snapshot{};
+      if (fault_) { Fail(kFault); return value_; }
       uint64_t now = 0;
       if (!Time(now)) { Fail(kFault); return value_; }
       Expire(now);
       if (epoch != value_.epoch) Fail(kEpochChanged);
       else if (Active() && key != key_) Fail(kSocketChanged);
+      if (fault_) Fail(kFault);
       value_.at_ms = now;
       return value_;
     } catch (...) { fault_ = true; armed_ = false; Snapshot r; r.flags |= kFault; return r; }

@@ -56,6 +56,14 @@ int main() {
   Require(slot.Arm(Attempt(16), key) == ArmResult::Armed);
   slot.Disarm(16);
   Require(slot.Read(16, 3, key).flags == kSupported);
+  auto ipv6 = key;
+  ipv6.family = 6; ipv6.source = {0xfd, 0, 0, 1}; ipv6.destination = {0x20, 1, 0xd, 0xb8};
+  Require(slot.Arm(Attempt(17), ipv6) == ArmResult::Armed);
+  slot.Bytes(key, true, 1, 1);
+  Require(!Evidence(slot.Read(17, 3, ipv6)));
+  slot.Bytes(ipv6, true, 1, 1);
+  Require(Evidence(slot.Read(17, 3, ipv6)));
+  slot.Disarm(17);
   for (unsigned test = 0; test < 7; ++test) {
     auto r = Attempt(17); auto k = key;
     switch (test) {
@@ -85,6 +93,28 @@ int main() {
   throws = true;
   throwing.Bytes(key, true, 1, 1);
   Require(throwing.Read(11, 3, key).flags == (kSupported | kFault));
+
+  std::atomic<bool> block_clock{false}, entered{false}, release{false};
+  Slot callback_failure([&] {
+    if (block_clock) {
+      entered = true;
+      while (!release) std::this_thread::yield();
+    }
+    return uint64_t{100};
+  });
+  Require(callback_failure.Arm(Attempt(), key) == ArmResult::Armed);
+  callback_failure.Bytes(key, true, 1, 1);
+  block_clock = true;
+  Snapshot raced;
+  std::thread reader([&] { raced = callback_failure.Read(11, 3, key); });
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+  while (!entered && std::chrono::steady_clock::now() < deadline) std::this_thread::yield();
+  Require(entered);
+  callback_failure.ObservationFailure();
+  release = true;
+  reader.join();
+  Require(raced.flags == (kSupported | kFault) && !raced.tx && !raced.rx);
+  Require(callback_failure.Read(12, 3, key).flags == kSupported);
 
   Slot concurrent([] { return uint64_t{100}; });
   Require(concurrent.Arm(Attempt(), key) == ArmResult::Armed);

@@ -1,0 +1,29 @@
+{
+  "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+  "requires_profile": "attached_tun_candidate",
+  "baseline_files": {
+    "core/include/vpn/internal/vpn_client.h": "71cdeff43b3c8427802b4c2599b5864a97d15607511dd88c9b4f7bbfa91c3e13",
+    "core/src/vpn_manager.h": "5cb048a42e9536394509e081929d1b889a1117112b910ac6785f221ef42f1507",
+    "core/src/vpn_manager.cpp": "936755b511f4dedd8a066002f0e9dc29ce664d39abcc0a219a9f48706d5343a5",
+    "core/src/tunnel.cpp": "a8a73a9fd19a0ba5d0143b1f7082dde2a8f29c8076797c6053289064f4bc5800",
+    "trusttunnel/include/vpn/trusttunnel/client.h": "4cc81d8294866b6525d736aed3e2a80807e0d72a21e80ba5ce55840b91e901cf",
+    "trusttunnel/src/client.cpp": "88963351a2995a9184b2c5b120f2314df826f6fc0a2d853369f232b71f25a63c",
+    "platform/windows/src/trusttunnel.cpp": "875a81f7bc2aa5895c93f62b3c96d2de492c0395e2156e70791966d2956af7d7"
+  },
+  "added_files": {
+    "native/probe/probe_abi.h": "core/include/vpn/internal/probe_abi.h",
+    "native/probe/probe_slot.h": "core/include/vpn/internal/probe_slot.h",
+    "native/probe/sdk_probe_core.h": "core/include/vpn/internal/sdk_probe_core.h",
+    "native/probe/probe_tunnel_adapter.h": "core/include/vpn/internal/probe_tunnel_adapter.h",
+    "native/probe/windows_probe_socket.h": "core/include/vpn/internal/windows_probe_socket.h",
+    "native/probe/owned_probe_exports.inc": "platform/windows/src/owned_probe_exports.inc"
+  },
+  "added_input_sha256": {
+    "native/probe/probe_abi.h": "a73d712e41b081e87c1f7d21fda60e8fc8bb111ceda5c292db736ef32a9cf130",
+    "native/probe/probe_slot.h": "d236f04b07369e0911c5b715a01c0c57385b856405ef219dc9d174dc9d095128",
+    "native/probe/sdk_probe_core.h": "8a15d5dfb752fc6278563cc70da668b81cfd1df4986f472544ed1003dd1cffc6",
+    "native/probe/probe_tunnel_adapter.h": "0f4e9bb125161e08cdf45bf6d9e172ce8836b06534a1efc744002511c3cfb6ee",
+    "native/probe/windows_probe_socket.h": "e0d096e707dac6745aed8ce8bfa3acadac241a0ff2b151125da7e1e50f68372e",
+    "native/probe/owned_probe_exports.inc": "05de849126b441bf79be15fad80825925dba4aa8775f38107a297ff5e28e53f1"
+  }
+}

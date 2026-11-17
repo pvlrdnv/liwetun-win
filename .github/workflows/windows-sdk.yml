@@ -14,6 +14,10 @@ on:
         description: Isolated read-only SDK-held TUN identity candidate (requires traffic_metrics/source_pins)
         type: boolean
         default: false
+      owned_probe:
+        description: Isolated owned TCP socket correlation (requires all previous profiles)
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -25,6 +29,7 @@ jobs:
       SOURCE_PINNED: ${{ inputs.source_pins }}
       TRAFFIC_METRICS: ${{ inputs.traffic_metrics }}
       ATTACHED_TUN: ${{ inputs.attached_tun }}
+      OWNED_PROBE: ${{ inputs.owned_probe }}
     defaults:
       run:
         shell: pwsh
@@ -68,6 +73,21 @@ jobs:
           @{passed=$true; counter_tests='tiny_one_sided_epoch_reset_overflow_clock_gap_concurrency'; tunnel_started=$false; release_ready=$false} | ConvertTo-Json | Set-Content build/sdk-evidence/traffic-counter-tests.json
           python -m unittest discover -s tools/sdk -p 'test_traffic_profile.py'
           if ($LASTEXITCODE -ne 0) { throw 'Traffic source guard tests failed' }
+      - name: Verify owned socket correlation contract without TUN
+        if: inputs.owned_probe
+        run: |
+          if ($env:SOURCE_PINNED -ne 'true' -or $env:TRAFFIC_METRICS -ne 'true' -or $env:ATTACHED_TUN -ne 'true') { throw 'Owned probe requires all preceding SDK profiles' }
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX native/probe/test_probe_slot.cpp /Fobuild/probe-slot.obj /Febuild/probe-slot.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Owned probe slot build failed' }
+          & ./build/probe-slot.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Owned probe slot contract failed' }
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_WIN32_WINNT=0x0A00 /Inative/health native/probe/test_windows_socket.cpp /Fobuild/probe-socket.obj /Febuild/probe-socket.exe /link ws2_32.lib iphlpapi.lib
+          if ($LASTEXITCODE -ne 0) { throw 'Owned socket contract build failed' }
+          & ./build/probe-socket.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Owned socket contract failed' }
+          python -m unittest discover -s tools/sdk -p 'test_owned_probe_profile.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Owned probe source guards failed' }
+          @{slot_contract_passed=$true; actual_loopback_socket_boundary_passed=$true; synthetic_context_not_sdk_tun=$true; tunnel_started=$false; network_configuration_changed=$false; live_sdk_path_qualified=$false; release_ready=$false} | ConvertTo-Json | Set-Content build/sdk-evidence/owned-probe-contract.json
       - name: Install build tools on disposable runner
         run: |
           python -m pip install conan==2.12.2
@@ -116,6 +136,11 @@ jobs:
         run: |
           python tools/sdk/attached_tun_profile.py --source build/vendor/sdk --output build/sdk-evidence
           if ($LASTEXITCODE -ne 0) { throw 'Attached TUN source verification failed' }
+      - name: Prepare isolated owned socket correlation profile
+        if: inputs.owned_probe
+        run: |
+          python tools/sdk/owned_probe_profile.py --source build/vendor/sdk --output build/sdk-evidence
+          if ($LASTEXITCODE -ne 0) { throw 'Owned probe source verification failed' }
       - name: Export pinned local dependency recipes
         run: |
           conan export build/vendor/common --user adguard --channel oss --version 8.2.0
@@ -128,7 +153,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'DNS recipe export failed' }
       - name: Configure and build actual SDK DLL
         run: |
-          $sdkVersion = if ($env:ATTACHED_TUN -eq 'true') { '1.1.12-liwetun.attached1' } elseif ($env:TRAFFIC_METRICS -eq 'true') { '1.1.12-liwetun.traffic1' } else { '1.1.12-liwetun.1' }
+          $sdkVersion = if ($env:OWNED_PROBE -eq 'true') { '1.1.12-liwetun.probe1' } elseif ($env:ATTACHED_TUN -eq 'true') { '1.1.12-liwetun.attached1' } elseif ($env:TRAFFIC_METRICS -eq 'true') { '1.1.12-liwetun.traffic1' } else { '1.1.12-liwetun.1' }
           cmake -S build/vendor/sdk/platform/windows -B build/sdk-build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe "-DTT_CLIENT_VERSION=$sdkVersion"
           if ($LASTEXITCODE -ne 0) { throw 'SDK configure failed' }
           $profileArgs = @()
@@ -173,6 +198,11 @@ jobs:
         run: |
           python tools/sdk/check_attached_tun_abi.py --runtime build/sdk-runtime --output build/sdk-evidence/attached-tun-abi-check.json
           if ($LASTEXITCODE -ne 0) { throw 'Attached TUN ABI contract failed' }
+      - name: Verify owned socket probe exports without SDK startup
+        if: inputs.owned_probe
+        run: |
+          python tools/sdk/check_owned_probe_abi.py --runtime build/sdk-runtime --output build/sdk-evidence/owned-probe-abi-check.json
+          if ($LASTEXITCODE -ne 0) { throw 'Owned probe ABI contract failed' }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

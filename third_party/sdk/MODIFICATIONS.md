@@ -75,3 +75,24 @@ after the aggregate profile, separate from all currently pinned runtime inputs:
   All changed files carry an explicit modification header; six baseline digests,
   added-header hashes and output hashes are recorded in `attached-tun-inputs.json`
   and `attached-tun-profile.json`. Default SDK/profile selections are unchanged.
+
+Optional owned-socket correlation (`tools/sdk/owned_probe_profile.py`), after the
+attachment profile, separate from every currently admitted runtime:
+
+- Adds one in-memory correlation slot per core instance. A 32-byte request and
+  56-byte snapshot contain only closed flags/token/epoch/time/byte facts. TCP
+  local/peer tuples stay private, expire logically by a bounded monotonic TTL,
+  and must be disarmed by the caller on completion/cancellation.
+- Derives an exclusive connected socket's tuple inside the Windows wrapper and
+  checks its exact local address entry against the SDK-held TUN. No interface
+  enumeration, generic public tuple-registration export or network I/O is added.
+- Observes positive bytes at three existing tunnel transfer points, checks the
+  actual endpoint/listener, and invalidates on other-path selection/migration.
+  Core connection IDs, addresses, domains and application names are not exported.
+  Existing raw logger/per-destination event suppression stays intact.
+- Adds private C++ core/wrapper methods and three versioned Windows exports;
+  no routing/TLS/DNS/recovery decision is changed. Changed vendor files carry an
+  explicit modification header. Exact seven source and six added-file digests
+  are pinned in `owned-probe-inputs.json` / `owned-probe-profile.json`.
+  These facts do not themselves prove an application HTTPS/DNS request or qualify
+  a release. A dedicated health endpoint remains unselected.
