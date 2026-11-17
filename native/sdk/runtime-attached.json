@@ -24,9 +24,13 @@
   "native_ipv6_egress_qualified": false,
   "service_admitted": false,
   "package_admitted": false,
-  "actual_interface_qualified": false,
+  "actual_interface_qualified": true,
   "probe_traversal_proven": false,
   "adapter_ownership_proven": false,
-  "qualification_scope": "sdk_build_cpp_contract_and_null_export_only",
-  "qualification_receipt": "docs/evidence/sdk-attached-44070100152.json"
+  "qualification_scope": "sdk_build_null_abi_and_disposable_h2_h3_live_attachment_concurrent_stop",
+  "qualification_receipt": "docs/evidence/sdk-attached-44070100152.json",
+  "live_attachment_qualification_receipts": [
+    "docs/evidence/attachment-context-44076452026.json",
+    "docs/evidence/attachment-context-44076458760.json"
+  ]
 }

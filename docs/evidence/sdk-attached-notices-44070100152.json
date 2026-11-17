@@ -1,0 +1,13 @@
+{
+  "source_run": 44070100152,
+  "source_commit": "9e18a558624a47fb753c31b97844f7853f6c25f3",
+  "inventory_sha256": "f46f008f0796ba99fd3ca475df246b45180f28187ddaa2e9f600057f68e5dae0",
+  "compared_to": "native/sdk/notice-traffic.json",
+  "packaged_notice_sets_unchanged": 15,
+  "packages_requiring_source_supplements": 13,
+  "actual_archived_bodies_verified": true,
+  "actual_conan_lock_verified": true,
+  "distribution_qualified": false,
+  "package_admitted": false,
+  "release_ready": false
+}

@@ -208,8 +208,8 @@ ABI/layout, epoch/state changes, invalid metrics, time/counter regression and
 unknown clearing. Windows C++ contract, full SDK build and both read-only null
 exports **PASS** (44070100152). All eight emitted source/header hashes match local
 preparation, and both downloaded DLL hashes match the build receipt. The separate
-`runtime-attached.json` pins these exact bytes, with actual-interface, network,
-service/package, desktop and release qualification false. Existing runtime pins
+`runtime-attached.json` initially pinned these exact bytes with all qualification
+gates false; focused live-interface results follow below. Existing runtime pins
 remain unchanged. [Build receipt](evidence/sdk-attached-44070100152.json).
 There is no service command, actual attached-interface qualification, DNS/HTTPS
 probe or verified-Internet state in this slice.
@@ -232,7 +232,7 @@ Additional source constraints for the next consumer (no behavior change here):
   No Wintun source is copied, driver altered or owner-machine experiment run.
 
 
-## CI-only live attachment fence — Windows execution pending
+## CI-only live attachment fence — H2/H3 and concurrent Stop PASS
 
 The network workflow's explicit `attached_tun=true` selects only the separately
 pinned build; source/aggregate profile guards and exact source-run/DLL hashes
@@ -250,6 +250,15 @@ independent path and baseline/WFP restoration requirements. This qualifies an
 attachment-read prerequisite only, not an application-owned health probe or
 adapter ownership. The package workflow/assembler explicitly require this flag
 OFF; normal service/package workflows cannot select the attached SDK candidate.
-Local fixture tests and source checks pass; new C++ fence and actual live Windows
-observations are pending. Existing build receipt remains historical build-only
-proof; no network/desktop/release qualification is inferred from it.
+Local fixture tests and source checks pass. Windows C++ fence and actual live
+H2/H3 context/read-vs-Stop **PASS** (44076452026 / 44076458760): 481/497 watcher
+reads, 478/495 inactive-after-active observations, HTTPS/DNS and complete baseline
+network/WFP restoration without watchdog. Identifiers were never exported.
+Package exclusion **PASS** (44076464374), 14 groups with all three CI flags OFF,
+using the prior qualified aggregate SDK rather than the attached candidate.
+
+`runtime-attached.json` qualifies only this focused live-interface prerequisite;
+full network/fault/recovery/IPv6 matrix, normal service/package admission,
+probe-specific traversal, ownership and desktop/release remain unqualified.
+Existing build and per-run runtime-input receipts remain historical evidence.
+The dedicated health request and its endpoint/path correlation are still absent.

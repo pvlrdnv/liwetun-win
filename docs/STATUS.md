@@ -244,14 +244,15 @@ routing or existing runtime pin changes. Local real-source transformation and
 five atomic guard tests PASS. Windows C++ contract, exact source preparation,
 full SDK and both null-export checks **PASS** (44070100152). All eight emitted
 source/header digests match local preparation; both downloaded DLL hashes match
-CI. A separate `runtime-attached.json` pins this build-only candidate, with actual
-interface/network/desktop/service/package/release qualification explicitly false.
+CI. A separate `runtime-attached.json` initially pinned this build-only candidate
+with all actual-interface/network/desktop/service/package/release qualifications
+false; focused live-interface qualification follows below.
 [Receipt](evidence/sdk-attached-44070100152.json). Existing runtime pins remain
-unchanged; candidate is not admitted by service/package workflows. Source audit also records
+unchanged; candidate is not admitted by normal service/package workflows. Source audit also records
 self-image WFP permits and Wintun duplicate-alias rename behavior as constraints
 on future probe/ownership work; no inferred bypass or foreign-adapter reproduction.
 
-Next CI-only network observer is implemented, Windows execution pending. The
+The CI-only live attachment observer is implemented and qualified on Windows. The
 explicit `attached_tun=true` network input selects the separate reviewed build and
 requires aggregate/source pins. `LIWETUN_TEST_ATTACHED_TUN` (default OFF) requires
 its export and fences every otherwise-valid counter read against the actual
@@ -261,13 +262,30 @@ identifiers remain on the service stack, never cross IPC or enter reports. No
 new IPC command/GUI capability/probe or routing policy change. The report marks
 this CI observer ON and both routing-test modes OFF. Package assembly explicitly
 rejects this third test flag as well as the previous routing flags. **23 Python
-fixture tests, syntax/YAML and diff checks PASS**. New C++ fence tests, real H2/H3
-context/read-vs-Stop and package-exclusion checks are pending on Windows CI.
+fixture tests, syntax/YAML and diff checks PASS**. Windows C++ fence and actual
+H2/H3 **PASS**: [44076452026](evidence/attachment-context-44076452026.json),
+[44076458760](evidence/attachment-context-44076458760.json). Both admitted actual
+SDK-held context at ready counter reads; Stop watchers made 481/497 reads with
+478/495 inactive-after-active observations. HTTPS/DNS and all network/WFP baselines
+passed without watchdog. This is a CI observation build, not all-test-flags-OFF
+product acceptance. `runtime-attached.json` now marks only this focused live
+attachment prerequisite qualified; full network/fault/recovery/IPv6 matrix,
+normal service/package admission, probe traversal, ownership and desktop/release
+remain unqualified. Original build/runtime input receipts remain historical.
+
+Package exclusion with the unchanged qualified aggregate SDK **PASS**
+(44076464374): all three CI flags OFF, 14 installer groups, medium GUI/service
+query, rollback/uninstall/cleanup; exact SDK input receipts preserved.
+[Package receipt](evidence/package-traffic-44076464374.json). Temporary CI signing
+only. All 15 archived dependency notice sets of the attached build match previous
+bodies; 13 source supplements remain; actual Conan lock PASS.
+[Byte receipt](evidence/sdk-attached-notices-44070100152.json). No distribution approval.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
-do not qualify those systems. New SDK artifacts retain for 14 days; GUI and
-repaired diagnostic endpoint artifacts expire 2026-11-30. Recheck availability
+do not qualify those systems. New SDK artifacts retain for 14 days. Latest GUI
+runtime/provenance expires 2026-12-01, its safe evidence/Rust notice candidates
+2026-11-24; the repaired diagnostic endpoint expires 2026-11-30. Recheck availability
 and preserve all source-run/digest guards before reuse.
 
 Endpoint-restart recovery passed bounded disposable Windows CI for H2 and H3.
