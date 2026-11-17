@@ -81,9 +81,9 @@ class SchannelProbe {
             info.dwProtocol != SP_PROT_TLS1_2_CLIENT || info.dwCipherStrength < 128) return TlsResult::ProtocolRejected;
         PCCERT_CONTEXT certificate = nullptr;
         if (QueryContextAttributesW(&context_, SECPKG_ATTR_REMOTE_CERT_CONTEXT, &certificate) != SEC_E_OK || !certificate) return TlsResult::ChainRejected;
-        const bool valid_time = certificate->pCertInfo && CertVerifyTimeValidity(nullptr, certificate->pCertInfo) == 0;
+        const auto certificate_result = ValidateCertificate(certificate);
         CertFreeCertificateContext(certificate);
-        if (!valid_time) return TlsResult::TimeRejected;
+        if (certificate_result != TlsResult::Ok) return certificate_result;
         if (QueryContextAttributesW(&context_, SECPKG_ATTR_STREAM_SIZES, &sizes_) != SEC_E_OK ||
             !sizes_.cbMaximumMessage || sizes_.cbMaximumMessage > kCipherLimit ||
             sizes_.cbHeader > kCipherLimit || sizes_.cbTrailer > kCipherLimit) return TlsResult::Limit;
@@ -163,6 +163,31 @@ class SchannelProbe {
     return Fail(TlsResult::Limit);
   }
  private:
+  static TlsResult ValidateCertificate(PCCERT_CONTEXT certificate) {
+    if (!certificate->pCertInfo || CertVerifyTimeValidity(nullptr, certificate->pCertInfo) != 0)
+      return TlsResult::TimeRejected;
+    // Schannel's automatic validation remains enabled. Independently require a
+    // complete zero-error chain: the Schannel flags alone did not reject a
+    // non-root fixture leaf without revocation information on Server 2022.
+    CERT_CHAIN_PARA parameters{};
+    parameters.cbSize = sizeof(parameters);
+    char usage[] = szOID_PKIX_KP_SERVER_AUTH;
+    char* usages[] = {usage};
+    parameters.RequestedUsage.dwType = USAGE_MATCH_TYPE_AND;
+    parameters.RequestedUsage.Usage.cUsageIdentifier = 1;
+    parameters.RequestedUsage.Usage.rgpszUsageIdentifier = usages;
+    constexpr DWORD flags = CERT_CHAIN_CACHE_ONLY_URL_RETRIEVAL | CERT_CHAIN_DISABLE_AUTH_ROOT_AUTO_UPDATE |
+        CERT_CHAIN_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT | CERT_CHAIN_REVOCATION_CHECK_CACHE_ONLY;
+    PCCERT_CHAIN_CONTEXT chain = nullptr;
+    if (!CertGetCertificateChain(HCCE_LOCAL_MACHINE, certificate, nullptr, certificate->hCertStore,
+          &parameters, flags, nullptr, &chain) || !chain) return TlsResult::ChainRejected;
+    const DWORD errors = chain->TrustStatus.dwErrorStatus;
+    CertFreeCertificateChain(chain);
+    if (errors & (CERT_TRUST_IS_REVOKED | CERT_TRUST_REVOCATION_STATUS_UNKNOWN | CERT_TRUST_IS_OFFLINE_REVOCATION))
+      return TlsResult::RevocationRejected;
+    if (errors & CERT_TRUST_IS_NOT_TIME_VALID) return TlsResult::TimeRejected;
+    return errors ? TlsResult::ChainRejected : TlsResult::Ok;
+  }
   TlsResult Fail(TlsResult result) { ready_ = false; return result; }
   static constexpr size_t kCipherLimit = 65536;
   struct Output {

@@ -1,8 +1,8 @@
 # HTTPS probe candidate contract
 
 Status: bounded HTTP framing/reply reducer PASS on MSVC (44143544601). Internal
-Schannel/borrowed-socket TLS candidate implemented; compilation/preflight and real
-handshake qualification pending. Live SDK-owned HTTPS remains unimplemented. This document does not enable application health.
+Schannel/borrowed-socket TLS candidate implemented; compilation/preflight PASS (44165060837). Real handshake matrix initially failed
+on missing revocation information (44167373258); explicit chain gate rerun pending. Live SDK-owned HTTPS remains unimplemented. This document does not enable application health.
 
 ## Reserved fixture target and wire contract
 
@@ -72,3 +72,11 @@ These are implemented policies, not yet proved handshake/runtime guarantees.
 TLS 1.3, graceful TLS shutdown, OS crypto-call cancellation/bounds and production
 certificate/revocation behavior still require dedicated work/qualification.
 The module is not linked into the shipped service/UI and has no public IPC entry.
+
+An initial real Server 2022 test accepted a leaf with unavailable revocation
+information despite Schannel flags. The implementation now additionally calls
+[CertGetCertificateChain](https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-certgetcertificatechain)
+against local-machine trust with server-auth usage, cache-only chain/revocation
+lookup and automatic root update disabled. It accepts only zero chain errors;
+unknown/offline/revoked status refuses HTTP. Automatic Schannel validation remains
+enabled. The production policy for obtaining fresh revocation data is still open.

@@ -185,6 +185,19 @@ keys/certificates are never uploaded. Local synthetic certificate generation
 PASS without trust changes. Actual Windows handshake matrix pending. No SDK,
 service command, public IPC, GUI or release capability is enabled by this fixture.
 
+Initial real TLS matrix 44167373258 on `628aea1` **FAIL**, with exact temporary
+root removal. Real valid/fragmented HTTPS, bad nonce, redirect/header limits and
+wrong-name/untrusted/expired certificate controls passed. The non-root leaf
+without revocation information was unexpectedly accepted by automatic Schannel
+validation despite its revocation flags; no application capability is enabled.
+[Original report](evidence/health-tls-revocation-44167373258.json).
+The candidate now additionally builds a local-machine chain with cache-only URL
+and revocation lookup, root auto-update disabled, required server-auth usage and
+zero tolerated chain errors. Unknown/offline/revoked status refuses HTTP before
+any application request. Automatic Schannel name/chain validation remains ON.
+Certificate controls now require their specific closed refusal codes rather than
+any generic TLS rejection. Windows matrix rerun pending.
+
 ## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the

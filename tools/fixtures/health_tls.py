@@ -316,8 +316,10 @@ def main():
                 passed = (value['tls_result'] == expected and value['request_sent'] and not value['response_verified']
                           and counts['requests'] == 1 and counts['replies'] == 0 and elapsed < 6500)
             else:
-                passed = (value['tls_result'] in [7, 8, 9, 10, 12] and not value['request_sent']
-                          and not value['response_verified'] and counts['requests'] == 0)
+                expected = {'wrong_name': 7, 'untrusted': 8, 'expired': 9, 'missing_revocation': 10}[name]
+                passed = (value['tls_result'] == expected and not value['handshake_verified']
+                          and value['http_result'] is None and not value['request_sent']
+                          and not value['response_verified'] and counts['requests'] == counts['body_bytes'] == 0)
             case['passed'] = passed
             if not passed:
                 raise RuntimeError('tls_case_not_qualified')
