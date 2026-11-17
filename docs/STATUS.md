@@ -436,6 +436,18 @@ tests PASS**. Pinned H3 source uses stream reset on connection close, suggesting
 an observer gap, but no live reset finding is established until CI observes it.
 No SDK/routing behavior or acceptance criterion was changed.
 
+Focused H3 deadline diagnostics 44119165669 / 44119407694 both **FAIL** the
+unchanged criterion. At about 7983 ms the receiver was still waiting, with no
+EOF and no reset; after Stop it recorded EOF. Native timeout/disarm/24 TX / 0 RX
+facts were correct and never became success. [Both reports](evidence/owned-probe-deadline-open-44119407694.json).
+The reset-only observer hypothesis is therefore not supported by these runs.
+The CI-owned socket now uses abortive SO_LINGER(1,0) close for no-payload refusal
+controls and failed/expired requests, after matching-token disarm; successful
+exchanges retain ordinary close. This targets the half-open failed request,
+without changing SDK/core routing or ordinary application traffic. Remote EOF
+before Stop is still required; no acceptance budget was relaxed. Live H2/H3
+deadline and echo/cancel regressions of this change are pending.
+
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
 do not qualify those systems. New SDK artifacts retain for 14 days. Latest GUI

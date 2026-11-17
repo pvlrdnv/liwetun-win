@@ -13,12 +13,23 @@ namespace liwetun {
 namespace {
 struct Socket {
   SOCKET value = INVALID_SOCKET;
+  bool abort_on_close = false;
   Socket() = default;
   explicit Socket(SOCKET fd) : value(fd) {}
   Socket(const Socket&) = delete;
   Socket& operator=(const Socket&) = delete;
-  Socket(Socket&& other) noexcept : value(std::exchange(other.value, INVALID_SOCKET)) {}
-  ~Socket() { if (value != INVALID_SOCKET) closesocket(value); }
+  Socket(Socket&& other) noexcept : value(std::exchange(other.value, INVALID_SOCKET)),
+      abort_on_close(other.abort_on_close) {}
+  ~Socket() {
+    if (value == INVALID_SOCKET) return;
+    if (abort_on_close) {
+      // A bounded request has no useful half-open receive side after failure.
+      // Matching token disarm runs before this descriptor is closed.
+      const linger abortive{1, 0};
+      setsockopt(value, SOL_SOCKET, SO_LINGER, reinterpret_cast<const char*>(&abortive), sizeof(abortive));
+    }
+    closesocket(value);
+  }
 };
 struct Winsock {
   bool ready = false;
@@ -166,6 +177,7 @@ void Backend::RunOwnedProbe() noexcept {
     {
       auto ordinary = Connect(attachment.index, false, deadline, owned_cancel_);
       if (ordinary.value == INVALID_SOCKET) throw 1;
+      ordinary.abort_on_close = true; // No payload/response is expected for this refusal control.
       result.stage = 3;
       std::lock_guard lock(core_mutex_);
       if (owned_cancel_ || !observed_core_ || instance_ != instance) throw 1;
@@ -177,6 +189,7 @@ void Backend::RunOwnedProbe() noexcept {
     auto socket = Connect(attachment.index, true, deadline, owned_cancel_);
     result.connected = socket.value != INVALID_SOCKET;
     if (!result.connected) throw 1;
+    socket.abort_on_close = true; // Every early failure must retire the request, including arm failure.
     Cleanup cleanup{[this, instance, token = request.token, &result] {
       std::lock_guard lock(core_mutex_);
       if (observed_core_ && instance_ == instance) result.disarmed = owned_disarm_(observed_core_, token) == 1;
@@ -201,6 +214,7 @@ void Backend::RunOwnedProbe() noexcept {
     const auto received = sent ? Transfer(socket.value, response, false, deadline, owned_cancel_) : IoResult::Failed;
     result.receive_cancelled = received == IoResult::Cancelled;
     result.receive_timed_out = received == IoResult::Deadline;
+    socket.abort_on_close = received != IoResult::Complete;
     result.echoed = received == IoResult::Complete && response == expected;
     result.stage = 8;
     {
