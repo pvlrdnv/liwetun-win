@@ -24,7 +24,7 @@ class OwnedProbeSink:
         self.lock = threading.Lock()
         self.counts = dict(accepted=0, request_bytes=0, valid_requests=0,
                            replies_sent=0, reply_bytes=0, rejected_frames=0,
-                           waiting_for_owner_close=0, owner_closed=0)
+                           waiting_for_owner_close=0, owner_closed=0, owner_reset=0)
         self.thread = threading.Thread(target=self.serve, daemon=True)
         self.thread.start()
 
@@ -77,6 +77,9 @@ class OwnedProbeSink:
                                     extra = client.recv(1)
                                 except socket.timeout:
                                     continue
+                                except ConnectionResetError:
+                                    self.count('owner_reset')
+                                    break
                                 if not extra:
                                     self.count('owner_closed')
                                 else:

@@ -428,7 +428,13 @@ not retain last receiver facts, so the exact missing observation is unknown.
 The observer now retains only closed receiver totals, validated worker fields
 and elapsed time, plus receiver totals after Stop and before fixture shutdown.
 No oracle/timeout/routing/SDK behavior changed; focused H3 diagnostic pending.
-H3 deadline remains unqualified until the full criterion passes.
+H3 deadline remains unqualified until the full criterion passes. The receiver now
+also records TCP `ConnectionResetError` in a separate closed `owner_reset` count;
+it still does not qualify the EOF-only oracle. A real loopback SO_LINGER reset
+check distinguishes reset from EOF without sending a response; **31 local Python
+tests PASS**. Pinned H3 source uses stream reset on connection close, suggesting
+an observer gap, but no live reset finding is established until CI observes it.
+No SDK/routing behavior or acceptance criterion was changed.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests

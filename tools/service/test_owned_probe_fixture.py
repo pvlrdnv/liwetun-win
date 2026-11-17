@@ -1,4 +1,5 @@
 import socket
+import struct
 import time
 import unittest
 from owned_probe_fixture import (OwnedProbeSink, REQUEST, REPLY, TARGET, validate_report,
@@ -8,6 +9,24 @@ from endpoint_forwarder import EndpointForwarder
 
 
 class OwnedProbeFixtureTests(unittest.TestCase):
+    def test_withheld_response_records_tcp_reset_separately_from_eof(self):
+        receiver = OwnedProbeSink(port=0, mode='deadline')
+        try:
+            with socket.create_connection(receiver.address, timeout=.1) as client:
+                client.sendall(REQUEST + (123).to_bytes(8, 'big'))
+                with self.assertRaises(socket.timeout):
+                    client.recv(24)
+                self.assertEqual(receiver.stats()['waiting_for_owner_close'], 1)
+                client.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))
+            deadline = time.monotonic() + 1
+            while receiver.stats()['owner_reset'] != 1 and time.monotonic() < deadline:
+                time.sleep(.01)
+            self.assertEqual(receiver.stats()['owner_reset'], 1)
+            self.assertEqual(receiver.stats()['owner_closed'], 0)
+            self.assertEqual(receiver.stats()['replies_sent'], 0)
+        finally:
+            receiver.close()
+
     def test_deadline_oracle_requires_one_sided_endpoint_bytes_and_no_reply_or_cancel(self):
         value = dict(schema_version=2, stage=9, connected=True, nonexclusive_rejected=True,
                      arm_accepted=True, echo_verified=False, same_instance_epoch=True, disarmed=True,
