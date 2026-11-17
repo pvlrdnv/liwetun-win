@@ -84,6 +84,31 @@ def cancel_owned_request(session, endpoint, report_path):
                 proves_https=False, proves_dns=False, release_ready=False)
 
 
+def expire_owned_request(session, endpoint, report_path):
+    """Never Stop before the worker's own bounded receive deadline completes."""
+    from owned_probe_fixture import validate_deadline_report
+    started = time.monotonic()
+    while time.monotonic() - started < 8:
+        receiver = endpoint.command('stats')['owned_probe_sink']
+        if report_path.exists() and receiver['owner_closed'] == 1 and receiver['waiting_for_owner_close'] == 0:
+            with report_path.open('rb') as source:
+                raw = source.read(4097)
+            if len(raw) <= 4096 and raw.endswith(b'\n'):
+                observation = validate_deadline_report(json.loads(raw), receiver)
+                break
+        time.sleep(.025)
+    else:
+        raise RuntimeError('owned_probe_deadline_not_qualified')
+    traffic = session.command('traffic')
+    unknown = (not traffic.get('flags', 0) & 2 and traffic.get('tx') is None and traffic.get('rx') is None)
+    if not unknown:
+        raise RuntimeError('owned_probe_deadline_not_qualified')
+    return dict(qualified=True, observation_total_ms=int((time.monotonic() - started) * 1000),
+                stop_sent_before_deadline=False, unknown_after_deadline=True,
+                owned_socket_path=observation, owned_socket_receiver=receiver,
+                proves_https=False, proves_dns=False, release_ready=False)
+
+
 def ordinary_https(origin, addresses, family=socket.AF_INET):
     source_matches = False
     try:
@@ -269,9 +294,10 @@ def main():
     attachment_guard = os.environ.get('ATTACHED_TUN') == 'true'
     owned_probe = os.environ.get('OWNED_PROBE') == 'true'
     owned_probe_mode = os.environ.get('LIWETUN_OWNED_PROBE_MODE', 'echo')
-    if owned_probe_mode not in ['echo', 'cancel'] or (owned_probe_mode == 'cancel' and not owned_probe):
+    if owned_probe_mode not in ['echo', 'cancel', 'deadline'] or (owned_probe_mode != 'echo' and not owned_probe):
         raise RuntimeError('invalid_owned_probe_mode')
     cancel_probe = owned_probe and owned_probe_mode == 'cancel'
+    negative_probe = owned_probe and owned_probe_mode != 'echo'
     if owned_probe and not attachment_guard:
         raise RuntimeError('invalid_owned_probe_mode')
     if attachment_guard and not traffic_required:
@@ -416,12 +442,17 @@ def main():
                 session, endpoint, client.parent / 'owned-probe-context.json')
             session.close()
             session = None
+        elif negative_probe:
+            stage = 'owned_request_receive_deadline'
+            result['owned_probe_deadline'] = expire_owned_request(
+                session, endpoint, client.parent / 'owned-probe-context.json')
+        if negative_probe:
             result['ordinary_https_probe_attempted'] = False
             result['application_dns_probe_attempted'] = False
         info = None
         selected = False
         os.environ['LIWETUN_CI_ORIGIN'] = SYNTHETIC_IPV6 if synthetic_ipv6 else origin
-        for _ in range(0 if cancel_probe else 20):
+        for _ in range(0 if negative_probe else 20):
             state = session.command('query')
             info = tun()
             if info and info['dns']:
@@ -432,8 +463,8 @@ def main():
                 break
             time.sleep(.1)
         result['ordinary_origin_route_is_tun'] = selected
-        if cancel_probe:
-            traffic_ok = result['owned_probe_cancellation']['qualified']
+        if negative_probe:
+            traffic_ok = result['owned_probe_cancellation' if cancel_probe else 'owned_probe_deadline']['qualified']
         elif profile == 'valid':
             if not info or not selected:
                 raise RuntimeError('production_route_not_selected')
@@ -578,7 +609,7 @@ def main():
                           adapter_absent_at_refusal=info is None,
                           endpoint_bytes_by_transport=refusal_delta,
                           endpoint_tcp_connections=refusal_stats['tcp_connected'])
-        if traffic_required and not cancel_probe:
+        if traffic_required and not negative_probe:
             stage = 'aggregate_traffic_observation'
             traffic_after = session.command('traffic')
             result['aggregate_traffic_after'] = traffic_after
@@ -662,7 +693,7 @@ def main():
             stage = 'tx_only_and_idle_counter_windows'
             result['tx_only_fixture'] = observe_tx_only_and_idle(session, addresses, endpoint, protocol)
             traffic_ok = traffic_ok and result['tx_only_fixture']['passed']
-        if traffic_required and profile == 'valid' and not cancel_probe:
+        if traffic_required and profile == 'valid' and not negative_probe:
             stage = 'concurrent_traffic_reader'
             traffic_watch = Child([str(client), '--traffic-watch'])
             if traffic_watch.receive() != 'ready':
@@ -729,7 +760,7 @@ def main():
                    'fixture_child_closed', 'lease_client_already_exited', 'lease_client_not_forced',
                    'service_crash_not_observed'}
         reasons.update({'owned_probe_not_waiting', 'owned_probe_cancellation_not_qualified',
-                        'owned_socket_path_not_qualified', 'invalid_owned_probe_report'})
+                        'owned_probe_deadline_not_qualified', 'owned_socket_path_not_qualified', 'invalid_owned_probe_report'})
         reason = error.args[0] if error.args else None
         result['failure_reason'] = reason if isinstance(reason, str) and reason in reasons else 'unknown'
         if reason == 'wfp_probe_failed':

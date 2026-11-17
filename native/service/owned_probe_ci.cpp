@@ -34,6 +34,7 @@ struct Result {
   bool connected = false, nonexclusive_rejected = false, armed = false;
   bool echoed = false, same_epoch = false, disarmed = false, cancelled = false, qualified = false;
   bool receive_cancelled = false;
+  bool receive_timed_out = false;
   probe::Snapshot sample;
 };
 enum class IoResult { Complete, Cancelled, Deadline, Failed };
@@ -105,15 +106,15 @@ bool WriteResult(const std::wstring& path, const Result& result) {
   const std::string rx = observed ? std::to_string(result.sample.rx) : "null";
   char output[1536]{};
   const int length = std::snprintf(output, sizeof(output),
-      "{\"schema_version\":1,\"stage\":%u,\"connected\":%s,\"nonexclusive_rejected\":%s,"
+      "{\"schema_version\":2,\"stage\":%u,\"connected\":%s,\"nonexclusive_rejected\":%s,"
       "\"arm_accepted\":%s,\"echo_verified\":%s,\"same_instance_epoch\":%s,\"disarmed\":%s,\"cancelled\":%s,"
-      "\"receive_cancelled\":%s,"
+      "\"receive_cancelled\":%s,\"receive_timed_out\":%s,"
       "\"snapshot_flags\":%u,\"tx_bytes\":%s,\"rx_bytes\":%s,\"qualified\":%s,"
       "\"proves_dns\":false,\"proves_https\":false,\"proves_internet\":false,"
       "\"identifiers_exported\":false,\"release_ready\":false}\n",
       result.stage, boolean(result.connected), boolean(result.nonexclusive_rejected), boolean(result.armed),
       boolean(result.echoed), boolean(result.same_epoch), boolean(result.disarmed), boolean(result.cancelled),
-      boolean(result.receive_cancelled), result.sample.flags,
+      boolean(result.receive_cancelled), boolean(result.receive_timed_out), result.sample.flags,
       tx.c_str(), rx.c_str(), boolean(result.qualified));
   if (length <= 0 || static_cast<size_t>(length) >= sizeof(output)) return false;
   Handle file(CreateFileW(path.c_str(), GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_NEW,
@@ -199,6 +200,7 @@ void Backend::RunOwnedProbe() noexcept {
     result.stage = 7;
     const auto received = sent ? Transfer(socket.value, response, false, deadline, owned_cancel_) : IoResult::Failed;
     result.receive_cancelled = received == IoResult::Cancelled;
+    result.receive_timed_out = received == IoResult::Deadline;
     result.echoed = received == IoResult::Complete && response == expected;
     result.stage = 8;
     {

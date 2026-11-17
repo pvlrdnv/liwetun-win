@@ -404,6 +404,17 @@ The separate probe runtime pin references the expanded focused CI receipt; full
 network matrix, live bypass/migration negatives, normal service/package admission,
 application HTTPS/DNS health, Windows 10/11 and release gates remain open.
 
+Added a third CI-only `owned_probe_mode=deadline`: the receiver withholds all
+response bytes until the worker's own 4 s I/O deadline, without an earlier Stop.
+The closed worker report is now schema v2 with distinct receive-cancelled and
+receive-timed-out booleans. Its strict negative oracle requires deadline (not
+cancel/failure), same SDK epoch, exact 24 endpoint TX / 0 RX, no echo/success,
+explicit disarm and remote EOF. Service observations must remain unknown; only
+then does the harness Stop and check baseline network/WFP restoration. Existing
+positive/cancel oracles refuse the new timeout fact. **30 local Python tests**,
+Python/YAML/diff checks PASS; live deadline and schema-v2 regression are pending.
+No SDK binary/profile/ABI or normal product probe capability changed.
+
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
 do not qualify those systems. New SDK artifacts retain for 14 days. Latest GUI

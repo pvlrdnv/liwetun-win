@@ -151,7 +151,7 @@ def main():
         if type(owned_probe) is not bool:
             raise RuntimeError('invalid_owned_probe_mode')
         owned_probe_mode = inputs.get('owned_probe_mode', 'echo')
-        if owned_probe_mode not in ['echo', 'cancel'] or (not owned_probe and owned_probe_mode != 'echo'):
+        if owned_probe_mode not in ['echo', 'cancel', 'deadline'] or (not owned_probe and owned_probe_mode != 'echo'):
             raise RuntimeError('invalid_owned_probe_mode')
         synthetic_ipv6 = inputs.get('synthetic_ipv6', False)
         if type(synthetic_ipv6) is not bool:
