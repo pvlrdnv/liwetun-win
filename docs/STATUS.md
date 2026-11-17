@@ -215,9 +215,11 @@ The traffic window now exposes a closed reset reason to the journal. Previously,
 a valid sample after a missed interval/instance change discarded history without
 retaining the reason. One `trafficWindowReset` event now records instance/state
 change, monotonic clock/counter regression, sampling gap or wall-clock staleness;
-steady polling does not add per-tick events. Observations remain counter facts,
-and a new full window must accumulate before classification. **229 local Dart
-tests + analyze PASS**, including 25 focused metric/journal persistence tests.
+steady polling does not add per-tick events. Repeated identical reset conditions
+are coalesced until a coherent sample pair or changed reason starts another episode. Observations remain counter facts,
+and a new full window must accumulate before classification. **230 local Dart
+tests + analyze PASS**, including 26 metric/journal persistence cases and a
+stuck-monotonic-clock regression (30 polls produce one reset event).
 Windows GUI qualification for this change is pending. Event schema stays v1,
 summary v3, with only closed enum additions and no new free-form metadata.
 

@@ -143,7 +143,8 @@ Summary schema v3 adds those scoped facts; closed event schema stays v1. Current
 state labels continue to require a separate Internet check, which is unavailable.
 Window resets now retain one closed journal reason (stale sample, sampling gap,
 instance/epoch change, clock/counter regression); ordinary polling does not create
-per-tick log entries. The observed current totals can remain valid while the
+per-tick log entries, including while the same reset condition repeats. A coherent
+sample pair clears the episode latch. The observed current totals can remain valid while the
 rolling classification is unknown and accumulating a new window.
 
 

@@ -279,6 +279,33 @@ void main() {
       );
     },
   );
+  test(
+    'a stuck monotonic sample records a reset episode without per-poll journal writes',
+    () {
+      var wall = now;
+      final journal = Journal(clock: () => wall)..observeService(ready);
+      journal.observeTraffic(observation(ms: 100));
+      for (var i = 0; i < 30; i++) {
+        wall = wall.add(const Duration(seconds: 1));
+        journal.observeTraffic(observation(ms: 100));
+      }
+      expect(journal.trafficHealth, TrafficHealth.unknown);
+      expect(
+        journal.events
+            .where((e) => e.event == EventId.trafficWindowReset)
+            .length,
+        1,
+      );
+      journal.observeTraffic(observation(ms: 1100));
+      journal.observeTraffic(observation(ms: 1100));
+      expect(
+        journal.events
+            .where((e) => e.event == EventId.trafficWindowReset)
+            .length,
+        2,
+      );
+    },
+  );
   testWidgets(
     'controller polls native facts and drops a late snapshot after Stop',
     (tester) async {

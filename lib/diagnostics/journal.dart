@@ -141,6 +141,7 @@ final class Journal {
   TrafficObservation? _trafficObservation;
   DateTime? _trafficObservedAt;
   TrafficHealth _trafficHealth = TrafficHealth.unknown;
+  ReasonCode? _trafficResetReason;
   bool get _trafficFresh {
     final observed = _trafficObservedAt;
     if (observed == null) return false;
@@ -156,6 +157,7 @@ final class Journal {
   void invalidateTraffic() {
     _trafficObservation = null;
     _trafficHealth = TrafficHealth.unknown;
+    _trafficResetReason = null;
     _trafficWindow.clear();
   }
 
@@ -172,8 +174,9 @@ final class Journal {
     _trafficObservation = value;
     _trafficObservedAt = _clock().toUtc();
     _trafficHealth = _trafficWindow.observe(value);
+    ReasonCode? resetReason;
     if (previous?.usable == true && value.usable) {
-      final reason = stale
+      resetReason = stale
           ? ReasonCode.stale
           : switch (_trafficWindow.lastReset) {
               TrafficWindowReset.instanceChanged => ReasonCode.instanceChanged,
@@ -184,8 +187,11 @@ final class Journal {
                 ReasonCode.counterRegression,
               null => null,
             };
-      if (reason != null) record(EventId.trafficWindowReset, reason: reason);
     }
+    if (resetReason != null && resetReason != _trafficResetReason) {
+      record(EventId.trafficWindowReset, reason: resetReason);
+    }
+    _trafficResetReason = resetReason;
     if (value.usable && previous?.usable != true) {
       record(EventId.trafficObservationAvailable);
     }
