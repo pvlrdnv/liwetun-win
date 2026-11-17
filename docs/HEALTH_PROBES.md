@@ -80,3 +80,35 @@ endpoint, recovery, idle and outgoing-without-reply. Preserve normal stop/crash
 route/DNS/adapter/WFP checks. Only after that wire application states and perform
 separate installed Windows 10 and Windows 11 desktop acceptance. No experiment
 runs against the owner's corporate tunnel or production nodes.
+
+
+## Aggregate instrumentation candidate — implementation pending Windows checks
+
+The opt-in SDK workflow `traffic_metrics=true` requires `source_pins=true` and
+builds version `1.1.12-liwetun.traffic1`. It applies the unchanged privacy profile,
+then a separately guarded aggregate patch. Nine canonical-LF input digests plus
+added-header digests are recorded in `native/sdk/traffic-inputs.json`; the output
+`traffic-profile.json` records actual modified bytes, patcher and manifest hashes.
+Current runtime receipts are not changed or automatically promoted.
+
+`ConnectionStatisticsMonitor` gains an optional delta observer invoked for each
+positive update to an already registered endpoint-routed client flow. Existing
+thresholded per-connection notifications stay unchanged/ignored. This avoids the
+100 KiB/100 ms threshold and the upstream close condition requiring both TX and
+RX before residual reporting. The aggregate event contains only two byte deltas;
+no per-connection identifier is copied or exported. Bypassed flows are not
+registered by the existing TUN logic. Internal DNS listener traffic is not a
+complete part of these client-flow totals, so they cannot establish DNS health.
+
+The snapshot is 64 bytes, ABI v1, with signed-safe totals, monotonic last TX/RX
+instants, core state and an epoch that changes on state transitions. Counters
+remain per SDK instance; the service must add an instance token before comparing
+snapshots across restarts. Unsupported/missing, overflow, clock regression,
+invalid state and callback gap cannot become valid zero metrics. A callback-side
+failure is latched and contained; it cannot escape into the routing callback.
+
+Portable tests cover tiny one-sided deltas, absent last-receive time, state-epoch
+changes, new-instance reset, atomic overflow rejection, clock regression,
+callback failure and four concurrent update/read threads. They require Windows
+compilation in this environment. Actual pinned-source preparation and four Python
+guards passed locally. No application display or network qualification yet.

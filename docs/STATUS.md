@@ -1,6 +1,6 @@
 # Development checkpoint — 2026-11-17
 
-## Checkpoint — subscription, tray and endpoint recovery CI PASS
+## Active — isolated aggregate-traffic SDK candidate
 
 Work continues in this independent repository. LikeWeb, production and the
 owner's corporate tunnel/network/trust configuration remain unchanged. No
@@ -103,6 +103,24 @@ metric. Recovery can allow bypass with kill switch off, so even a TUN-sourced
 HTTPS success cannot prove endpoint traversal. Application health remains
 unavailable/unknown until a closed native bridge and probe-specific proof are
 qualified. [Findings and required next slice](HEALTH_PROBES.md).
+
+Aggregate traffic instrumentation is implemented as a separate opt-in SDK profile.
+The existing upstream per-connection events throttle at 100 KiB / 100 ms and drop
+one-sided residuals at close, so the new hook observes each positive byte update
+for registered endpoint-routed client flows before that notification threshold.
+It exports no address/domain/application/connection identifiers. The original
+raw logger and per-destination suppression remain. A fixed 64-byte v1 snapshot
+has signed-safe totals, last TX/RX monotonic instants, state epochs and explicit
+overflow/clock/state/gap validity. Callback failures cannot escape into routing.
+
+Nine exact canonical-LF baseline file digests and added-header digests are pinned;
+all guards/anchors pass before vendor edits. Real pinned-source privacy + traffic
+preparation PASS locally; four source-guard tests PASS. Local C++ compilation is
+unavailable (no compiler installed); Windows counter/concurrency tests, full SDK
+build and read-only ABI export checks are prepared but pending. This is an opt-in
+`traffic_metrics=true, source_pins=true` SDK workflow, with a distinct version and
+receipt. Existing runtime/source candidate pins and application metrics remain
+unchanged/unavailable. No network/desktop/release qualification of this SDK yet.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests

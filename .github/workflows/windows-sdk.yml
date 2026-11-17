@@ -6,6 +6,10 @@ on:
         description: Build the isolated immutable-source candidate
         type: boolean
         default: false
+      traffic_metrics:
+        description: Isolated aggregate-traffic SDK candidate (requires source_pins)
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -15,6 +19,7 @@ jobs:
     env:
       RUSTUP_TOOLCHAIN: 1.95.0
       SOURCE_PINNED: ${{ inputs.source_pins }}
+      TRAFFIC_METRICS: ${{ inputs.traffic_metrics }}
     defaults:
       run:
         shell: pwsh
@@ -46,6 +51,18 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
         with:
           arch: x64
+      - name: Verify isolated aggregate counter contract
+        if: inputs.traffic_metrics
+        run: |
+          if ($env:SOURCE_PINNED -ne 'true') { throw 'Traffic candidate requires immutable source pins' }
+          New-Item -ItemType Directory -Force build/sdk-evidence | Out-Null
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX native/traffic/test_counter.cpp /Fobuild/traffic-counter.obj /Febuild/traffic-counter.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Traffic counter contract build failed' }
+          & ./build/traffic-counter.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Traffic counter contract tests failed' }
+          @{passed=$true; counter_tests='tiny_one_sided_epoch_reset_overflow_clock_gap_concurrency'; tunnel_started=$false; release_ready=$false} | ConvertTo-Json | Set-Content build/sdk-evidence/traffic-counter-tests.json
+          python -m unittest discover -s tools/sdk -p 'test_traffic_profile.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Traffic source guard tests failed' }
       - name: Install build tools on disposable runner
         run: |
           python -m pip install conan==2.12.2
@@ -73,6 +90,11 @@ jobs:
           python tools/sdk/prepare.py @profileArgs --source build/vendor/sdk --bootstrap build/conanfiles.tar.gz --output build/sdk-evidence
           if ($LASTEXITCODE -ne 0) { throw 'SDK source verification failed' }
           python -m pip freeze | Set-Content build/sdk-evidence/python-build-packages.txt
+      - name: Prepare isolated aggregate-only traffic profile
+        if: inputs.traffic_metrics
+        run: |
+          python tools/sdk/traffic_profile.py --source build/vendor/sdk --output build/sdk-evidence
+          if ($LASTEXITCODE -ne 0) { throw 'Aggregate traffic source verification failed' }
       - name: Export pinned local dependency recipes
         run: |
           conan export build/vendor/common --user adguard --channel oss --version 8.2.0
@@ -85,7 +107,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'DNS recipe export failed' }
       - name: Configure and build actual SDK DLL
         run: |
-          cmake -S build/vendor/sdk/platform/windows -B build/sdk-build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DTT_CLIENT_VERSION=1.1.12-liwetun.1
+          $sdkVersion = if ($env:TRAFFIC_METRICS -eq 'true') { '1.1.12-liwetun.traffic1' } else { '1.1.12-liwetun.1' }
+          cmake -S build/vendor/sdk/platform/windows -B build/sdk-build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe "-DTT_CLIENT_VERSION=$sdkVersion"
           if ($LASTEXITCODE -ne 0) { throw 'SDK configure failed' }
           $profileArgs = @()
           if ($env:SOURCE_PINNED -eq 'true') { $profileArgs += '--source-pinned' }
@@ -119,6 +142,11 @@ jobs:
           Copy-Item build/sdk-build/liwetun-conan.lock build/sdk-evidence/conan.lock
           Copy-Item build/sdk-build/liwetun-conan-graph.json build/sdk-evidence/conan-graph.json
           Get-FileHash build/sdk-runtime/*.dll -Algorithm SHA256 | Select-Object @{N='file';E={Split-Path $_.Path -Leaf}},Hash | ConvertTo-Json | Set-Content build/sdk-evidence/binary-digests.json
+      - name: Verify candidate read-only traffic export without tunnel startup
+        if: inputs.traffic_metrics
+        run: |
+          python tools/sdk/check_traffic_abi.py --runtime build/sdk-runtime --output build/sdk-evidence/traffic-abi-check.json
+          if ($LASTEXITCODE -ne 0) { throw 'Aggregate traffic export contract failed' }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

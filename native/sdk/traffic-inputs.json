@@ -1,0 +1,22 @@
+{
+  "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+  "baseline_files": {
+    "core/src/connection_statistics.h": "75a172284d754df05dc9a7ee7dc421a53785515b533500b4b0296b64aa386b02",
+    "core/src/connection_statistics.cpp": "e503feb22e284ef85e944e7b0a562ec2b797720d86748b23fb6193c4cd40e7c2",
+    "core/include/vpn/vpn.h": "c322e5026cbd49628d114ad7e8ec12883936a2adfd41e945a539163b5c822c53",
+    "core/include/vpn/internal/vpn_client.h": "afbd3463119cefcafd0ec7eb092f231765296a024d130a8ca5e2e7b4c61200f4",
+    "core/src/vpn_manager.cpp": "6ab6c8181dc32548cca54fa40fedc63f0eefe616c2d3684a37fe57976549b6b4",
+    "trusttunnel/include/vpn/trusttunnel/client.h": "e64206813b32e8eb5b85a500595046a051d9447956b393921ed54068c617936b",
+    "trusttunnel/src/client.cpp": "c5bcecafca8dbb3cc762249c38dc6722e659d1c041900bfed214c3e2d56cffe4",
+    "platform/windows/src/trusttunnel.cpp": "90e57a429375c9496fd29a876b0db0faef9f75e357e3589225c72df561f55968",
+    "core/src/tunnel.cpp": "93d10f4a34a94f9dc649c850a212b99e8cfb86d37913c150ca8071281666c6e8"
+  },
+  "added_files": {
+    "native/traffic/traffic_abi.h": "platform/windows/src/traffic_abi.h",
+    "native/traffic/traffic_counter.h": "platform/windows/src/liwetun_traffic_counter.h"
+  },
+  "added_input_sha256": {
+    "native/traffic/traffic_abi.h": "1541911357ef9fe588da9894167e4d39df263b8527a1a3a2fa738017768c22bd",
+    "native/traffic/traffic_counter.h": "e1fff651abde77c972f9b2b0b05d2517c03e9d0d857631d4a015d3ca4f0d45e7"
+  }
+}
