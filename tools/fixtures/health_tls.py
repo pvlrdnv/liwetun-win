@@ -408,10 +408,15 @@ def main():
                           and value['http_result'] == 7 and value['tls_result'] in [3, 14]
                           and counts['requests'] == counts['replies'] == 1)
             elif name in ['client_auth', 'tls13_only']:
-                expected = [11] if name == 'client_auth' else [3, 12]
+                # A required-client-cert server can terminate with a generic
+                # fatal TLS alert rather than Schannel requesting credentials.
+                # Keep that outcome generic; never relabel an arbitrary alert
+                # as a certificate-authentication diagnosis.
+                expected = [11, 12] if name == 'client_auth' else [3, 12]
                 passed = (value['tls_result'] in expected and not value['handshake_verified']
                           and not value['request_sent'] and value['http_result'] is None
-                          and not value['response_verified'] and counts['requests'] == counts['body_bytes'] == 0)
+                          and not value['response_verified'] and counts['handshake_failed'] == 1
+                          and counts['requests'] == counts['body_bytes'] == 0)
             else:
                 expected = {'wrong_name': 7, 'untrusted': 8, 'expired': 9, 'missing_revocation': 10, 'revoked': 10}[name]
                 passed = (value['tls_result'] == expected and not value['handshake_verified']

@@ -237,6 +237,17 @@ certificate, refusal of a TLS-1.3-only server by the explicitly TLS-1.2 candidat
 and rejection of a truncated encrypted HTTP body. These extend the fixture only;
 Windows execution pending. The 13-case successful receipt remains immutable.
 
+Extended attempt 44168984358 on `fd2c8a7` stopped at the required-client-cert
+control: the client correctly refused the handshake and sent no HTTP, but the
+fixture expected only a local credential-request category. Windows returned the
+closed generic TLS rejection, consistent with the peer terminating via a fatal
+TLS alert. [Original report](evidence/health-tls-client-auth-44168984358.json).
+The oracle now accepts either explicit client-credential refusal or generic TLS
+refusal for this known server fixture, with independently failed server handshake
+and zero HTTP/body still mandatory. The diagnostic is not relabeled as a known
+client-auth cause. All certificate-category controls remain exact. No Schannel
+code/policy changed. Contract regression 44168991601 PASS; extended rerun pending.
+
 ## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the
