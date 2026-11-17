@@ -1,0 +1,38 @@
+name: Windows owned probe contract
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: windows-2022
+    timeout-minutes: 5
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: x64
+      - name: Compile and verify correlation and owned socket boundary
+        run: |
+          New-Item -ItemType Directory -Force build/probe-evidence | Out-Null
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX native/probe/test_probe_slot.cpp /Fobuild/probe-slot.obj /Febuild/probe-slot.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Owned probe slot build failed' }
+          & ./build/probe-slot.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Owned probe slot contract failed' }
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_WIN32_WINNT=0x0A00 /Inative/health native/probe/test_windows_socket.cpp /Fobuild/probe-socket.obj /Febuild/probe-socket.exe /link ws2_32.lib iphlpapi.lib
+          if ($LASTEXITCODE -ne 0) { throw 'Owned socket boundary build failed' }
+          & ./build/probe-socket.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Owned socket boundary contract failed' }
+          @{source_commit='${{ github.sha }}'; slot_contract_passed=$true; actual_loopback_socket_boundary_passed=$true; synthetic_context_not_sdk_tun=$true; tunnel_started=$false; network_configuration_changed=$false; live_sdk_path_qualified=$false; release_ready=$false} | ConvertTo-Json | Set-Content build/probe-evidence/contract.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: owned-probe-contract-evidence
+          path: build/probe-evidence/
+          retention-days: 7
+          if-no-files-found: warn

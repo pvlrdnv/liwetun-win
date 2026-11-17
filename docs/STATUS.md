@@ -288,6 +288,20 @@ only short-lived closed path facts. No per-destination event/logger restoration.
 This remains design-only: no owned-request arm/read API, DNS/HTTPS health probe
 or dedicated health endpoint is implemented/selected. [Audit](HEALTH_PROBES.md).
 
+Owned-socket correlation primitive is now implemented, not integrated into the
+SDK/service/GUI yet. A fixed 32-byte arm request / 56-byte closed snapshot contain
+no socket/interface/connection ID, address or string. One bounded in-memory slot
+requires exact private socket-key matching and token/epoch/monotonic TTL fences;
+other path, migration, changed socket, expiry or observer failure invalidate
+facts. Tiny byte deltas are immediate; overflow is atomic/faulted. Late old-token
+reads/disarm and foreign-flow bytes cannot alter a new attempt. Windows arm-key
+helper reads a connected exclusive TCP socket and queries only its exact local
+address entry against the supplied SDK-held LUID/index; it does not enumerate
+interfaces or change configuration. The caller must hold a fresh socket and arm
+before application I/O. New portable/concurrency and actual loopback socket
+boundary tests are prepared; Windows compilation/execution pending. No actual
+SDK path, DNS/HTTPS health endpoint or application readiness is claimed.
+
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
 do not qualify those systems. New SDK artifacts retain for 14 days. Latest GUI
