@@ -59,6 +59,7 @@ class _Home extends StatefulWidget {
 class _HomeState extends State<_Home> {
   int _page = 0;
   String _search = '';
+  String? _country;
   bool _saving = false;
 
   @override
@@ -341,16 +342,30 @@ class _HomeState extends State<_Home> {
   );
 
   Widget _serversPage() {
-    final connections = widget.controller.connections
-        .where(
-          (item) =>
-              item.title.toLowerCase().contains(_search.toLowerCase()) ||
-              (item.cachedProfile?.profile.country.toLowerCase().contains(
-                    _search.toLowerCase(),
-                  ) ??
-                  false),
-        )
-        .toList();
+    final all = widget.controller.connections;
+    final countries =
+        all
+            .map((item) => item.cachedProfile?.profile.country)
+            .whereType<String>()
+            .toSet()
+            .toList()
+          ..sort();
+    // A removed country must not leave the refreshed list permanently hidden.
+    final country = countries.contains(_country) ? _country : null;
+    final query = _search.trim().toLowerCase();
+    final connections = all.where((item) {
+      final itemCountry = item.cachedProfile?.profile.country;
+      final matchesCountry = country == null || itemCountry == country;
+      final matchesSearch =
+          item.title.toLowerCase().contains(query) ||
+          (itemCountry?.toLowerCase().contains(query) ?? false);
+      // Keep subscription controls reachable while filtering their profiles.
+      return item.link.kind == ImportKind.subscription ||
+          (matchesCountry && matchesSearch);
+    }).toList();
+    final hasProfiles = connections.any(
+      (item) => item.link.kind == ImportKind.profile,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -389,7 +404,35 @@ class _HomeState extends State<_Home> {
           onChanged: (value) => setState(() => _search = value),
         ),
         const SizedBox(height: 20),
-        if (connections.isEmpty)
+        if (countries.isNotEmpty) ...[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('Все страны'),
+                selected: country == null,
+                onSelected: (_) => setState(() => _country = null),
+              ),
+              for (final value in countries)
+                ChoiceChip(
+                  label: Text(value),
+                  selected: country == value,
+                  onSelected: (selected) =>
+                      setState(() => _country = selected ? value : null),
+                ),
+            ],
+          ),
+          const SizedBox(height: 20),
+        ],
+        if (all.isNotEmpty &&
+            !hasProfiles &&
+            (query.isNotEmpty || country != null))
+          const Padding(
+            padding: EdgeInsets.all(20),
+            child: Text('Подключения не найдены. Измените поиск или страну.'),
+          ),
+        if (all.isEmpty)
           const Card(
             child: Padding(
               padding: EdgeInsets.all(28),

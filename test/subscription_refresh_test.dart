@@ -295,6 +295,54 @@ void main() {
     },
   );
 
+  testWidgets('country/search filters retain source controls and selection', (
+    tester,
+  ) async {
+    try {
+      await controller.applySubscriptionSnapshot(
+        sourceId,
+        feed(
+          profiles: [
+            profile('one'),
+            {...profile('two'), 'country': 'DE'},
+          ],
+        ),
+      );
+      controller.select(controller.connections.last);
+      final selected = controller.selectedId;
+      await tester.pumpWidget(LiWeTunApp(controller: controller));
+      await tester.tap(find.text('Серверы').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ChoiceChip, 'NL'));
+      await tester.pumpAndSettle();
+      expect(find.text('Synthetic one'), findsOneWidget);
+      expect(find.text('Synthetic two'), findsNothing);
+      expect(controller.selectedId, selected);
+      await tester.enterText(find.byType(TextField), 'missing');
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Подключения не найдены'), findsOneWidget);
+      expect(find.byTooltip('Обновить подписку'), findsOneWidget);
+      expect(find.textContaining('Пока ничего нет'), findsNothing);
+      // Refresh removes the active country's last profile. Reset its filter.
+      await controller.applySubscriptionSnapshot(
+        sourceId,
+        feed(
+          revision: 2,
+          profiles: [
+            {...profile('two'), 'country': 'DE'},
+          ],
+        ),
+      );
+      await tester.enterText(find.byType(TextField), '');
+      await tester.pumpAndSettle();
+      expect(find.text('Synthetic two'), findsOneWidget);
+      expect(find.text(sourceUri), findsNothing);
+      expect(tester.takeException(), isNull);
+    } finally {
+      dispose();
+    }
+  });
+
   test(
     'timing policy bounds jitter and retries and refreshes before data expiry',
     () {

@@ -1,7 +1,7 @@
 # Bounded subscription HTTPS transport
 
 Status: HTTPS transport passed Windows CI; refresh UI and startup/periodic
-scheduling are implemented, with their Windows integration qualification pending. No LikeWeb route or production fetch is
+scheduling passed Windows integration qualification (run 44028234705). No LikeWeb route or production fetch is
 assumed. The v1 subscription contract remains a client-side proposal.
 
 `HttpSubscriptionTransport` accepts only an explicitly imported HTTPS source,
@@ -51,7 +51,8 @@ analyze + all 216 Dart tests PASS, including 6 actual loopback TLS/HTTP
 cases: hostname verification, unknown CA refusal, real JSON/Host/no credentials,
 redirect refusal and body/header bounds. Synthetic certificates are generated
 fresh, loaded only into explicit fixture contexts, never installed as OS roots
-or copied into GUI artifacts. The refresh integration adds an actual HTTPS/UI/DPAPI revoke case for Windows CI.
+or copied into GUI artifacts. The refresh integration passed 216 Dart + 6 Rust + 5 actual desktop tests,
+including HTTPS/UI/DPAPI revocation (run 44028234705).
 Installed Windows 10/11 desktop acceptance remains separate.
 
 

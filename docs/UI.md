@@ -29,9 +29,13 @@ from verified Internet; unknown outcomes remain uncertain and permit stop.
 Paste/import dialog with obscured input, no autofill and no raw parse exception.
 TrustTunnel direct and QR links are structurally classified and retained opaque
 until the SDK decodes them. VLESS/HY2 authority and TLS settings are validated
-for the supported subset. HTTPS URL is a pending subscription source, never a
-ready server. Server list includes search, selection, protocol in advanced
-details, and separate unknown service/entitlement observations.
+for the supported subset. HTTPS URL is a subscription source, never a ready server. Validated snapshots
+produce source-scoped selectable profiles. Manual refresh, last accepted update
+time and errors appear on each source; startup/periodic refresh uses bounded
+retry/jitter. Name/country search and country chips filter profiles, preserving
+source refresh controls and current selection. No-match text differs from an
+empty library. Server list includes protocol in advanced details, stale cache
+eligibility and separate unknown service/entitlement observations.
 
 ## Support
 
