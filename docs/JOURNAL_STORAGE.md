@@ -67,3 +67,11 @@ analyze, 118 Dart + 6 Rust tests and 3 actual desktop tests passed. The journal
 test proves restart/clear and an unchanged real encrypted profile slot.
 Non-elevated installed desktop acceptance and power-loss/disk-full fault
 injection remain separate gates.
+
+
+Summary v3 retains the persistence state/limits and adds scoped aggregate traffic
+observations. Event schema v1 adds the closed `trafficWindowReset` event with
+reasons for stale observations, sampling gaps, instance/state-epoch changes and
+monotonic clock/counter regression. It records a reset once, not every poll;
+classifying a new window requires fresh history. No counter values, interface
+identifiers, destinations or free-form error text are added to those events.

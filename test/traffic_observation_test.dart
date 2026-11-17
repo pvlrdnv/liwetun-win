@@ -202,6 +202,83 @@ void main() {
       expect(report()['traffic_metrics'], 'unknown');
     },
   );
+  test(
+    'journal retains one closed reason when an otherwise valid traffic window resets',
+    () {
+      for (final entry in {
+        ReasonCode.instanceChanged: observation(ms: 21000, tx: 10, instance: 2),
+        ReasonCode.stateEpochChanged: observation(ms: 21000, tx: 10, epoch: 2),
+        ReasonCode.clockRegression: observation(ms: 19000, tx: 10),
+        ReasonCode.samplingGap: observation(ms: 26000, tx: 10),
+        ReasonCode.counterRegression: observation(ms: 21000, tx: 9),
+      }.entries) {
+        var wall = now;
+        final journal = Journal(clock: () => wall)..observeService(ready);
+        for (var i = 0; i <= 20; i++) {
+          wall = now.add(Duration(seconds: i));
+          journal.observeTraffic(observation(ms: i * 1000, tx: 10));
+        }
+        expect(journal.trafficHealth, TrafficHealth.idle);
+        wall = wall.add(const Duration(seconds: 1));
+        journal.observeTraffic(entry.value);
+        expect(journal.trafficObservation.usable, true);
+        expect(journal.trafficHealth, TrafficHealth.unknown);
+        final resets = journal.events.where(
+          (event) => event.event == EventId.trafficWindowReset,
+        );
+        expect(resets.single.reason, entry.key);
+        for (var i = 1; i <= 21; i++) {
+          wall = wall.add(const Duration(seconds: 1));
+          journal.observeTraffic(
+            observation(
+              ms: entry.value.atMs! + i * 1000,
+              tx: entry.value.tx!,
+              instance: entry.value.instance!,
+              epoch: entry.value.epoch!,
+            ),
+          );
+        }
+        expect(journal.trafficHealth, TrafficHealth.idle);
+        expect(
+          journal.events
+              .where((event) => event.event == EventId.trafficWindowReset)
+              .length,
+          1,
+        );
+      }
+    },
+  );
+  test(
+    'stale wall-clock observation resets history once without inventing a second monotonic gap',
+    () {
+      var wall = now;
+      final journal = Journal(clock: () => wall)..observeService(ready);
+      journal.observeTraffic(observation());
+      wall = wall.add(const Duration(seconds: 6));
+      journal.observeTraffic(observation(ms: 6000));
+      expect(journal.trafficHealth, TrafficHealth.unknown);
+      final resets = journal.events.where(
+        (event) => event.event == EventId.trafficWindowReset,
+      );
+      expect(resets.single.reason, ReasonCode.stale);
+      journal.observeTraffic(const TrafficObservation());
+      journal.observeTraffic(const TrafficObservation());
+      expect(
+        journal.events
+            .where((event) => event.event == EventId.trafficWindowReset)
+            .length,
+        1,
+      );
+      expect(
+        journal.events
+            .where(
+              (event) => event.event == EventId.trafficObservationUnavailable,
+            )
+            .length,
+        1,
+      );
+    },
+  );
   testWidgets(
     'controller polls native facts and drops a late snapshot after Stop',
     (tester) async {

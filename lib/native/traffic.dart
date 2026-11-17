@@ -170,10 +170,25 @@ final class WindowsTraffic implements TrafficGateway {
 }
 
 /// A bounded rolling observation window; gaps and epoch changes discard history.
+enum TrafficWindowReset {
+  instanceChanged,
+  epochChanged,
+  clockRegression,
+  samplingGap,
+  counterRegression,
+}
+
 final class TrafficWindow {
   final Queue<TrafficObservation> _samples = Queue();
-  void clear() => _samples.clear();
+  TrafficWindowReset? _lastReset;
+  TrafficWindowReset? get lastReset => _lastReset;
+  void clear() {
+    _samples.clear();
+    _lastReset = null;
+  }
+
   TrafficHealth observe(TrafficObservation value) {
+    _lastReset = null;
     if (!value.usable ||
         value.instance == null ||
         value.epoch == null ||
@@ -185,14 +200,18 @@ final class TrafficWindow {
     }
     if (_samples.isNotEmpty) {
       final last = _samples.last;
-      if (value.instance != last.instance ||
-          value.epoch != last.epoch ||
-          value.atMs! <= last.atMs! ||
-          value.atMs! - last.atMs! > 5000 ||
-          value.tx! < last.tx! ||
-          value.rx! < last.rx!) {
-        clear();
+      if (value.instance != last.instance) {
+        _lastReset = TrafficWindowReset.instanceChanged;
+      } else if (value.epoch != last.epoch) {
+        _lastReset = TrafficWindowReset.epochChanged;
+      } else if (value.atMs! <= last.atMs!) {
+        _lastReset = TrafficWindowReset.clockRegression;
+      } else if (value.atMs! - last.atMs! > 5000) {
+        _lastReset = TrafficWindowReset.samplingGap;
+      } else if (value.tx! < last.tx! || value.rx! < last.rx!) {
+        _lastReset = TrafficWindowReset.counterRegression;
       }
+      if (_lastReset != null) _samples.clear();
     }
     _samples.add(value);
     while (_samples.length > 64 || value.atMs! - _samples.first.atMs! > 30000) {

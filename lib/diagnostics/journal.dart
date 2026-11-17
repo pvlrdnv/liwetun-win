@@ -40,6 +40,7 @@ enum EventId {
   trafficIdleObserved,
   trafficFlowObserved,
   trafficOutgoingWithoutReplyObserved,
+  trafficWindowReset,
 }
 
 enum ReasonCode {
@@ -63,6 +64,11 @@ enum ReasonCode {
   httpStatus,
   networkFailure,
   operationBusy,
+  instanceChanged,
+  stateEpochChanged,
+  clockRegression,
+  samplingGap,
+  counterRegression,
 }
 
 /// No arbitrary string, URI, exception, remote ID or core output is accepted.
@@ -159,12 +165,27 @@ final class Journal {
       invalidateTraffic();
       return;
     }
-    if (!_trafficFresh) _trafficWindow.clear();
+    final stale = !_trafficFresh;
+    if (stale) _trafficWindow.clear();
     final previous = _trafficObservation;
     final oldHealth = _trafficHealth;
     _trafficObservation = value;
     _trafficObservedAt = _clock().toUtc();
     _trafficHealth = _trafficWindow.observe(value);
+    if (previous?.usable == true && value.usable) {
+      final reason = stale
+          ? ReasonCode.stale
+          : switch (_trafficWindow.lastReset) {
+              TrafficWindowReset.instanceChanged => ReasonCode.instanceChanged,
+              TrafficWindowReset.epochChanged => ReasonCode.stateEpochChanged,
+              TrafficWindowReset.clockRegression => ReasonCode.clockRegression,
+              TrafficWindowReset.samplingGap => ReasonCode.samplingGap,
+              TrafficWindowReset.counterRegression =>
+                ReasonCode.counterRegression,
+              null => null,
+            };
+      if (reason != null) record(EventId.trafficWindowReset, reason: reason);
+    }
     if (value.usable && previous?.usable != true) {
       record(EventId.trafficObservationAvailable);
     }

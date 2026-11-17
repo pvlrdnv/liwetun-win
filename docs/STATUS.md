@@ -1,6 +1,6 @@
 # Development checkpoint — 2026-11-17
 
-## Active — isolated aggregate-traffic SDK candidate
+## Active — native health prerequisites; aggregate SDK qualified
 
 Work continues in this independent repository. LikeWeb, production and the
 owner's corporate tunnel/network/trust configuration remain unchanged. No
@@ -121,8 +121,8 @@ build and read-only ABI export checks **PASS** (44038398682), source 84f9da6.
 [Receipt](evidence/sdk-traffic-44038398682.json). The DLL hash is recorded in
 `native/sdk/runtime-traffic.json`, separate from both existing runtime pins. This is an opt-in
 `traffic_metrics=true, source_pins=true` SDK workflow, with a distinct version and
-receipt. Existing runtime/source candidate pins remain unchanged. No network/desktop/release
-qualification of this SDK yet.
+receipt. Existing runtime/source candidate pins remain unchanged. That initial build
+did not establish network/desktop/release qualification; later network evidence follows below.
 
 The service now implements optional read-only command 5 with a 104-byte reply;
 existing command replies stay 32 bytes / protocol v1. It borrows the active SDK
@@ -211,6 +211,16 @@ service query, rollback/uninstall/cleanup. All four preserved SDK input-receipt
 hashes match the previous qualified package. [Receipt](evidence/package-traffic-44068126242.json).
 Ephemeral CI signing only; no tunnel start, owner package or desktop acceptance.
 
+The traffic window now exposes a closed reset reason to the journal. Previously,
+a valid sample after a missed interval/instance change discarded history without
+retaining the reason. One `trafficWindowReset` event now records instance/state
+change, monotonic clock/counter regression, sampling gap or wall-clock staleness;
+steady polling does not add per-tick events. Observations remain counter facts,
+and a new full window must accumulate before classification. **229 local Dart
+tests + analyze PASS**, including 25 focused metric/journal persistence tests.
+Windows GUI qualification for this change is pending. Event schema stays v1,
+summary v3, with only closed enum additions and no new free-form metadata.
+
 Next native prerequisite is implemented as another opt-in SDK preparation:
 `attached_tun=true` requires source pins and the aggregate profile. Six exact
 post-traffic/pristine source digests and two added-header hashes guard a fixed
@@ -220,8 +230,11 @@ before/after reading. Caller must exclude concurrent start/stop/destruction.
 Internal interface identifiers never enter GUI/journal/report. Neither adapter
 ownership nor probe/endpoint traversal is established; no health state, probe,
 routing or existing runtime pin changes. Local real-source transformation and
-five atomic guard tests PASS. C++ contract / full SDK / null-export Windows checks
-pending; candidate is not admitted by service/package workflows.
+five atomic guard tests PASS. Windows C++ contract and exact source preparation
+**PASS** in run 44070100152; full SDK / null-export checks are still running.
+Candidate is not admitted by service/package workflows. Source audit also records
+self-image WFP permits and Wintun duplicate-alias rename behavior as constraints
+on future probe/ownership work; no inferred bypass or foreign-adapter reproduction.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
@@ -791,8 +804,8 @@ also passed on disposable Windows CI. See [service architecture](WINDOWS_SERVICE
   C++ channel; restricted TLS VLESS/HY2 import, HTTPS subscription-source parsing.
   TLS bypass and unsupported embedded TT subscriptions are rejected.
 - Strict proposed subscription snapshot parser/store: atomic complete/partial
-  updates, revocation, expiry, replay/version/type/size checks. No live fetch or
-  LikeWeb API changes; this store is not wired to GUI persistence.
+  updates, revocation, expiry, replay/version/type/size checks. Bounded HTTPS refresh, protected cache and GUI reconciliation are implemented.
+  LikeWeb API/export integration remains outside this repository.
 - Typed sanitized protected journal (seven days/1000 events), preview and ZIP export. No raw
   core strings or destination logs. Unknown metrics remain unknown.
 - Full upstream SDK build with pinned SDK/Common/DNS revisions and guarded raw
@@ -849,7 +862,7 @@ The client is not release-ready. Unsigned workspace builds fail service admissio
 no service is installed on the owner's computer. Protected storage and actual
 GUI integration passed disposable Windows CI. The fresh installer prototype
 passed only disposable CI with temporary signing. No release-signed
-installer/updater, recovery/startup, tray desktop acceptance, real metrics, route-bound
+installer/updater, recovery/startup, tray desktop acceptance, live signed GUI traffic-metric acceptance, route-bound
 health probes, kill switch or Hysteria2/Xray connection adapter.
 
 UNKNOWN until tested: clean Windows 10/11 installed GUI and ordinary-mode traffic,

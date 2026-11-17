@@ -58,4 +58,8 @@ Light/dark follows OS; Material controls, keyboard focus, descriptive tooltips,
 scrolling and compact navigation. Required future native states: disconnected,
 connecting, checking internet, connected, recovering, error. The service channel now backs disconnected, connecting, tunnel-ready, recovering
 and error; checking Internet/connected remain unavailable until route-bound
-traffic qualification exists. No fabricated metrics.
+traffic qualification exists. Optional aggregate TX/RX observations use a bounded
+20-second window and become unknown on a gap, state/instance change or stale
+sample. They describe counted activity only; background flows can keep it active
+while the user's own application is idle. They cannot prove DNS/Internet or
+remote delivery. No fabricated metrics.

@@ -141,6 +141,10 @@ registered endpoint-client payload. Bypassed/internal DNS/other adapter traffic
 is outside these totals; TX-only is not evidence that the server is blocked.
 Summary schema v3 adds those scoped facts; closed event schema stays v1. Current
 state labels continue to require a separate Internet check, which is unavailable.
+Window resets now retain one closed journal reason (stale sample, sampling gap,
+instance/epoch change, clock/counter regression); ordinary polling does not create
+per-tick log entries. The observed current totals can remain valid while the
+rolling classification is unknown and accumulating a new window.
 
 
 ## Tiny TX-only / idle observation fixture — H3 CI PASS, H2 unresolved
@@ -165,6 +169,15 @@ closed per-window forwarded/denied TCP/UDP totals. No destination/body logs and
 no SDK/oracle change. Original post-close failures and follow-up results remain
 archived in docs/evidence/tx-only-*.json. This is disposable Server 2022 CI, not
 Windows 10/11 desktop acceptance.
+
+H2 diagnostic 44068421270 additionally measured exactly one rejected UDP payload
+of 48 bytes in each window. Its sending interval had 672 forwarded owned TCP
+bytes and 720 aggregate TX bytes; idle had zero forwarded TCP bytes and 48
+aggregate TX bytes. This supports non-fixture activity as the source of the extra
+TX, without identifying any process/destination or proving a counter defect.
+The complete case still fails strict idle qualification; no SDK/oracle change.
+Registered-flow TX observes attempted payload before remote delivery, so even a
+positive aggregate cannot serve as a receiver receipt or path-health proof.
 
 
 ## SDK-held TUN attachment prerequisite — Windows checks pending
@@ -194,3 +207,20 @@ ABI/layout, epoch/state changes, invalid metrics, time/counter regression and
 unknown clearing. Local compilation is unavailable; Windows compilation/full SDK
 and null-export checks are pending. There is no service command, actual attached
 interface qualification, DNS/HTTPS probe or verified-Internet state in this slice.
+
+
+Additional source constraints for the next consumer (no behavior change here):
+
+- NativeLibsCommon c546b329, `common/wfp_firewall.cpp::allow_self`, installs
+  application-image permit rules when creating the SDK's firewall session.
+  Socket protection also binds SDK-created endpoint sockets to the physical
+  interface. A successful request made inside the service must therefore carry
+  explicit owned-flow path proof; neither its process identity nor a permit rule
+  proves TUN traversal. These rules alone do not prove that a particular request
+  bypassed routing.
+- [Wintun 0.14.1 adapter implementation](https://raw.githubusercontent.com/WireGuard/wintun/0.14.1/api/adapter.c)
+  contains a duplicate-alias naming path that can rename a conflicting interface.
+  Merely replacing the SDK's OpenAdapter call with CreateAdapter is not an
+  established coexistence fix. A future ownership change needs controlled
+  preexisting-adapter/race acceptance and exact preservation of foreign state.
+  No Wintun source is copied, driver altered or owner-machine experiment run.

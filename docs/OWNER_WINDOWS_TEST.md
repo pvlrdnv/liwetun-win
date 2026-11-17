@@ -41,11 +41,14 @@ or account requires its own authorization; no key is published in these docs.
 
 ## Safe report implementation
 
-The report's version-2 `summary.json` contains app version, bounded Windows API
+The report's version-3 `summary.json` contains app version, bounded Windows API
 major/minor/build numbers, application architecture and last service response
 with UTC observation time. An unsuccessful/unavailable service response has
-unknown state/runtime fields, not fabricated disconnected/zero values. Traffic
-metrics and unobserved core versions remain unknown. Event schema stays version1.
+unknown state/runtime fields, not fabricated disconnected/zero values. Optional
+traffic observations contain only registered endpoint-client payload totals,
+monotonic sample/last-TX/last-RX times and an instance/state epoch. Missing,
+invalid or more-than-five-second-old observations have null counters.
+Unobserved core versions remain unknown. Event schema stays version1.
 
 Environment observation is a read-only local Win32 call, without SCM access,
 network requests, process enumeration, user/computer names or interface/address
@@ -62,8 +65,11 @@ observations. No arbitrary shell scripts or corporate software modifications
 are part of this owner workflow.
 
 
-Diagnostic summary v3 adds scoped native traffic observations when available.
-Unknown/invalid/stale observations have null counters, not invented zeros; the
-monotonic instance/epoch window does not prove DNS or Internet health. Event schema
-remains v1. New aggregate SDK, service/GUI integration and actual counter traffic
-qualification are separate from desktop owner acceptance and trusted release signing.
+The 20-second window distinguishes measured idle, incoming data, and outgoing
+data without a reply. It covers all registered flows, including background tasks;
+leaving the application's test socket idle does not make the whole system idle.
+TX growth is not proof of remote delivery. These facts cannot establish DNS,
+Internet health or server blocking. Missing capability remains visibly unavailable.
+SDK, service/GUI and counter traffic CI evidence is separate from live signed GUI
+traffic display, desktop owner acceptance and trusted release signing. Internal
+interface identifiers from a future attachment bridge are excluded from reports.
