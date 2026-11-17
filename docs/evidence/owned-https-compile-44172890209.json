@@ -1,0 +1,10 @@
+{
+  "source_run": 44172890209,
+  "source_commit": "9a3c420c6eb34b1986372f46b883f1eafa350bd1",
+  "passed": false,
+  "stage": "service_compile",
+  "reason": "local_security_header_shadowed_windows_sspi",
+  "network_fixture_started": false,
+  "fixture_roots_installed": false,
+  "release_ready": false
+}

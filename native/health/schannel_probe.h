@@ -7,7 +7,9 @@
 #define SCHANNEL_USE_BLACKLISTS
 #endif
 #include <winternl.h>
-#include <security.h>
+// The service has its own security.h on the include path. Include the Windows
+// SSPI declarations directly so that header cannot shadow the platform API.
+#include <sspi.h>
 #include <schannel.h>
 #include <wincrypt.h>
 #include <array>

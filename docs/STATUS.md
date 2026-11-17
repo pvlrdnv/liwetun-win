@@ -286,6 +286,14 @@ loopback TLS receiver after the empty nonexclusive control. Python/YAML and diff
 checks PASS. Actual Windows service compilation, SDK-owned HTTPS/path controls
 and seven-flag-OFF packaging are pending. No owner-device network/trust changes.
 
+Initial owned-HTTPS run 44172890209 on `9a3c420` failed before any network or
+fixture trust installation: the service's own `security.h` include directory
+shadowed the Windows SSPI wrapper used by the previously standalone TLS test.
+The TLS header now directly includes the platform `sspi.h`; policy/validation
+remain unchanged. [Closed compile receipt](evidence/owned-https-compile-44172890209.json).
+Actual Windows compilation/HTTPS matrix reruns pending. The independent normal
+package run continues with the seventh test mode OFF.
+
 ## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the
