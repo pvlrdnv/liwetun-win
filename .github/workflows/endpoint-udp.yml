@@ -7,6 +7,11 @@ on:
         required: false
         default: false
         type: boolean
+      stream_close_fix:
+        description: Opt-in disposable H3 parked-reader wakeup candidate (requires source_fix)
+        required: false
+        default: false
+        type: boolean
       endpoint_version:
         required: true
         default: v1.1.0
@@ -23,6 +28,7 @@ jobs:
     env:
       LIWETUN_ENDPOINT_VERSION: ${{ inputs.endpoint_version }}
       LIWETUN_ENDPOINT_SOURCE_FIX: ${{ inputs.source_fix }}
+      LIWETUN_ENDPOINT_CLOSE_FIX: ${{ inputs.stream_close_fix }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -51,6 +57,10 @@ jobs:
               raise SystemExit('Endpoint digest mismatch')
           subprocess.run(['tar', '-xf', str(archive), '-C', str(directory), '--strip-components=1'], check=True)
           PY
+      - name: Validate explicit endpoint wakeup experiment
+        run: |
+          if [ "$LIWETUN_ENDPOINT_CLOSE_FIX" = 'true' ] && [ "$LIWETUN_ENDPOINT_SOURCE_FIX" != 'true' ]; then exit 2; fi
+          python3 -m unittest discover -s tools/service -p 'test_endpoint_close_profile.py'
       - name: Build hash-checked diagnostic source fix
         if: ${{ inputs.source_fix }}
         run: |
@@ -72,11 +82,13 @@ jobs:
           subprocess.run(['tar', '-xf', str(archive), '-C', str(source), '--strip-components=1'], check=True)
           PY
           python3 tools/service/prepare_endpoint.py prepare
+          if [ "$LIWETUN_ENDPOINT_CLOSE_FIX" = 'true' ]; then python3 tools/service/endpoint_close_profile.py prepare; fi
           cargo +1.95.0 build --manifest-path build/endpoint-source/Cargo.toml --locked --release --package trusttunnel_endpoint --jobs 2
           mkdir -p build/endpoint
           cp build/endpoint-source/target/release/trusttunnel_endpoint build/endpoint/
           strip --strip-debug build/endpoint/trusttunnel_endpoint
           python3 tools/service/prepare_endpoint.py record
+          if [ "$LIWETUN_ENDPOINT_CLOSE_FIX" = 'true' ]; then python3 tools/service/endpoint_close_profile.py record; fi
       - name: Endpoint-only authenticated UDP wire control
         run: python3 tools/service/endpoint_udp_isolation.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

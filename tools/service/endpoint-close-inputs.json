@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "scope": "disposable_endpoint_reader_wakeup_candidate_only",
+  "file": "lib/src/http3_codec.rs",
+  "input_sha256": "6562c79cb2d52b12392f504cdbb57fcde51d15279094c25463859c58fe71803c",
+  "output_sha256": "4f65a1e6a41649bbea876147fc743d77da6e2dccbef9729c2401706f314d52b2",
+  "production_admitted": false,
+  "release_ready": false
+}

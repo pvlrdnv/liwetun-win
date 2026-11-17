@@ -448,6 +448,25 @@ without changing SDK/core routing or ordinary application traffic. Remote EOF
 before Stop is still required; no acceptance budget was relaxed. Live H2/H3
 deadline and echo/cancel regressions of this change are pending.
 
+Abortive close experiment source `00125e2`: H2 deadline, H2 echo and H3 cancel
+PASS, but H3 deadline 44120128489 **FAIL**, again with the receiver waiting and
+no EOF/reset before Stop. [All four reports](evidence/owned-probe-abort-experiment-44120128489.json).
+The ineffective native change was removed; the producer is byte-for-byte back
+to its previously tested `8e23ec5` schema-v2 source.
+
+Exact archived endpoint source (`fab5b835`) inspection found that its H3 Close
+event shuts down the read side without waking a StreamSource parked on the
+readable channel. Finished and Reset both map to Close; the write side retains
+the stream/sender. This is a candidate explanation for the observed waiting
+receiver, not yet a demonstrated live fix. A separately opt-in
+`stream_close_fix=true` endpoint workflow now adds one readable notification
+before the existing read shutdown. One exact input/output source digest and
+all replacement anchors guard preparation; normal fixture defaults/pins are
+unchanged. Production server/source repositories are untouched. Exact archived
+source preparation, new no-mutation/reapply guards, **33 Python tests** and YAML
+checks PASS. Candidate build/live differential qualification is pending; it
+cannot silently replace the existing diagnostic endpoint pin.
+
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
 do not qualify those systems. New SDK artifacts retain for 14 days. Latest GUI
