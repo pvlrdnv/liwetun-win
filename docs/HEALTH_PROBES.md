@@ -181,7 +181,7 @@ Registered-flow TX observes attempted payload before remote delivery, so even a
 positive aggregate cannot serve as a receiver receipt or path-health proof.
 
 
-## SDK-held TUN attachment prerequisite — Windows checks pending
+## SDK-held TUN attachment prerequisite — Windows build / null ABI PASS
 
 A separate `attached_tun=true` SDK build (requires both `source_pins=true` and
 `traffic_metrics=true`) prepares version `1.1.12-liwetun.attached1`. Its source
@@ -205,9 +205,14 @@ release. Nothing is installed/tested on the owner's corporate device.
 Actual pinned-source preparation and five pre-write guard tests pass locally.
 The portable contract covers missing attachment, empty identifiers, unsupported
 ABI/layout, epoch/state changes, invalid metrics, time/counter regression and
-unknown clearing. Local compilation is unavailable; Windows compilation/full SDK
-and null-export checks are pending. There is no service command, actual attached
-interface qualification, DNS/HTTPS probe or verified-Internet state in this slice.
+unknown clearing. Windows C++ contract, full SDK build and both read-only null
+exports **PASS** (44070100152). All eight emitted source/header hashes match local
+preparation, and both downloaded DLL hashes match the build receipt. The separate
+`runtime-attached.json` pins these exact bytes, with actual-interface, network,
+service/package, desktop and release qualification false. Existing runtime pins
+remain unchanged. [Build receipt](evidence/sdk-attached-44070100152.json).
+There is no service command, actual attached-interface qualification, DNS/HTTPS
+probe or verified-Internet state in this slice.
 
 
 Additional source constraints for the next consumer (no behavior change here):

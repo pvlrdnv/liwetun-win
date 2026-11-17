@@ -220,10 +220,17 @@ are coalesced until a coherent sample pair or changed reason starts another epis
 and a new full window must accumulate before classification. **230 local Dart
 tests + analyze PASS**, including 26 metric/journal persistence cases and a
 stuck-monotonic-clock regression (30 polls produce one reset event).
-Windows GUI qualification for this change is pending. Event schema stays v1,
+Windows GUI **PASS** (44073703263): 230 Dart + 6 Rust + 6 desktop tests,
+release build, notice bytes and actual channel admission checks.
+[Receipt](evidence/windows-traffic-reset-7f701e0.json). Event schema stays v1,
 summary v3, with only closed enum additions and no new free-form metadata. UI
 counter wording now avoids implying remote delivery and explicitly includes
 background applications, consistent with the rejected-UDP fixture observation.
+Installer with this GUI and the previously qualified aggregate SDK **PASS**
+(44074698238): 14 groups, signed medium GUI/service query, rollback/uninstall /
+cleanup and the same four exact SDK input receipts.
+[Receipt](evidence/package-traffic-44074698238.json). Ephemeral CI signing only;
+no tunnel start, live GUI counter-display qualification or owner release.
 
 Next native prerequisite is implemented as another opt-in SDK preparation:
 `attached_tun=true` requires source pins and the aggregate profile. Six exact
@@ -234,9 +241,13 @@ before/after reading. Caller must exclude concurrent start/stop/destruction.
 Internal interface identifiers never enter GUI/journal/report. Neither adapter
 ownership nor probe/endpoint traversal is established; no health state, probe,
 routing or existing runtime pin changes. Local real-source transformation and
-five atomic guard tests PASS. Windows C++ contract and exact source preparation
-**PASS** in run 44070100152; full SDK / null-export checks are still running.
-Candidate is not admitted by service/package workflows. Source audit also records
+five atomic guard tests PASS. Windows C++ contract, exact source preparation,
+full SDK and both null-export checks **PASS** (44070100152). All eight emitted
+source/header digests match local preparation; both downloaded DLL hashes match
+CI. A separate `runtime-attached.json` pins this build-only candidate, with actual
+interface/network/desktop/service/package/release qualification explicitly false.
+[Receipt](evidence/sdk-attached-44070100152.json). Existing runtime pins remain
+unchanged; candidate is not admitted by service/package workflows. Source audit also records
 self-image WFP permits and Wintun duplicate-alias rename behavior as constraints
 on future probe/ownership work; no inferred bypass or foreign-adapter reproduction.
 

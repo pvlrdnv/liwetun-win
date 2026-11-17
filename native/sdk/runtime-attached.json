@@ -1,0 +1,32 @@
+{
+  "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+  "privacy_policy_version": 1,
+  "source_pinned_candidate": true,
+  "source_pin_manifest_sha256": "cf9d5d299aeae007c9314b4235d8a45ad52076de46da5e5150e952d3d05cd474",
+  "conan_input_lock_sha256": "2680c44369acf682190acbb322273a3a0a648edcbbba851e99b0c0166595c246",
+  "traffic_abi": 1,
+  "traffic_profile_manifest_sha256": "40d21c0edd085dc7bae109ae97f9bc0ef0d338e42e83c8e712c872383bd88686",
+  "traffic_abi_header_sha256": "1541911357ef9fe588da9894167e4d39df263b8527a1a3a2fa738017768c22bd",
+  "source_run": 44070100152,
+  "source_commit": "9e18a558624a47fb753c31b97844f7853f6c25f3",
+  "files": {
+    "trusttunnel.dll": "12c7d64eb3bcb9a895d25a2d96fd2405779f75c9f67b109bb8635bf4bbc6abb8",
+    "wintun.dll": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce"
+  },
+  "sdk_variant": "attached_tun_candidate",
+  "attached_tun_abi": 1,
+  "attached_tun_profile_manifest_sha256": "23d38d5622e8cc80d0b7728401b01c84f40e14cb65bc4640548ccffb4b03fc2e",
+  "attached_tun_abi_header_sha256": "3fa6c56f552e42538b8be25f92fadf3507dffeddfa51dad2d20242d0875a43b4",
+  "network_requalified": false,
+  "release_qualified": false,
+  "windows_10_qualified": false,
+  "windows_11_qualified": false,
+  "native_ipv6_egress_qualified": false,
+  "service_admitted": false,
+  "package_admitted": false,
+  "actual_interface_qualified": false,
+  "probe_traversal_proven": false,
+  "adapter_ownership_proven": false,
+  "qualification_scope": "sdk_build_cpp_contract_and_null_export_only",
+  "qualification_receipt": "docs/evidence/sdk-attached-44070100152.json"
+}
