@@ -10,11 +10,13 @@ The same-commit original H3 fixture still fails pre-Stop remote-close acceptance
 [Full comparison](evidence/owned-probe-wakeup-44123761038.json).
 Live wrong-nonce, actual flow migration, actual epoch change and same-address
 local bypass rejection now pass focused H2/H3 CI; the latter does not establish
-SDK recovery bypass selection. **39 local Python checks PASS**; actual Windows
-CI compiled and exercised the service. Six normal-package test flags remain OFF.
+SDK recovery bypass selection. **44 local Python checks PASS**; actual Windows
+CI compiled and exercised the service. Seven normal-package test flags remain OFF.
 The separate SDK/endpoint candidates are not a shipped health capability.
 Schannel compilation/preflight and the expanded 16-case real loopback HTTPS
-matrix passed after explicit per-certificate revocation verification was added. Product HTTPS/DNS health, adapter ownership, trusted signing /
+matrix passed after explicit per-certificate revocation verification was added.
+Service-owned HTTPS now has positive H2/H3 exact-socket proof; its negative
+matrix is running. Product HTTPS/DNS health, adapter ownership, trusted signing /
 distribution and separate Windows 10/11 desktop acceptance remain open. No
 production/LikeWeb or owner-device network/trust changes.
 
@@ -293,6 +295,47 @@ The TLS header now directly includes the platform `sspi.h`; policy/validation
 remain unchanged. [Closed compile receipt](evidence/owned-https-compile-44172890209.json).
 Actual Windows compilation/HTTPS matrix reruns pending. The independent normal
 package run continues with the seventh test mode OFF.
+
+Service-owned HTTPS positive **PASS** on source `54533da5`: H2 44173333723 and
+H3 44173344152 (explicit reader-wakeup diagnostic endpoint). Both verified TLS
+1.2, CA/CRL, exact nonce HTTP reply, actual SDK flags 15, unchanged instance/epoch
+and explicit disarm. SDK endpoint bytes exactly matched this socket's TLS wire:
+**497 TX / 1703 RX**, including handshake/record framing, not HTTP payload totals.
+Receivers observed owner EOF before Stop. Network/DNS/adapter/WFP baselines and
+exact fixture-root cleanup passed without watchdog intervention.
+[Positive evidence](evidence/owned-https-positive-44173333723.json).
+This qualifies a synthetic CI request, not production HTTPS/DNS health, periodic
+freshness or desktop readiness. H2/H3 wrong nonce, untrusted certificate,
+deadline and receive cancellation controls plus the old raw-echo regression are
+running against that same immutable source; no public capability is admitted.
+
+Seven-flag-OFF ordinary installer **PASS** (44172896138), source `9a3c420`:
+14 installer groups, common ephemeral signer for owned components, original
+Wintun bytes, actual medium-integrity GUI, rollback/removal, unchanged network
+and cleanup. Prior aggregate SDK 44038398682 and GUI 44073703263 remain selected;
+all four pinned receipt digests were independently compared and preserved.
+[Package receipt](evidence/package-https-44172896138.json). No tunnel started and
+no owner-installable/trusted-release package was produced.
+
+H2/H3 wrong-nonce and deadline controls passed on `54533da5`; evidence is being
+collected. The first untrusted controls 44173662102 / 44173690152 correctly
+returned ChainRejected with zero HTTP, current epoch, exact SDK wire proof and
+disarm, but the observer checked the independent server failure before it had
+arrived. It now waits boundedly for that fact, preserving the same oracle.
+First receive-cancel controls 44173674795 / 44173704262 had native Cancelled /
+explicit disarm, but the harness sent a traffic command after Stop had exited
+its owned child. A buffered broken-pipe close then aborted finally and overwrote
+the detailed receipt. Those cases have no qualified final WFP/root-cleanup
+measurement and are not counted as passing. [Original reports](evidence/owned-https-harness-44173662102.json).
+
+The cancellation observer now keeps its unknown-before-Stop observation and
+never queries that child after Stop; the owner child is then closed once.
+Broken-pipe stream close cannot skip remaining cleanup. A nested finally always
+attempts exact HTTPS-root removal and writes the original closed result even
+if another cleanup step fails. No native SDK/TLS/worker, deadline or security
+policy changed. **47 local Python tests PASS**, including both reproduced harness
+races and cleanup regression; syntax/diff checks PASS. Focused Windows reruns
+pending. Positive HTTPS and seven-flag-OFF package evidence remains unchanged.
 
 ## Development evidence and history
 

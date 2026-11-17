@@ -3,8 +3,9 @@
 Status: HTTP/socket contracts and Schannel preflight PASS (44165060837).
 Real loopback TLS 1.2 matrix **16 cases PASS** (44169309801), with explicit
 per-certificate revocation verification. [Closed evidence](evidence/health-tls-44169309801.json).
-Live SDK-owned HTTPS remains unimplemented. This document does not enable
-application health.
+Service-owned synthetic HTTPS positive H2/H3 CI passed (44173333723 / 44173344152);
+negative matrix qualification is pending. No public application health capability
+is enabled.
 
 ## Reserved fixture target and wire contract
 
@@ -96,3 +97,22 @@ produce a generic fatal-alert outcome), a TLS-1.3-only peer and a truncated HTTP
 body. Refusing TLS 1.3 is an intentional boundary, not TLS 1.3 qualification.
 Only the fixture knows the server configuration; a generic TLS rejection is not
 exported as a precise diagnosis of the peer's cause.
+
+## Service-owned CI integration
+
+`LIWETUN_TEST_OWNED_HTTPS` defaults OFF, requires the owned socket/attachment
+profiles, and is excluded by ordinary package guards together with the six prior
+test flags. The worker arms the fresh exclusive socket before TLS, validates the
+reserved nonce reply, reads SDK proof on the retained descriptor/current epoch
+and requires endpoint TX/RX covering this socket's actual wire totals. It disarms
+before close and clears qualification on Stop or changed epoch.
+
+The positive H2/H3 cases exactly matched 497 TX / 1703 RX to the SDK counters,
+with CA/CRL/name verification, current epoch, disarm and restoration.
+[Evidence](evidence/owned-https-positive-44173333723.json). These include encrypted
+handshake/record bytes and are not HTTP payload counts. The extra typed HTTPS
+receipt carries no name, address, token, socket or interface identifier.
+
+This remains one startup request in disposable CI. It has no periodic freshness
+controller, public service IPC, production endpoint or GUI admission. DNS and
+Internet-wide health remain unproved.

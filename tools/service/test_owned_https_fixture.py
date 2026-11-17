@@ -5,9 +5,13 @@ import ssl
 import tempfile
 import time
 import unittest
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 from owned_https_fixture import OwnedHttpsSink, REQUEST_HEADERS, HEADERS, validate_https_report
 from health_tls import generate
+from network import Child
+from production_network import observe_owned_https
 
 
 def reports():
@@ -23,6 +27,64 @@ def reports():
 
 
 class OwnedHttpsReportTests(unittest.TestCase):
+    def test_broken_pipe_close_still_closes_other_stream(self):
+        child = Child.__new__(Child)
+        child.process = SimpleNamespace(poll=lambda: 0, stdin=Mock(), stdout=Mock())
+        child.process.stdin.close.side_effect = BrokenPipeError()
+        child.close()
+        child.process.stdout.close.assert_called_once()
+
+    def test_untrusted_observer_waits_for_independent_handshake_failure(self):
+        import json
+        path, tls = reports()
+        path.update(echo_verified=False, qualified=False, tx_bytes=165, rx_bytes=1278)
+        tls.update(tls_result=8, http_result=None, handshake_verified=False, request_sent=False,
+                   response_verified=False, qualified=False, wire_tx=165, wire_rx=1278)
+        calls = []
+        receiver = dict(empty_controls=1, client_certificate_seen=False, rejected_frames=0, owner_reset=0,
+                        handshake_failed=0, valid_requests=0, request_bytes=0, replies_sent=0)
+        def command(_):
+            calls.append(True)
+            return {'owned_probe_sink': dict(receiver, handshake_failed=int(len(calls) > 1))}
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / 'owned-probe-context.json').write_text(json.dumps(path) + '\n')
+            (directory / 'owned-https-context.json').write_text(json.dumps(tls) + '\n')
+            session = SimpleNamespace(command=lambda _: dict(flags=1, tx=None, rx=None))
+            result = observe_owned_https(session, SimpleNamespace(command=command), directory, 'https-untrusted', {})
+            self.assertTrue(result['qualified'])
+            self.assertGreaterEqual(len(calls), 2)
+
+    def test_cancel_never_queries_a_session_after_stop_exits_it(self):
+        import json
+        path, tls = reports()
+        path.update(echo_verified=False, qualified=False, cancelled=True, receive_cancelled=True,
+                    same_instance_epoch=False, snapshot_flags=1, tx_bytes=None, rx_bytes=None)
+        tls.update(tls_result=1, http_result=7, response_verified=False, qualified=False, wire_tx=497, wire_rx=1544)
+        stopped = []
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            def command(value):
+                if value == 'traffic':
+                    self.assertFalse(stopped, 'Exited child cannot receive a command')
+                    return dict(flags=1, tx=None, rx=None)
+                self.assertEqual(value, 'stop')
+                stopped.append(True)
+                (directory / 'owned-probe-context.json').write_text(json.dumps(path) + '\n')
+                (directory / 'owned-https-context.json').write_text(json.dumps(tls) + '\n')
+                return dict(code=0)
+            def stats(_):
+                receiver = dict(empty_controls=1, client_certificate_seen=False, rejected_frames=0, owner_reset=0,
+                                handshake_complete=1, handshake_failed=0, valid_requests=1,
+                                request_bytes=len(REQUEST_HEADERS) + 8, replies_sent=0, reply_bytes=0,
+                                owner_closed=int(bool(stopped)), waiting_for_owner_close=int(not stopped))
+                return {'owned_probe_sink': receiver}
+            result = observe_owned_https(SimpleNamespace(command=command), SimpleNamespace(command=stats),
+                                         directory, 'https-cancel', {})
+            self.assertTrue(result['qualified'])
+            self.assertTrue(result['unknown_before_stop'])
+            self.assertIsNone(result['unknown_after_negative'])
+
     def test_valid_https_alone_cannot_replace_missing_disarm_epoch_or_path(self):
         path, tls = reports()
         validate_https_report(tls, path)

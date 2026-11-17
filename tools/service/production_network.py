@@ -39,7 +39,7 @@ def observe_owned_https(session, endpoint, report_path, mode, diagnostic):
         else:
             raise RuntimeError('owned_https_not_waiting')
         traffic = session.command('traffic')
-        if traffic.get('flags', 0) & 2 or traffic.get('tx') is not None or path_file.exists():
+        if traffic.get('flags', 0) & 2 or traffic.get('tx') is not None or traffic.get('rx') is not None or path_file.exists():
             raise RuntimeError('owned_https_not_waiting')
         started = time.monotonic()
         stop = session.command('stop')
@@ -57,7 +57,8 @@ def observe_owned_https(session, endpoint, report_path, mode, diagnostic):
             path = validate_report(path)
             tls = validate_https_report(tls, path)
             diagnostic.update(path=path, tls=tls)
-            if mode == 'https-untrusted' or (receiver['owner_closed'] == 1 and receiver['waiting_for_owner_close'] == 0):
+            if ((mode == 'https-untrusted' and receiver['handshake_failed'] == 1)
+                    or (mode != 'https-untrusted' and receiver['owner_closed'] == 1 and receiver['waiting_for_owner_close'] == 0)):
                 break
         time.sleep(.025)
     else:
@@ -90,13 +91,15 @@ def observe_owned_https(session, endpoint, report_path, mode, diagnostic):
                         and receiver['replies_sent'] == receiver['reply_bytes'] == 0
                         and path['receive_timed_out'] == (not stopping))
     good = mode == 'https'
-    traffic = session.command('traffic')
+    if not stopping:
+        traffic = session.command('traffic')
     unknown = not traffic.get('flags', 0) & 2 and traffic.get('tx') is None and traffic.get('rx') is None
     if not (common and accepted and tls['qualified'] == good and tls['response_verified'] == good
             and (good or unknown)):
         raise RuntimeError('owned_https_not_qualified')
     return dict(qualified=True, owned_https_qualified=good, path=path, tls=tls, receiver=receiver,
-                elapsed_ms=elapsed, unknown_after_negative=unknown if not good else None,
+                elapsed_ms=elapsed, unknown_after_negative=unknown if not good and not stopping else None,
+                unknown_before_stop=unknown if stopping else None,
                 stop_during_receive=stopping, proves_dns=False, proves_internet=False, release_ready=False)
 
 
@@ -600,6 +603,9 @@ def main():
             result['owned_https_observation'] = {}
             result['owned_https'] = observe_owned_https(session, endpoint, client.parent, owned_probe_mode,
                                                         result['owned_https_observation'])
+            if owned_probe_mode == 'https-cancel':
+                session.close()
+                session = None
         elif negative_probe:
             stage = {'deadline': 'owned_request_receive_deadline', 'wrong-nonce': 'owned_request_wrong_nonce',
                      'migration': 'owned_request_migration', 'epoch-change': 'owned_request_epoch_change',
@@ -945,51 +951,57 @@ def main():
             result['wfp_probe_stage'] = getattr(error, 'wfp_stage', 'unknown')
             result['wfp_query_code'] = getattr(error, 'wfp_query_code', None)
     finally:
-        if local_receiver:
-            local_receiver.close()
-        if session:
-            session.close('stop')
-        restored = wait_clean(baseline)
-        if watchdog:
-            if restored and watchdog.process.poll() is None:
-                ps("""
-                $event = [Threading.EventWaitHandle]::OpenExisting('Local\\LiWeTun.CI.GeneralDone.' + $env:GITHUB_RUN_ID)
-                try { [void]$event.Set() } finally { $event.Dispose() }
-                """)
-            try:
-                watchdog.process.wait(timeout=145 if termination == 'endpoint-restart' or traffic_pattern == 'tx-only' else 85)
-                guard = json.loads((report.parent / 'general-watchdog.json').read_text(encoding='utf-8-sig'))
-                result['deadline_triggered'] = guard['triggered']
-                result['passed'] = result['passed'] and not guard['triggered'] and guard['action_completed']
-            except Exception:
-                result['passed'] = False
-                result['deadline_result_unavailable'] = True
-            watchdog.close()
-        if traffic_watch:
-            traffic_watch.close()
-        if endpoint and negative_probe:
-            try:
-                result['owned_probe_receiver_before_fixture_shutdown'] = endpoint.command('stats')['owned_probe_sink']
-            except Exception:
-                result['owned_probe_receiver_observation_unavailable'] = True
-        if local_receiver:
-            result['owned_bypass_receiver_before_fixture_shutdown'] = local_receiver.stats()
-            local_receiver.close()
-        if endpoint:
-            endpoint.close('quit')
-        if forwarder:
-            forwarder.close('quit')
-        if wfp_watch:
-            wfp_watch.close('quit')
-        result['routes_dns_adapter_restored'] = wait_clean(baseline)
-        result['passed'] = result['passed'] and result['routes_dns_adapter_restored']
-        if owned_probe_mode in HTTPS_MODES:
-            try:
-                result['owned_https_fixture_roots_removed'] = https_roots.close() if https_roots else False
-            except Exception:
-                result['owned_https_fixture_roots_removed'] = False
-            result['passed'] = result['passed'] and result['owned_https_fixture_roots_removed']
-        report.write_text(json.dumps(result, indent=2) + '\n')
+        try:
+            if local_receiver:
+                local_receiver.close()
+            if session:
+                session.close('stop')
+            restored = wait_clean(baseline)
+            if watchdog:
+                if restored and watchdog.process.poll() is None:
+                    ps("""
+                    $event = [Threading.EventWaitHandle]::OpenExisting('Local\\LiWeTun.CI.GeneralDone.' + $env:GITHUB_RUN_ID)
+                    try { [void]$event.Set() } finally { $event.Dispose() }
+                    """)
+                try:
+                    watchdog.process.wait(timeout=145 if termination == 'endpoint-restart' or traffic_pattern == 'tx-only' else 85)
+                    guard = json.loads((report.parent / 'general-watchdog.json').read_text(encoding='utf-8-sig'))
+                    result['deadline_triggered'] = guard['triggered']
+                    result['passed'] = result['passed'] and not guard['triggered'] and guard['action_completed']
+                except Exception:
+                    result['passed'] = False
+                    result['deadline_result_unavailable'] = True
+                watchdog.close()
+            if traffic_watch:
+                traffic_watch.close()
+            if endpoint and negative_probe:
+                try:
+                    result['owned_probe_receiver_before_fixture_shutdown'] = endpoint.command('stats')['owned_probe_sink']
+                except Exception:
+                    result['owned_probe_receiver_observation_unavailable'] = True
+            if local_receiver:
+                result['owned_bypass_receiver_before_fixture_shutdown'] = local_receiver.stats()
+                local_receiver.close()
+            if endpoint:
+                endpoint.close('quit')
+            if forwarder:
+                forwarder.close('quit')
+            if wfp_watch:
+                wfp_watch.close('quit')
+            result['routes_dns_adapter_restored'] = wait_clean(baseline)
+            result['passed'] = result['passed'] and result['routes_dns_adapter_restored']
+        except Exception:
+            result['passed'] = False
+            result['cleanup_failed'] = True
+            result.setdefault('failed_stage', 'fixture_cleanup')
+        finally:
+            if owned_probe_mode in HTTPS_MODES:
+                try:
+                    result['owned_https_fixture_roots_removed'] = https_roots.close() if https_roots else False
+                except Exception:
+                    result['owned_https_fixture_roots_removed'] = False
+                result['passed'] = result['passed'] and result['owned_https_fixture_roots_removed']
+            report.write_text(json.dumps(result, indent=2) + '\n')
     return 0 if result['passed'] else 2
 
 

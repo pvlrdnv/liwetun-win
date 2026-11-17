@@ -160,8 +160,14 @@ class Child:
             if self.process.poll() is None:
                 self.process.kill()
                 self.process.wait(timeout=5)
-        self.process.stdin.close()
-        self.process.stdout.close()
+        # A command can already have failed because the owned child exited.
+        # Closing a buffered broken pipe must not abort remaining fixture/root
+        # cleanup or overwrite the original closed failure receipt.
+        for stream in (self.process.stdin, self.process.stdout):
+            try:
+                stream.close()
+            except OSError:
+                pass
 
 
 def totals():

@@ -1,0 +1,166 @@
+{
+  "source_run": 44172896138,
+  "source_commit": "9a3c420c6eb34b1986372f46b883f1eafa350bd1",
+  "gui_source_run": 44073703263,
+  "owned_https_ci_enabled": false,
+  "owned_bypass_ci_enabled": false,
+  "owned_migration_ci_enabled": false,
+  "owned_socket_ci_probe_enabled": false,
+  "attachment_context_ci_guard_enabled": false,
+  "sdk_runtime_input": {
+    "source_run": 44038398682,
+    "source_commit": "84f9da68a2fee2e7cb4cb42ef2f80e264aad4d08",
+    "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+    "privacy_policy_version": 1,
+    "files": {
+      "trusttunnel.dll": "fcafa344cd1ce143a928c3f1cfc63f25686e7f6b739aa7ed58d4736d082d1ca5",
+      "wintun.dll": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce"
+    },
+    "source_pinned_candidate": true,
+    "source_pin_manifest_sha256": "cf9d5d299aeae007c9314b4235d8a45ad52076de46da5e5150e952d3d05cd474",
+    "conan_input_lock_sha256": "2680c44369acf682190acbb322273a3a0a648edcbbba851e99b0c0166595c246",
+    "network_requalified": true,
+    "release_qualified": false,
+    "network_qualification_scope": "disposable_ci_ordinary_ipv4_faults_recovery_and_synthetic_ipv6_with_aggregate_counters",
+    "qualification_receipt": "docs/evidence/sdk-traffic-requalification.json",
+    "windows_10_qualified": false,
+    "windows_11_qualified": false,
+    "native_ipv6_egress_qualified": false,
+    "traffic_abi": 1,
+    "traffic_profile_manifest_sha256": "40d21c0edd085dc7bae109ae97f9bc0ef0d338e42e83c8e712c872383bd88686",
+    "traffic_abi_header_sha256": "1541911357ef9fe588da9894167e4d39df263b8527a1a3a2fa738017768c22bd",
+    "sdk_variant": "aggregate_traffic_candidate"
+  },
+  "evidence": {
+    "qualification": {
+      "cleanup_passed": true,
+      "network_unchanged": true,
+      "installer_tested": true,
+      "release_ready": false,
+      "passed": true,
+      "checks": [
+        "original_microsoft_app_local_crt_staged",
+        "native_and_engine_notice_bytes_verified_not_legal_approval",
+        "all_native_payload_images_are_x64",
+        "gui_sdk_and_notice_inputs_verified",
+        "common_ci_signer_only_for_owned_components",
+        "original_wintun_bytes_preserved",
+        "actual_signed_gui_queries_production_service",
+        "medium_integrity_without_enabled_admin_group",
+        "owner_can_read_service_identity_but_not_write_process_or_duplicate_token",
+        "no_tunnel_start_or_network_configuration_change",
+        "fresh_installer_rollback_medium_query_and_uninstall"
+      ],
+      "stage": "installer_qualification"
+    },
+    "installer-qualification": {
+      "cleanup_passed": true,
+      "release_ready": false,
+      "invocations": [
+        {
+          "exit_code": 21,
+          "stage": "preexisting_directory_denial"
+        },
+        {
+          "exit_code": 25,
+          "stage": "preexisting_setup_mutex_denial"
+        },
+        {
+          "exit_code": 22,
+          "stage": "preexisting_service_denial"
+        },
+        {
+          "exit_code": 23,
+          "stage": "preexisting_registration_denial"
+        },
+        {
+          "exit_code": 23,
+          "stage": "preexisting_registration_denial"
+        },
+        {
+          "exit_code": 31,
+          "stage": "invalid_owner_rollback"
+        },
+        {
+          "exit_code": 0,
+          "stage": "fresh_install"
+        },
+        {
+          "exit_code": 21,
+          "stage": "fresh_install"
+        },
+        {
+          "exit_code": 43,
+          "stage": "open_medium_gui_denies_uninstall"
+        },
+        {
+          "exit_code": 41,
+          "stage": "uninstall_preserves_unknown_file"
+        },
+        {
+          "exit_code": 0,
+          "stage": "uninstall_preserves_unknown_file"
+        },
+        {
+          "exit_code": 0,
+          "stage": "normal_uninstaller_bootstrap"
+        },
+        {
+          "exit_code": 0,
+          "stage": "normal_uninstaller_bootstrap"
+        }
+      ],
+      "checks": [
+        "pinned_compiler_and_signed_installer",
+        "preexisting_directory_preserved",
+        "preexisting_setup_mutex_denied",
+        "preexisting_service_preserved_without_starting",
+        "preexisting_registration_and_shortcut_preserved",
+        "invalid_owner_rolls_back_fresh_files_and_service",
+        "fresh_install_preserves_payload_and_signed_uninstaller",
+        "duplicate_install_denied",
+        "installed_gui_queries_production_service_at_medium_integrity",
+        "visible_medium_gui_blocks_uninstall_before_mutations",
+        "visible_medium_gui_closes_and_releases_presence",
+        "unknown_file_preserved_with_retry_uninstaller",
+        "uninstall_retry_after_service_removal",
+        "normal_uninstaller_bootstrap_and_removal"
+      ],
+      "desktop_owner_selection_tested": false,
+      "passed": true,
+      "stage": "normal_uninstaller_bootstrap",
+      "signing": "ephemeral_ci_only",
+      "before_fixture_cleanup": {
+        "directory": false,
+        "registration": false,
+        "shortcut": false
+      },
+      "tunnel_started": false
+    },
+    "installer-digest": {
+      "signing": "ephemeral_ci_only",
+      "installer_sha256": "a92ee435169dcbb8b1b1c7a727d20405ad48b59d4a3c201646d96c5ee4b46376",
+      "release_ready": false,
+      "source_commit": "9a3c420c6eb34b1986372f46b883f1eafa350bd1"
+    },
+    "installer-visible-gui": {
+      "passed": true,
+      "medium_integrity": true,
+      "admin_group_enabled": false,
+      "gui_window_visible": true,
+      "closed_gracefully": true
+    },
+    "installer-medium-integrity": {
+      "passed": true,
+      "medium_integrity": true,
+      "admin_group_enabled": false,
+      "service_metadata_read_only": true
+    }
+  },
+  "preserved_input_receipt_hashes": {
+    "notices/sdk/CANDIDATE_SOURCE_RECEIPT.json": "1faeaad6e0935e44e8063257ab6ff67602857d865ecfeec71faba4363eb07f53",
+    "notices/sdk/SOURCE_PINS.json": "cf9d5d299aeae007c9314b4235d8a45ad52076de46da5e5150e952d3d05cd474",
+    "notices/sdk/TRAFFIC_PROFILE_INPUTS.json": "40d21c0edd085dc7bae109ae97f9bc0ef0d338e42e83c8e712c872383bd88686",
+    "notices/sdk/TRAFFIC_RUNTIME_INPUT.json": "5d36e96d1698a9a2bda2ccc141a65ab54071ef8e43911b30ef23c1bb55e4e6e2"
+  }
+}
