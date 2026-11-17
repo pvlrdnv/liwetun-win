@@ -281,6 +281,13 @@ only. All 15 archived dependency notice sets of the attached build match previou
 bodies; 13 source supplements remain; actual Conan lock PASS.
 [Byte receipt](evidence/sdk-attached-notices-44070100152.json). No distribution approval.
 
+The next owned-request source audit identifies three positive-byte hook sites
+and endpoint/listener checks, plus client-ID swaps during migration. A future
+reducer must derive the owned socket tuple, reject bypass/migration and retain
+only short-lived closed path facts. No per-destination event/logger restoration.
+This remains design-only: no owned-request arm/read API, DNS/HTTPS health probe
+or dedicated health endpoint is implemented/selected. [Audit](HEALTH_PROBES.md).
+
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
 do not qualify those systems. New SDK artifacts retain for 14 days. Latest GUI

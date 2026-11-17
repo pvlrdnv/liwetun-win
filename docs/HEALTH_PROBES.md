@@ -262,3 +262,29 @@ full network/fault/recovery/IPv6 matrix, normal service/package admission,
 probe-specific traversal, ownership and desktop/release remain unqualified.
 Existing build and per-run runtime-input receipts remain historical evidence.
 The dedicated health request and its endpoint/path correlation are still absent.
+
+
+## Next owned-request correlation: source audit, not implementation
+
+Pinned `core/src/tunnel.cpp` registers monitored statistics only after client
+acceptance when both the client listener and endpoint upstream match the active
+SDK objects. Positive-byte hooks exist in buffered upload, normal client upload
+and upstream-to-client delivery. These are candidate observation points for the
+owned request; the aggregate callback cannot correlate a single socket.
+
+The migration completion path swaps client connection IDs. Therefore a historical
+registration/ID match alone is insufficient. The next reducer must check actual
+upstream/listener at each matching byte update and invalidate on migration,
+bypass/unknown path, state epoch change, timeout or failed observation. Do not
+assume every per-flow migration changes the global SDK state epoch. No new
+per-destination reporting event or raw logger is needed or permitted.
+
+Candidate Windows arm boundary: validate the caller's held connected TCP socket,
+exclusive local-port use, actual local/peer tuple and local address membership
+in the SDK-held TUN. Derive the tuple inside the SDK, rather than accepting a
+generic caller-supplied browsing tuple. Keep one short-lived in-memory slot and
+return closed token/epoch/time/path facts only. Hold no SDK lifetime lock during
+network I/O; acquire it briefly for arm/read/disarm and cancel on Stop. Exact API,
+source guards, migration/bypass controls and Windows qualification are still
+unimplemented. No dedicated application health endpoint is selected/contacted.
+DNS correlation needs its own design; an owned TCP proof cannot establish it.
