@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
@@ -6,11 +7,77 @@ import 'diagnostics/journal.dart';
 import 'domain/import_link.dart';
 import 'domain/profile_cache.dart';
 import 'domain/subscription.dart';
+import 'domain/subscription_refresh.dart';
+import 'network/subscription_transport.dart';
 import 'native/trusttunnel.dart';
 import 'native/service.dart';
 import 'native/storage.dart';
 
 enum ProfileStorageState { memoryOnly, loading, saved, saving, blocked }
+
+enum SubscriptionApplyCode {
+  applied,
+  closed,
+  busy,
+  missing,
+  rejected,
+  unsupported,
+  stale,
+  replay,
+  capacity,
+  unavailable,
+}
+
+final class _RefreshOutcome {
+  const _RefreshOutcome.fetch(this.fetchCode) : applyCode = null;
+  const _RefreshOutcome.apply(this.applyCode) : fetchCode = null;
+  final SubscriptionFetchCode? fetchCode;
+  final SubscriptionApplyCode? applyCode;
+  bool get applied => applyCode == SubscriptionApplyCode.applied;
+  bool get unchanged => applyCode == SubscriptionApplyCode.replay;
+  String get message {
+    if (applyCode != null) {
+      return switch (applyCode!) {
+        SubscriptionApplyCode.applied => 'Список подписки обновлён.',
+        SubscriptionApplyCode.closed => 'Приложение закрыто.',
+        SubscriptionApplyCode.busy =>
+          'Обновление уже выполняется. Повторите через несколько секунд.',
+        SubscriptionApplyCode.missing =>
+          'Добавьте или выберите подписку для обновления.',
+        SubscriptionApplyCode.replay =>
+          'Получена устаревшая версия подписки. Прежний список сохранён.',
+        SubscriptionApplyCode.stale =>
+          'Срок данных в ответе истёк. Прежний список сохранён.',
+        SubscriptionApplyCode.capacity =>
+          'Список слишком большой. Прежние подключения сохранены.',
+        SubscriptionApplyCode.unavailable =>
+          'Не удалось проверить новые подключения. Прежний список сохранён.',
+        _ => 'Не удалось проверить формат подписки. Прежний список сохранён.',
+      };
+    }
+    return switch (fetchCode) {
+      SubscriptionFetchCode.privateAddress =>
+        'Для подписки нужен публичный HTTPS-адрес. Прежний список сохранён.',
+      SubscriptionFetchCode.unsupportedProxy =>
+        'Обновление через настроенный HTTPS-прокси пока не поддерживается. Прежний список сохранён.',
+      SubscriptionFetchCode.tls =>
+        'Не удалось проверить защищённое соединение. Прежний список сохранён.',
+      SubscriptionFetchCode.timeout =>
+        'Сервис подписки не ответил вовремя. Прежний список сохранён.',
+      SubscriptionFetchCode.dns =>
+        'Не удалось найти сервис подписки. Прежний список сохранён.',
+      SubscriptionFetchCode.tooLarge =>
+        'Ответ подписки слишком большой. Прежний список сохранён.',
+      SubscriptionFetchCode.cancelled => 'Обновление отменено.',
+      SubscriptionFetchCode.contentType ||
+      SubscriptionFetchCode.malformedBody =>
+        'Сервис вернул неподдерживаемый формат подписки. Прежний список сохранён.',
+      SubscriptionFetchCode.malformedSource =>
+        'Проверьте HTTPS-ссылку подписки. Прежний список сохранён.',
+      _ => 'Не удалось обновить подписку. Прежний список сохранён.',
+    };
+  }
+}
 
 final class LocalConnection {
   const LocalConnection(
@@ -45,11 +112,16 @@ final class AppController extends ChangeNotifier {
     ServiceGateway? service,
     StorageGateway? storage,
     DateTime Function()? clock,
+    SubscriptionTransport? subscriptionTransport,
+    int Function(int maximum)? jitter,
   }) : journal = journal ?? Journal(),
        _inspector = inspector ?? const WindowsTrustTunnel(),
        _service = service ?? const WindowsService(),
        _storage = storage ?? const WindowsStorage(),
-       _clock = clock ?? DateTime.now {
+       _clock = clock ?? DateTime.now,
+       _subscriptionTransport =
+           subscriptionTransport ?? HttpSubscriptionTransport(),
+       _jitter = jitter ?? Random().nextInt {
     this.journal.record(EventId.appStarted);
     this.journal.onPersistenceChanged = () {
       if (!_disposed) notifyListeners();
@@ -61,6 +133,19 @@ final class AppController extends ChangeNotifier {
   final ServiceGateway _service;
   final StorageGateway _storage;
   final DateTime Function() _clock;
+  final SubscriptionTransport _subscriptionTransport;
+  final int Function(int maximum) _jitter;
+  final Map<String, DateTime> _refreshDue = {}, _lastRefreshAttempt = {};
+  final Map<String, int> _refreshFailures = {};
+  final Map<String, _RefreshOutcome> _refreshOutcomes = {};
+  Timer? _refreshTimer;
+  bool _autoRefresh = false;
+  DateTime? _refreshNotBefore;
+  String? _refreshingSource;
+  bool get refreshingSubscription => _refreshingSource != null;
+  bool get hasSubscriptions =>
+      _connections.any((item) => item.link.kind == ImportKind.subscription);
+
   Map<String, SubscriptionStore> _subscriptions = {};
   List<LocalConnection> _derivedConnections = [];
   bool _applyingSubscription = false;
@@ -69,18 +154,240 @@ final class AppController extends ChangeNotifier {
   bool _subscriptionStopQueued = false;
   bool get applyingSubscription => _applyingSubscription;
 
+  void enableAutomaticSubscriptionRefresh() {
+    if (_disposed || _autoRefresh) return;
+    _autoRefresh = true;
+    _scheduleAutomaticRefresh();
+  }
+
+  Future<String> refreshSubscription([String? sourceId]) async {
+    final sources = _connections
+        .where((item) => item.link.kind == ImportKind.subscription)
+        .toList();
+    if (sourceId == null && sources.length > 1) {
+      return 'Нажмите обновление у нужной подписки в списке.';
+    }
+    final id =
+        sourceId ?? (sources.isEmpty ? null : sources.single.link.localId);
+    if (id == null) {
+      return const _RefreshOutcome.apply(SubscriptionApplyCode.missing).message;
+    }
+    return (await _refreshSubscription(id)).message;
+  }
+
+  Future<_RefreshOutcome> _refreshSubscription(String sourceId) async {
+    if (_disposed) {
+      return const _RefreshOutcome.apply(SubscriptionApplyCode.closed);
+    }
+    if (refreshingSubscription ||
+        _applyingSubscription ||
+        storageState == ProfileStorageState.loading) {
+      return const _RefreshOutcome.apply(SubscriptionApplyCode.busy);
+    }
+    LocalConnection? source;
+    for (final item in _connections) {
+      if (item.link.kind == ImportKind.subscription &&
+          item.link.localId == sourceId) {
+        source = item;
+      }
+    }
+    if (source == null) {
+      return const _RefreshOutcome.apply(SubscriptionApplyCode.missing);
+    }
+    final now = _clock();
+    final previous = _lastRefreshAttempt[sourceId];
+    if (previous != null &&
+        !now.isBefore(previous) &&
+        now.difference(previous) < const Duration(seconds: 5)) {
+      return const _RefreshOutcome.apply(SubscriptionApplyCode.busy);
+    }
+    _lastRefreshAttempt[sourceId] = now;
+    _refreshTimer?.cancel();
+    _refreshingSource = sourceId;
+    journal.record(EventId.subscriptionRefreshStarted);
+    notifyListeners();
+    var outcome = const _RefreshOutcome.fetch(SubscriptionFetchCode.network);
+    try {
+      final reply = await _subscriptionTransport
+          .fetch(source.link.secret)
+          .timeout(const Duration(seconds: 17));
+      if (_disposed) {
+        return const _RefreshOutcome.apply(SubscriptionApplyCode.closed);
+      }
+      if (reply.code != SubscriptionFetchCode.ok) {
+        outcome = _RefreshOutcome.fetch(reply.code);
+      } else if (reply.payload == null) {
+        outcome = const _RefreshOutcome.apply(SubscriptionApplyCode.rejected);
+      } else {
+        outcome = _RefreshOutcome.apply(
+          await applySubscriptionSnapshot(sourceId, reply.payload!),
+        );
+      }
+      return outcome;
+    } on TimeoutException {
+      outcome = const _RefreshOutcome.fetch(SubscriptionFetchCode.timeout);
+      return outcome;
+    } catch (_) {
+      outcome = const _RefreshOutcome.fetch(SubscriptionFetchCode.network);
+      return outcome;
+    } finally {
+      _refreshingSource = null;
+      if (!_disposed) {
+        _refreshOutcomes[sourceId] = outcome;
+        if (!outcome.applied) {
+          journal.record(
+            EventId.subscriptionRefreshFailed,
+            reason: _refreshReason(outcome),
+          );
+        }
+        final failures = outcome.applied || outcome.unchanged
+            ? 0
+            : ((_refreshFailures[sourceId] ?? 0) + 1).clamp(1, 6);
+        _refreshFailures[sourceId] = failures;
+        DateTime? deadline;
+        final time = _clock();
+        for (final profile
+            in _subscriptions[sourceId]?.profiles.values ?? <CachedProfile>[]) {
+          if (!profile.canUse(time)) continue;
+          final expires = profile.validUntil.isBefore(profile.accessExpiresAt)
+              ? profile.validUntil
+              : profile.accessExpiresAt;
+          if (deadline == null || expires.isBefore(deadline)) {
+            deadline = expires;
+          }
+        }
+        _refreshDue[sourceId] = time.add(
+          subscriptionRefreshDelay(
+            now: time,
+            failures: failures,
+            jitterSeconds: _jitter(121),
+            earliestDeadline: deadline,
+          ),
+        );
+        _refreshNotBefore = time.add(const Duration(seconds: 1));
+        _scheduleAutomaticRefresh();
+        notifyListeners();
+      }
+    }
+  }
+
+  ReasonCode _refreshReason(_RefreshOutcome outcome) {
+    if (outcome.fetchCode != null) {
+      return switch (outcome.fetchCode!) {
+        SubscriptionFetchCode.dns => ReasonCode.dnsFailure,
+        SubscriptionFetchCode.tls => ReasonCode.tlsFailure,
+        SubscriptionFetchCode.timeout => ReasonCode.timeout,
+        SubscriptionFetchCode.privateAddress => ReasonCode.privateAddress,
+        SubscriptionFetchCode.unsupportedProxy => ReasonCode.unsupported,
+        SubscriptionFetchCode.httpStatus => ReasonCode.httpStatus,
+        SubscriptionFetchCode.tooLarge => ReasonCode.tooLong,
+        SubscriptionFetchCode.contentType => ReasonCode.unsupported,
+        SubscriptionFetchCode.malformedBody ||
+        SubscriptionFetchCode.malformedSource => ReasonCode.malformed,
+        SubscriptionFetchCode.cancelled => ReasonCode.none,
+        _ => ReasonCode.networkFailure,
+      };
+    }
+    return switch (outcome.applyCode) {
+      SubscriptionApplyCode.busy => ReasonCode.operationBusy,
+      SubscriptionApplyCode.replay => ReasonCode.replay,
+      SubscriptionApplyCode.stale => ReasonCode.stale,
+      SubscriptionApplyCode.capacity => ReasonCode.tooLong,
+      SubscriptionApplyCode.unsupported => ReasonCode.unsupported,
+      SubscriptionApplyCode.unavailable => ReasonCode.ioFailure,
+      _ => ReasonCode.malformed,
+    };
+  }
+
+  void _scheduleAutomaticRefresh() {
+    _refreshTimer?.cancel();
+    if (!_autoRefresh ||
+        _disposed ||
+        refreshingSubscription ||
+        _applyingSubscription) {
+      return;
+    }
+    final now = _clock();
+    DateTime? next;
+    for (final source in _connections.where(
+      (item) => item.link.kind == ImportKind.subscription,
+    )) {
+      final due = _refreshDue.putIfAbsent(source.link.localId, () => now);
+      if (next == null || due.isBefore(next)) next = due;
+    }
+    if (next == null) return;
+    if (_refreshNotBefore != null && next.isBefore(_refreshNotBefore!)) {
+      next = _refreshNotBefore;
+    }
+    final delay = next!.difference(now);
+    _refreshTimer = Timer(
+      delay.isNegative ? Duration.zero : delay,
+      () => unawaited(_refreshDueSource()),
+    );
+  }
+
+  Future<void> _refreshDueSource() async {
+    if (_disposed || !_autoRefresh) return;
+    if (refreshingSubscription || _applyingSubscription) {
+      _scheduleAutomaticRefresh();
+      return;
+    }
+    final now = _clock();
+    final candidates =
+        _connections
+            .where(
+              (item) =>
+                  item.link.kind == ImportKind.subscription &&
+                  !(_refreshDue[item.link.localId] ?? now).isAfter(now),
+            )
+            .toList()
+          ..sort(
+            (a, b) => (_refreshDue[a.link.localId] ?? now).compareTo(
+              _refreshDue[b.link.localId] ?? now,
+            ),
+          );
+    if (candidates.isEmpty) {
+      _scheduleAutomaticRefresh();
+      return;
+    }
+    final result = await _refreshSubscription(candidates.first.link.localId);
+    if (!_disposed && result.applyCode == SubscriptionApplyCode.busy) {
+      _refreshDue[candidates.first.link.localId] = _clock().add(
+        const Duration(seconds: 5),
+      );
+      _scheduleAutomaticRefresh();
+    }
+  }
+
   bool eligible(LocalConnection connection) =>
       connection.cachedProfile?.canUse(_clock()) ?? true;
 
   String subscriptionNotice(LocalConnection source) {
-    final store = _subscriptions[source.link.localId];
-    if (store == null || store.revision < 0) return 'Обновлений ещё не было.';
-    if (store.access == Access.revoked) return 'Доступ отозван.';
-    if (store.access == Access.expired) return 'Срок доступа завершён.';
+    final id = source.link.localId;
+    final store = _subscriptions[id];
+    final status = _refreshingSource == id
+        ? 'Обновляем список…'
+        : _refreshOutcomes[id] != null && !_refreshOutcomes[id]!.applied
+        ? _refreshOutcomes[id]!.message
+        : null;
+    if (store == null || store.revision < 0) {
+      return status ?? 'Обновлений ещё не было.';
+    }
     final usable = store.profiles.values
         .where((profile) => profile.canUse(_clock()))
         .length;
-    return 'Серверов: ${store.profiles.length} · актуальных: $usable · ревизия ${store.revision}';
+    final state = switch (store.access) {
+      Access.revoked => 'Доступ отозван.',
+      Access.expired => 'Срок доступа завершён.',
+      Access.active =>
+        'Серверов: ${store.profiles.length} · актуальных: $usable',
+    };
+    final applied = store.lastAppliedAt?.toLocal();
+    final updated = applied == null
+        ? 'Время обновления неизвестно'
+        : 'Обновлено ${applied.day.toString().padLeft(2, '0')}.${applied.month.toString().padLeft(2, '0')}.'
+              '${applied.year} ${applied.hour.toString().padLeft(2, '0')}:${applied.minute.toString().padLeft(2, '0')}';
+    return '${status == null ? '' : '$status\n'}$state · $updated';
   }
 
   Future<List<LocalConnection>> _inspectSubscription(
@@ -120,17 +427,20 @@ final class AppController extends ChangeNotifier {
   }
 
   /// Only a validated transport may supply a snapshot; never expose its body to logs.
-  Future<String> applySubscriptionSnapshot(String sourceId, String text) async {
-    if (_disposed) return 'Приложение закрыто.';
+  Future<SubscriptionApplyCode> applySubscriptionSnapshot(
+    String sourceId,
+    String text,
+  ) async {
+    if (_disposed) return SubscriptionApplyCode.closed;
     if (_applyingSubscription || storageState == ProfileStorageState.loading) {
-      return 'Дождитесь завершения текущей операции.';
+      return SubscriptionApplyCode.busy;
     }
     if (!_connections.any(
       (item) =>
           item.link.localId == sourceId &&
           item.link.kind == ImportKind.subscription,
     )) {
-      return 'Подписка не найдена.';
+      return SubscriptionApplyCode.missing;
     }
     _applyingSubscription = true;
     notifyListeners();
@@ -141,7 +451,7 @@ final class AppController extends ChangeNotifier {
           : SubscriptionStore.restoreCache(previous.encodeCache(), _clock());
       next.apply(text, _clock());
       final inspected = await _inspectSubscription(sourceId, next);
-      if (_disposed) return 'Приложение закрыто.';
+      if (_disposed) return SubscriptionApplyCode.closed;
       final stores = {..._subscriptions, sourceId: next};
       final derived = [
         ..._derivedConnections.where((item) => item.sourceId != sourceId),
@@ -165,7 +475,7 @@ final class AppController extends ChangeNotifier {
       _scheduleSubscriptionExpiry();
       _enforceSubscriptionAccess();
       notifyListeners();
-      return 'Список подписки обновлён.';
+      return SubscriptionApplyCode.applied;
     } on SnapshotException catch (error) {
       if (!_disposed) {
         journal.record(
@@ -177,7 +487,12 @@ final class AppController extends ChangeNotifier {
               : ReasonCode.malformed,
         );
       }
-      return 'Подписка отклонена. Прежний список сохранён.';
+      return switch (error.reason) {
+        SnapshotFailure.replay => SubscriptionApplyCode.replay,
+        SnapshotFailure.stale => SubscriptionApplyCode.stale,
+        SnapshotFailure.unsupported => SubscriptionApplyCode.unsupported,
+        _ => SubscriptionApplyCode.rejected,
+      };
     } on CacheException {
       if (!_disposed) {
         journal.record(
@@ -185,7 +500,7 @@ final class AppController extends ChangeNotifier {
           reason: ReasonCode.tooLong,
         );
       }
-      return 'Список слишком большой. Прежние подключения сохранены.';
+      return SubscriptionApplyCode.capacity;
     } catch (_) {
       if (!_disposed) {
         journal.record(
@@ -193,9 +508,10 @@ final class AppController extends ChangeNotifier {
           reason: ReasonCode.ioFailure,
         );
       }
-      return 'Не удалось проверить подписку. Прежний список сохранён.';
+      return SubscriptionApplyCode.unavailable;
     } finally {
       _applyingSubscription = false;
+      _scheduleAutomaticRefresh();
       if (!_disposed) notifyListeners();
     }
   }
@@ -332,6 +648,7 @@ final class AppController extends ChangeNotifier {
         return;
       }
       storageCode = reply.code;
+      _scheduleAutomaticRefresh();
       notifyListeners();
     } on SnapshotException {
       if (!_disposed) _blockStorage(StorageCode.corrupt);
@@ -487,12 +804,16 @@ final class AppController extends ChangeNotifier {
         return 'Достигнут предел: 100 подключений и подписок.';
       }
       _connections.add(LocalConnection(_connections.length + 1, link));
+      if (link.kind == ImportKind.subscription) {
+        _refreshDue[link.localId] = _clock();
+        _scheduleAutomaticRefresh();
+      }
       if (link.kind == ImportKind.profile) _selectedId ??= link.localId;
       journal.record(EventId.importAccepted, protocol: link.protocol);
       _profilesChanged();
       notifyListeners();
       return link.kind == ImportKind.subscription
-          ? 'Ссылка добавлена. Загрузка подписки будет доступна на следующем этапе.'
+          ? 'Подписка добавлена. Список можно обновить в разделе подключений.'
           : 'Ссылка добавлена. Проверка ядром Windows ещё недоступна.';
     } on LinkException catch (error) {
       final reason = switch (error.reason) {
@@ -705,6 +1026,8 @@ final class AppController extends ChangeNotifier {
     _disposed = true;
     _pollTimer?.cancel();
     _subscriptionExpiry?.cancel();
+    _refreshTimer?.cancel();
+    _subscriptionTransport.close();
     journal.onPersistenceChanged = null;
     journal.disposePersistence();
     super.dispose();

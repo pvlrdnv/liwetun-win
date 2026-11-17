@@ -43,8 +43,8 @@ These client checks do not replace server entitlement/revocation enforcement.
 
 access: active/revoked/expired. Non-active responses must be complete with no
 profiles. A fresh, validated higher revision with revoked/expired access clears
-the store. HTTP failures including 401/403 are not yet mapped to revocation;
-the future transport must define authoritative origin/response semantics first.
+the store. HTTP failures including 401/403 preserve the accepted cache; only a validated
+snapshot can revoke local access.
 
 Profile fields (all required): `id`, `server_id` (opaque ASCII IDs, not secrets),
 `name` (display-only), `country` (ISO-like 2 uppercase letters), `protocol`
@@ -90,9 +90,11 @@ The client policy now bounds a snapshot to 100 profiles / 100 explicit revokes
 and a store to 100 retained profiles, including partial accumulation. A partial
 update exceeding capacity rejects without changing revision or existing data.
 The encoded private cache is limited to 1 MiB. Its plaintext is an in-memory
-serialization for future inclusion in the existing user-DPAPI envelope, never a
+serialization within the existing user-DPAPI envelope, never a
 file/log/export format. The codec now connects to the v2 profile envelope and controller reconciliation;
-actual Windows verification of the new schema is pending. Native trust checks
+actual Windows cache/revoke/replay verification passed (run 43929885246). Native trust checks
 precede committing an update, and active-session expiry/revoke/URI replacement
-queues Stop without automatic reconnect or unknown-outcome retries. HTTPS
-refresh, its UI action and any LikeWeb route remain unimplemented.
+queues Stop without automatic reconnect or unknown-outcome retries. HTTPS refresh and its manual/startup/periodic controls are implemented; Windows
+qualification of the combined path is pending. No LikeWeb route is implemented.
+The inner cache v2 records a successful application timestamp; legacy v1 remains
+readable with an unknown timestamp. The public server snapshot schema stays v1.

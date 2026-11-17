@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter/material.dart' show OutlinedButton;
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,8 +12,11 @@ import 'package:liwetun/native/service.dart';
 import 'package:liwetun/native/storage.dart';
 import 'package:liwetun/domain/profile_cache.dart';
 import 'package:liwetun/domain/subscription.dart';
+import 'package:liwetun/network/subscription_transport.dart';
 import 'package:liwetun/native/environment.dart';
 import 'package:liwetun/diagnostics/journal.dart';
+
+final class _RealHttp extends HttpOverrides {}
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -303,6 +307,161 @@ void main() {
       } finally {
         first?.dispose();
         second?.dispose();
+        if (created) {
+          final remaining = await storage.load();
+          expect(remaining.code, StorageCode.ok);
+          expect(
+            (await storage.clear(remaining.revision)).code,
+            StorageCode.ok,
+          );
+          expect((await storage.load()).code, StorageCode.missing);
+        }
+      }
+    },
+  );
+  testWidgets(
+    'actual HTTPS refresh UI applies and revokes a DPAPI subscription without tunnel',
+    (tester) async {
+      expect(Platform.environment['GITHUB_ACTIONS'], 'true');
+      const storage = WindowsStorage();
+      expect((await storage.load()).code, StorageCode.missing);
+      final directory =
+          Platform.environment['LIWETUN_SUBSCRIPTION_TLS_FIXTURE'];
+      expect(directory != null, isTrue);
+      final certificate = '$directory/cert.pem';
+      final serverContext = SecurityContext(withTrustedRoots: false)
+        ..useCertificateChain(certificate)
+        ..usePrivateKey('$directory/key.pem');
+      final trusted = SecurityContext(withTrustedRoots: false)
+        ..setTrustedCertificates(certificate);
+      final server = await HttpServer.bindSecure(
+        InternetAddress.loopbackIPv4,
+        0,
+        serverContext,
+      );
+      var requests = 0;
+      var revoked = false;
+      final wall = DateTime.now().toUtc();
+      final instant = DateTime.fromMillisecondsSinceEpoch(
+        wall.millisecondsSinceEpoch ~/ 1000 * 1000,
+        isUtc: true,
+      );
+      var clock = instant;
+      String stamp(DateTime value) =>
+          value.toIso8601String().replaceFirst('.000Z', 'Z');
+      server.listen((request) async {
+        requests++;
+        try {
+          request.response.headers.contentType = ContentType.json;
+          request.response.write(
+            jsonEncode({
+              'schema_version': 1,
+              'revision': revoked ? 2 : 1,
+              'generated_at': stamp(instant),
+              'valid_until': stamp(instant.add(const Duration(hours: 1))),
+              'access_expires_at': stamp(instant.add(const Duration(days: 1))),
+              'access': revoked ? 'revoked' : 'active',
+              'complete': true,
+              'profiles': revoked
+                  ? []
+                  : [
+                      {
+                        'id': 'one',
+                        'server_id': 'synthetic_https',
+                        'name': 'Synthetic HTTPS subscription',
+                        'country': 'NL',
+                        'protocol': 'trusttunnel',
+                        'allowed': true,
+                        'uri': const String.fromEnvironment(
+                          'SYNTHETIC_TT_HTTP2',
+                        ),
+                      },
+                    ],
+              'revoked_profile_ids': [],
+            }),
+          );
+          await request.response.close();
+        } catch (_) {}
+      }, onError: (_) {});
+      final transport = HttpSubscriptionTransport(
+        resolver: (_) async => [InternetAddress('8.8.8.8')],
+        proxyResolver: (_) => 'DIRECT',
+        clientFactory: () => _RealHttp().createHttpClient(null),
+        connector: (_, _, hostname) => openSubscriptionTls(
+          InternetAddress.loopbackIPv4,
+          server.port,
+          hostname,
+          context: trusted,
+        ),
+      );
+      final controller = AppController(
+        subscriptionTransport: transport,
+        clock: () => clock,
+        jitter: (_) => 0,
+      );
+      var created = false;
+      const sourceUri =
+          'https://subscription.example.invalid/SYNTHETIC_HTTPS_PRIVATE';
+      final sourceId = parseLink(sourceUri).localId;
+      Future<void> settled() async {
+        for (
+          var attempt = 0;
+          attempt < 200 &&
+              (controller.refreshingSubscription ||
+                  controller.storageState == ProfileStorageState.saving);
+          attempt++
+        ) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(controller.refreshingSubscription, isFalse);
+        expect(controller.storageState, ProfileStorageState.saved);
+      }
+
+      try {
+        await controller.initializeStorage();
+        controller.import(sourceUri);
+        created = true;
+        await controller.refreshSubscription(sourceId);
+        await settled();
+        expect(controller.connections.length, 2);
+        controller.select(
+          controller.connections.singleWhere((item) => item.sourceId != null),
+        );
+        await settled();
+        expect(
+          controller.selected?.inspection?.status,
+          NativeImportStatus.accepted,
+        );
+        expect(controller.stopPossible, isFalse);
+        final cached = ProfileCache.decode((await storage.load()).payload!);
+        expect(cached.subscriptions[sourceId]!.revision, 1);
+        expect(
+          cached.subscriptions[sourceId]!.lastAppliedAt == instant,
+          isTrue,
+        );
+        await tester.pumpWidget(LiWeTunApp(controller: controller));
+        await tester.tap(find.text('Серверы').last);
+        await tester.pumpAndSettle();
+        expect(find.text('Synthetic HTTPS subscription'), findsOneWidget);
+        expect(find.text(sourceUri), findsNothing);
+        clock = instant.add(const Duration(seconds: 6));
+        revoked = true;
+        await tester.tap(
+          find.widgetWithText(OutlinedButton, 'Обновить подписку'),
+        );
+        await settled();
+        await tester.pumpAndSettle();
+        expect(controller.selected, isNull);
+        expect(controller.connections.length, 1);
+        expect(find.textContaining('Доступ отозван'), findsOneWidget);
+        expect(controller.stopPossible, isFalse);
+        expect(requests, 2);
+        final denied = ProfileCache.decode((await storage.load()).payload!);
+        expect(denied.subscriptions[sourceId]!.revision, 2);
+        expect(denied.subscriptions[sourceId]!.access, Access.revoked);
+      } finally {
+        controller.dispose();
+        await server.close(force: true);
         if (created) {
           final remaining = await storage.load();
           expect(remaining.code, StorageCode.ok);

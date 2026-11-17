@@ -9,7 +9,11 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   final controller = AppController();
   unawaited(controller.initializeJournal());
-  unawaited(controller.initializeStorage());
+  unawaited(
+    controller.initializeStorage().then((_) {
+      controller.enableAutomaticSubscriptionRefresh();
+    }),
+  );
   unawaited(
     const WindowsEnvironment().read().then((value) {
       controller.journal.environment = value;

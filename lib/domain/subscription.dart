@@ -241,8 +241,9 @@ final class SubscriptionStore {
   /// Private plaintext for the caller's DPAPI envelope; never a diagnostic dump.
   String encodeCache() {
     final text = jsonEncode({
-      'schema_version': 1,
+      'schema_version': 2,
       'revision': _revision,
+      'applied_at': _lastAppliedAt == null ? null : _utc(_lastAppliedAt!),
       'access': _access.name,
       'profiles': _profiles.values
           .map(
@@ -264,9 +265,23 @@ final class SubscriptionStore {
       _cacheBound(text);
       final data = jsonDecode(text);
       if (data is! Map<String, dynamic>) _bad();
-      _keys(data, {'schema_version', 'revision', 'access', 'profiles'});
-      if (data['schema_version'] is! int || data['schema_version'] != 1) {
+      final version = data['schema_version'];
+      if (version is! int || ![1, 2].contains(version)) {
         throw const SnapshotException(SnapshotFailure.unsupported);
+      }
+      _keys(data, {
+        'schema_version',
+        'revision',
+        'access',
+        'profiles',
+        if (version == 2) 'applied_at',
+      });
+      final applied = version == 1 || data['applied_at'] == null
+          ? null
+          : _date(data['applied_at']);
+      if (applied != null &&
+          applied.isAfter(now.toUtc().add(const Duration(minutes: 5)))) {
+        _bad();
       }
       final revision = data['revision'];
       if (revision is! int || revision < -1 || revision > 9007199254740991) {
@@ -282,7 +297,7 @@ final class SubscriptionStore {
       if (raw is! List ||
           raw.length > maxProfiles ||
           ((revision == -1 || access != Access.active) && raw.isNotEmpty) ||
-          (revision == -1 && access != Access.active)) {
+          (revision == -1 && (access != Access.active || applied != null))) {
         _bad();
       }
       final next = <String, CachedProfile>{};
@@ -313,7 +328,8 @@ final class SubscriptionStore {
       return SubscriptionStore()
         .._revision = revision
         .._access = access
-        .._profiles = next;
+        .._profiles = next
+        .._lastAppliedAt = applied;
     } on SnapshotException {
       rethrow;
     } catch (_) {
@@ -333,6 +349,8 @@ final class SubscriptionStore {
 
   @override
   String toString() => '[private subscription cache]';
+  DateTime? _lastAppliedAt;
+  DateTime? get lastAppliedAt => _lastAppliedAt;
   int _revision = -1;
   Access _access = Access.active;
   Map<String, CachedProfile> _profiles = {};
@@ -371,5 +389,9 @@ final class SubscriptionStore {
     _profiles = next;
     _revision = snapshot.revision;
     _access = snapshot.access;
+    _lastAppliedAt = DateTime.fromMillisecondsSinceEpoch(
+      now.toUtc().millisecondsSinceEpoch ~/ 1000 * 1000,
+      isUtc: true,
+    );
   }
 }

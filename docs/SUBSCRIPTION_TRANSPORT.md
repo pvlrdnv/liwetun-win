@@ -1,7 +1,7 @@
 # Bounded subscription HTTPS transport
 
-Status: implemented and tested as an independent client component. Refresh UI /
-startup scheduling are not wired yet. No LikeWeb route or production fetch is
+Status: HTTPS transport passed Windows CI; refresh UI and startup/periodic
+scheduling are implemented, with their Windows integration qualification pending. No LikeWeb route or production fetch is
 assumed. The v1 subscription contract remains a client-side proposal.
 
 `HttpSubscriptionTransport` accepts only an explicitly imported HTTPS source,
@@ -46,9 +46,23 @@ Close cancels active requests, socket tasks, pending DNS continuations and body
 observation. No late DNS completion starts a connection. Per-request cancellation
 state is removed after completion rather than accumulating global listeners.
 
-Local analyze + all 204 Dart tests PASS, including 6 actual loopback TLS/HTTP
+Transport Windows CI passed 204 Dart + 6 Rust + 4 desktop tests. Current local
+analyze + all 216 Dart tests PASS, including 6 actual loopback TLS/HTTP
 cases: hostname verification, unknown CA refusal, real JSON/Host/no credentials,
 redirect refusal and body/header bounds. Synthetic certificates are generated
 fresh, loaded only into explicit fixture contexts, never installed as OS roots
-or copied into GUI artifacts. Windows CI is prepared to run those same tests;
-Windows execution and installed desktop acceptance are still separate.
+or copied into GUI artifacts. The refresh integration adds an actual HTTPS/UI/DPAPI revoke case for Windows CI.
+Installed Windows 10/11 desktop acceptance remains separate.
+
+
+## Refresh scheduling
+
+The controller enables automatic refresh after protected storage initialization.
+Explicitly imported subscription sources refresh at startup, then every 15 minutes
+plus 0–120 seconds jitter. A usable profile's earlier deadline moves the next
+refresh to 30 seconds before expiry, with a minimum 30-second delay. Failures use
+30/60/120/240/480/900 seconds plus 0–30 seconds jitter. Only one source refreshes
+at a time, with a one-second gap; manual retries have a five-second cooldown.
+Manual controls report a closed status for each source, alongside cache eligibility
+and the last accepted update time. Replays use the normal cadence but never
+renew timestamps or deadlines. Requests cancel on controller disposal.

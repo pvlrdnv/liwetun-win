@@ -1,6 +1,6 @@
-# Development checkpoint — 2026-11-16
+# Development checkpoint — 2026-11-17
 
-## Active — client subscription integration next
+## Active — subscription refresh Windows qualification
 
 Work continues in this independent repository. LikeWeb, production and the
 owner's corporate tunnel/network/trust configuration remain unchanged. No
@@ -42,23 +42,32 @@ atomic controller reconciliation. Native/capacity/parse failures retain the old
 list; restore never auto-starts; expired profiles cannot start. Revoke/expiry or
 changed active URI queues Stop, including during a pending Start, without blind
 resend of an uncertain Stop. The UI displays derived names and stale eligibility.
-HTTPS refresh and its UI action remain unimplemented. Local analyze and
-**150 Dart tests PASS**. Actual Windows build/channel qualification also **PASS**:
-[43929885246](https://github.com/pvlrdnv/liwetun-win/actions/runs/43929885246),
-150 Dart + 6 Rust + 4 desktop-channel tests, including real DPAPI v2 subscription
-save/restore/revoke/replay/cleanup without network. [Receipt](evidence/windows-subscription-cache-b3ffc07.json).
-The bounded HTTPS transport is implemented separately: 15-second absolute
-request deadline, checked/pinned numeric DNS destinations with original TLS
-hostname, no redirects/compression/cookies/credential forwarding, bounded body,
-closed cancellation/error results and disabled HTTP debug URL profiling.
-**204 local Dart tests + analyze PASS**, including 6 real synthetic loopback TLS /
-HTTP cases. [Transport policy and limits](SUBSCRIPTION_TRANSPORT.md). Windows
-transport execution pending. Refresh UI/startup/periodic scheduling is not wired;
-no client production fetch or LikeWeb API change. WSL evidence does not establish Windows readiness. No LikeWeb API/server change or production fetch is
-authorized or required for client-side development. Other open original-scope
-work includes route-bound health evidence, sleep/network-change recovery, tray,
-Hysteria2/Xray and release update handling. A readiness estimate for a basic
-manual-import TT client must not be presented as completion of the full handoff.
+The protected-cache stage passed Windows CI with 150 Dart + 6 Rust + 4 desktop
+channel tests: [43929885246](https://github.com/pvlrdnv/liwetun-win/actions/runs/43929885246).
+[Cache receipt](evidence/windows-subscription-cache-b3ffc07.json).
+
+The bounded HTTPS transport then passed Windows CI with **204 Dart + 6 Rust +
+4 desktop tests**: [43935446923](https://github.com/pvlrdnv/liwetun-win/actions/runs/43935446923).
+Six cases use actual synthetic loopback TLS/HTTP, including hostname/CA refusal,
+redirect refusal and header/body bounds. [Receipt](evidence/windows-subscription-tls-1a88a42.json).
+No system trust changes or fixture private keys in GUI artifacts.
+
+Manual refresh, per-source status, startup refresh and a serial periodic scheduler
+are now wired. Success uses 15 minutes plus jitter, earlier near a usable profile
+expiry; failures back off from 30 seconds to 15 minutes plus jitter. Replayed
+revisions never extend rights or the last-applied timestamp. Inner cache v2 adds
+the application time while retaining v1 decoding. Transport failures preserve
+accepted profiles and rights. **216 local Dart tests + analyze PASS**. Windows
+qualification of this integration is pending, including an additional actual
+HTTPS → UI → DPAPI → revoke case without starting a tunnel.
+[Transport policy and limits](SUBSCRIPTION_TRANSPORT.md).
+
+No production subscription fetch or LikeWeb API/server change. The v1 export
+contract remains a client proposal; an existing general feed is not assumed
+compatible. Other original-scope work includes route-bound health evidence,
+sleep/network-change recovery, tray, Hysteria2/Xray and release update handling.
+A readiness estimate for a basic manual-import TT client must not be presented
+as completion of the full handoff. WSL evidence does not establish Windows readiness.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests

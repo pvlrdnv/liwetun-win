@@ -343,7 +343,12 @@ class _HomeState extends State<_Home> {
   Widget _serversPage() {
     final connections = widget.controller.connections
         .where(
-          (item) => item.title.toLowerCase().contains(_search.toLowerCase()),
+          (item) =>
+              item.title.toLowerCase().contains(_search.toLowerCase()) ||
+              (item.cachedProfile?.profile.country.toLowerCase().contains(
+                    _search.toLowerCase(),
+                  ) ??
+                  false),
         )
         .toList();
     return Column(
@@ -364,9 +369,12 @@ class _HomeState extends State<_Home> {
               label: const Text('Добавить ссылку'),
             ),
             OutlinedButton.icon(
-              onPressed: () => _message(
-                'Обновление подписки ещё не подключено. Серверный формат согласуется отдельно.',
-              ),
+              onPressed:
+                  widget.controller.hasSubscriptions &&
+                      !widget.controller.refreshingSubscription &&
+                      !widget.controller.applyingSubscription
+                  ? () => _refreshSubscription()
+                  : null,
               icon: const Icon(Icons.refresh),
               label: const Text('Обновить подписку'),
             ),
@@ -413,13 +421,23 @@ class _HomeState extends State<_Home> {
                     : 'Формат проверен · доступность и право доступа неизвестны',
               ),
               trailing: connection.link.kind == ImportKind.subscription
-                  ? null
+                  ? IconButton(
+                      tooltip: 'Обновить подписку',
+                      onPressed:
+                          widget.controller.refreshingSubscription ||
+                              widget.controller.applyingSubscription
+                          ? null
+                          : () => _refreshSubscription(connection),
+                      icon: const Icon(Icons.refresh),
+                    )
                   : Icon(
                       widget.controller.selectedId == connection.selectionId
                           ? Icons.radio_button_checked
                           : Icons.radio_button_off,
                     ),
-              onTap: () => widget.controller.select(connection),
+              onTap: connection.link.kind == ImportKind.profile
+                  ? () => widget.controller.select(connection)
+                  : null,
             ),
           ),
         const SizedBox(height: 16),
@@ -575,6 +593,13 @@ class _HomeState extends State<_Home> {
 
   Future<void> _toggleConnection() async {
     final message = await widget.controller.toggleConnection();
+    if (mounted) _message(message);
+  }
+
+  Future<void> _refreshSubscription([LocalConnection? source]) async {
+    final message = await widget.controller.refreshSubscription(
+      source?.link.localId,
+    );
     if (mounted) _message(message);
   }
 

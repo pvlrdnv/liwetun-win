@@ -31,6 +31,8 @@ enum EventId {
   subscriptionApplied,
   subscriptionRejected,
   subscriptionAccessLost,
+  subscriptionRefreshStarted,
+  subscriptionRefreshFailed,
 }
 
 enum ReasonCode {
@@ -47,6 +49,13 @@ enum ReasonCode {
   replay,
   stale,
   accessChanged,
+  dnsFailure,
+  tlsFailure,
+  timeout,
+  privateAddress,
+  httpStatus,
+  networkFailure,
+  operationBusy,
 }
 
 /// No arbitrary string, URI, exception, remote ID or core output is accepted.

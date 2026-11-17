@@ -76,9 +76,31 @@ void main() {
     expect(store.profiles.length, 100);
   });
 
+  test(
+    'legacy cache keeps unknown application time instead of inventing one',
+    () {
+      final store = SubscriptionStore()..apply(feed(), now);
+      expect(store.lastAppliedAt, now);
+      final data = jsonDecode(store.encodeCache()) as Map<String, dynamic>;
+      data['schema_version'] = 1;
+      data.remove('applied_at');
+      final restored = SubscriptionStore.restoreCache(jsonEncode(data), now);
+      expect(restored.revision, 1);
+      expect(restored.lastAppliedAt, isNull);
+      final next = SubscriptionStore.restoreCache(store.encodeCache(), now);
+      expect(next.lastAppliedAt, now);
+      expect(
+        () => next.apply(feed(), now.add(const Duration(minutes: 5))),
+        throwsA(isA<SnapshotException>()),
+      );
+      expect(next.lastAppliedAt, now);
+    },
+  );
+
   final mutations = <void Function(Map<String, dynamic>)>[
-    (data) => data['schema_version'] = 2,
+    (data) => data['schema_version'] = 99,
     (data) => data['revision'] = -2,
+    (data) => data['applied_at'] = '2026-11-15T13:00:00Z',
     (data) => data['access'] = 'revoked',
     (data) => data['unexpected'] = 'PRIVATE_CANARY',
     (data) => data['profiles'].add(data['profiles'][0]),

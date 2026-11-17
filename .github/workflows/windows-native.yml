@@ -73,6 +73,8 @@ jobs:
       - name: Build Windows release shell with static native parser
         run: flutter build windows --release --no-pub
       - name: Exercise real Windows channel without installing or starting a service
+        env:
+          LIWETUN_SUBSCRIPTION_TLS_FIXTURE: ${{ github.workspace }}/build/subscription-tls
         timeout-minutes: 10
         run: flutter test integration_test/native_bridge_test.dart -d windows --no-pub --dart-define-from-file=build/native-fixture.json
       - name: Write build evidence
@@ -94,9 +96,11 @@ jobs:
             protected_storage_channel = 'verified'
             profile_restore_without_autoconnect = 'verified'
             subscription_cache_revoke_replay_restore = 'verified_without_network'
+            subscription_https_ui_dpapi_revoke = 'verified_synthetic_loopback_no_tunnel'
             packaged_notice_bytes = 'verified_not_legal_approval'
             tunnel_service = 'not_installed'
-            network_tests = 'not_run'
+            tunnel_network_tests = 'not_run'
+            subscription_https_loopback = 'verified_synthetic_no_trust_changes'
             release_ready = $false
           }
           $report | ConvertTo-Json | Set-Content -Encoding utf8 build/windows-import-evidence.json

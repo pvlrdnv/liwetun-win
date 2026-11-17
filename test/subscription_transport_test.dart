@@ -318,7 +318,7 @@ void main() {
     };
     final replyClient = _Client(_Request(_Response(stream: body.stream)));
     final candidate = HttpSubscriptionTransport(
-      timeout: const Duration(milliseconds: 30),
+      timeout: const Duration(seconds: 1),
       resolver: (_) async => addresses,
       proxyResolver: (_) => 'DIRECT',
       clientFactory: () => replyClient,
