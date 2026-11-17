@@ -172,11 +172,16 @@ Select `production_termination=endpoint-restart`, valid IPv4 profile and H2 or H
 After ordinary HTTPS/DNS passes, the fixture terminates only its retained Popen
 endpoint child, waits two seconds and launches the same pinned binary/config.
 The original authenticated client lease and SDK stay alive; no second Start RPC.
-Up to three attempts require TUN source addresses, HTTPS payload, exact synthetic
+Up to five attempts starting within a 75-second observation window require TUN source addresses, HTTPS payload, exact synthetic
 DNS marker growth, at least 82 DNS bytes in the chosen protocol and no growth in
 another protocol. Stop must restore the baseline network and WFP sessions without
 watchdog action. The independent guard allows 120 seconds for this case only.
 This tests a diagnostic endpoint interruption, not desktop sleep or a physical
 interface change. There are no product/service recovery changes or production
 connections in this experiment. Four observation guards and all 15 Python fixture
-tests pass locally; actual Windows qualification remains pending.
+tests pass locally; initial H2 qualification passed (44029340084). H3 short-window run 44029344825
+failed recovery evidence: HTTPS returned on the third observation, DNS did not;
+Stop still restored routes/DNS/adapter/WFP without watchdog action. The original
+report remains archived. The follow-up adds post-probe service state, elapsed
+time and a longer bounded observation window; no SDK/product recovery changes.
+Follow-up Windows execution remains pending.

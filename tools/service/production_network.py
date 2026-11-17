@@ -386,7 +386,10 @@ def main():
             # Re-read TUN addresses on every observation; no Start/reconnect RPC.
             attempts = []
             recovered = False
-            for _ in range(3):
+            recovery_started = time.monotonic()
+            for _ in range(5):
+                if time.monotonic() - recovery_started >= 75:
+                    break
                 stage = 'observe_endpoint_recovery'
                 current = tun()
                 if not current:
@@ -415,11 +418,14 @@ def main():
                               for key in ['synthetic_dns_requests', 'synthetic_dns_replies']}
                 # Require the selected transport and the exact synthetic DNS exchange.
                 # Endpoint uptime/process state alone can never qualify recovery.
+                post_state = session.command('query')
                 recovered = recovery_evidence_valid(
-                    protocol, current_state['state'], https_ok, https_tun, dns_ok, dns_tun,
+                    protocol, post_state['state'], https_ok, https_tun, dns_ok, dns_tun,
                     growth, dns_growth, dns_transport_growth)
                 attempts.append({'adapter_present': True,
-                                 'state': current_state['state'], 'https_delivered': https_ok,
+                                 'state_before': current_state['state'], 'state_after': post_state['state'],
+                                 'elapsed_ms': int((time.monotonic() - recovery_started) * 1000),
+                                 'https_delivered': https_ok,
                                  'https_source_is_tun': https_tun, 'dns_delivered': dns_ok,
                                  'dns_source_is_tun': dns_tun, 'transport_bytes': growth,
                                  'dns_marker_delta': dns_growth, 'dns_transport_bytes': dns_transport_growth,

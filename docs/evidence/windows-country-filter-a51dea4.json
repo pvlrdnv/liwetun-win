@@ -1,0 +1,21 @@
+{
+  "source_commit": "a51dea490d644f4f04b3c7d262feec2fae2d0368",
+  "decoder_revision": "48f424c0874eb6f6374ee84492c5cd55aa04dca9",
+  "runner_os": "windows-2022",
+  "executable_sha256": "e5494609f1000f8a4b2c5143f8dcf9deedf124cd71e97a9b83c4a8939725533e",
+  "native_import": "verified",
+  "protected_storage_channel": "verified",
+  "profile_restore_without_autoconnect": "verified",
+  "subscription_cache_revoke_replay_restore": "verified_without_network",
+  "subscription_https_ui_dpapi_revoke": "verified_synthetic_loopback_no_tunnel",
+  "packaged_notice_bytes": "verified_not_legal_approval",
+  "tunnel_service": "not_installed",
+  "tunnel_network_tests": "not_run",
+  "subscription_https_loopback": "verified_synthetic_no_trust_changes",
+  "release_ready": false,
+  "source_run": 44029335268,
+  "dart_tests": 217,
+  "rust_tests": 6,
+  "actual_desktop_channel_tests": 5,
+  "desktop_os_acceptance": false
+}

@@ -61,12 +61,14 @@ accepted profiles and rights. **216 local Dart tests + analyze PASS**. Windows
 qualification **PASS**: [44028234705](https://github.com/pvlrdnv/liwetun-win/actions/runs/44028234705),
 216 Dart + 6 Rust + 5 desktop tests, including actual HTTPS → UI → DPAPI → revoke
 without starting a tunnel. [Receipt](evidence/windows-subscription-refresh-183bc19.json).
-Installer qualification with this GUI is running; temporary CI signing only.
+Installer qualification with this GUI **PASS** (44029096943): 14 installer groups,
+medium-integrity GUI/service query, rollback/uninstall/cleanup. Temporary CI signing only.
 
 Country chips and combined name/country search now filter derived profiles while
 keeping source refresh controls accessible. No-match text differs from an empty
 library, and a removed country cannot leave the refreshed list hidden. Local
-refresh/filter suite: **11 PASS**; analyze PASS. Windows qualification pending.
+refresh/filter suite: **11 PASS**; analyze PASS. Windows qualification **PASS**
+(44029335268): 217 Dart + 6 Rust + 5 actual desktop tests.
 [Transport policy and limits](SUBSCRIPTION_TRANSPORT.md).
 
 No production subscription fetch or LikeWeb API/server change. The v1 export
@@ -86,10 +88,14 @@ A disposable-CI endpoint-restart recovery case is prepared (not yet qualified).
 Only the owned diagnostic server is stopped for two seconds; the authenticated
 client lease and SDK instance remain alive. Success requires fresh HTTPS and
 exact synthetic DNS replies from TUN sources over the selected H2/H3 transport,
-then Stop and baseline routes/DNS/adapter/WFP restoration. Three bounded attempts;
-a 120-second independent watchdog applies only to this case. No desktop
+then Stop and baseline routes/DNS/adapter/WFP restoration. Initial H2 run 44029340084 PASS. Initial H3 run 44029344825 did not establish
+recovery in its three-attempt window: HTTPS returned on attempt three, DNS did
+not; Stop restored baseline network and WFP without watchdog. Both original
+reports are archived. Follow-up observes post-probe state and elapsed time over
+up to five attempts starting within 75 seconds; a 120-second independent watchdog
+applies only to this case. No desktop
 sleep/Wi-Fi-switch claim and no application recovery changes. Four oracle guards
-cover false positives; all 15 Python fixture tests PASS. Windows execution pending.
+cover false positives; all 15 Python fixture tests PASS. Follow-up Windows execution pending.
 
 ## Latest checkpoint — six basic ordinary IPv4 CI cases PASS
 
