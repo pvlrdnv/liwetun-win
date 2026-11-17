@@ -6,6 +6,10 @@ on:
         description: Qualify the separately pinned immutable-source SDK candidate
         type: boolean
         default: false
+      traffic_metrics:
+        description: Package the separately qualified aggregate-traffic SDK candidate
+        type: boolean
+        default: false
       gui_run_id:
         description: Successful Windows native import run with unsigned GUI runtime artifact
         required: true
@@ -24,6 +28,7 @@ jobs:
     timeout-minutes: 25
     env:
       SOURCE_PINNED: ${{ inputs.source_pins }}
+      TRAFFIC_METRICS: ${{ inputs.traffic_metrics }}
     defaults:
       run:
         shell: pwsh
@@ -51,10 +56,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'GUI provenance download failed' }
           $provenance = Get-Content build/gui-provenance/gui-runtime-provenance.json -Raw | ConvertFrom-Json
           if ($provenance.source_commit -ne $gui.head_sha -or $provenance.kind -ne 'unsigned_gui_ci_only' -or $provenance.release_ready -ne $false) { throw 'GUI provenance mismatch' }
-          $pinFile = if ($env:SOURCE_PINNED -eq 'true') { 'native/sdk/runtime-sources.json' } else { 'native/sdk/runtime.json' }
+          if ($env:TRAFFIC_METRICS -eq 'true' -and $env:SOURCE_PINNED -ne 'true') { throw 'Traffic SDK requires immutable source pins' }
+          $pinFile = if ($env:TRAFFIC_METRICS -eq 'true') { 'native/sdk/runtime-traffic.json' } elseif ($env:SOURCE_PINNED -eq 'true') { 'native/sdk/runtime-sources.json' } else { 'native/sdk/runtime.json' }
           $pin = Get-Content $pinFile -Raw | ConvertFrom-Json
           if ($env:SOURCE_PINNED -eq 'true') {
             if ($pin.source_pin_manifest_sha256 -ne (Get-FileHash native/sdk/source-pins.json -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.conan_input_lock_sha256 -ne (Get-FileHash native/sdk/conan-sources.lock -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.source_pinned_candidate -ne $true -or $pin.release_qualified -ne $false) { throw 'Candidate SDK source receipt mismatch' }
+          }
+          if ($env:TRAFFIC_METRICS -eq 'true') {
+            if ($pin.traffic_profile_manifest_sha256 -ne (Get-FileHash native/sdk/traffic-inputs.json -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.traffic_abi_header_sha256 -ne (Get-FileHash native/traffic/traffic_abi.h -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.traffic_abi -ne 1 -or $pin.sdk_variant -ne 'aggregate_traffic_candidate' -or $pin.network_requalified -ne $true) { throw 'Traffic SDK source/network receipt mismatch' }
           }
           $sdk = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$($pin.source_run)" | ConvertFrom-Json
           if ($LASTEXITCODE -ne 0 -or $sdk.name -ne 'Windows SDK qualification' -or $sdk.conclusion -ne 'success' -or $sdk.head_sha -ne $pin.source_commit) { throw 'SDK source not qualified' }
@@ -73,6 +82,7 @@ jobs:
           }
           $noticeArgs = @()
           if ($env:SOURCE_PINNED -eq 'true') { $noticeArgs += '--source-pinned' }
+          if ($env:TRAFFIC_METRICS -eq 'true') { $noticeArgs += '--traffic-metrics' }
           python tools/sdk/verify_notices.py @noticeArgs
           if ($LASTEXITCODE -ne 0) { throw 'Candidate notice integrity failed' }
           python tools/sdk/client_notices.py @noticeArgs

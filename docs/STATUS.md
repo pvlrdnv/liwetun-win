@@ -134,9 +134,35 @@ A 20-second rolling counter window resets on restart, epoch/counter/clock change
 or >5-second sample gaps. Actual Internet/DNS validation remains unavailable.
 Diagnostic summary v3 includes scoped/fresh counter facts; events remain schema1.
 **227 local Dart tests + analyze PASS**, including seven new observation/report/
-late-reply cases. All 18 Python network fixture tests PASS. Actual Windows
-service/GUI + H2/H3 counter progress and concurrent Stop/crash reads are prepared;
-qualification pending. Old SDK compatibility remains a separate check.
+late-reply cases. All 18 Python network fixture tests PASS. Actual Windows signed service **19 checks PASS** (44057085561), including an
+inactive supported capability with null observations. H2/H3 ordinary traffic
+**PASS** (44057092836 / 44057100839): same-instance/epoch monotonic totals grew
+675 TX / 5428 RX bytes, separately proven HTTPS/DNS, and 479/487 concurrent
+snapshot reads observed inactive state after Stop. Network/WFP restored without
+watchdog. Native GUI run 44057078923 failed because the UI's revised unverified-
+Internet wording still had an old literal test expectation; fixed in 0cc1512.
+Repeat GUI **PASS** (44057954554): 227 Dart + 6 Rust + 6 desktop tests, including
+actual untrusted-installation refusal of traffic reads. This is not a live signed
+GUI traffic-counter acceptance test.
+
+The remaining new-SDK matrix **PASS**: lease death 44057998261, service crash
+44058004150, wrong-auth/CA 44058009712 / 44058016409, synthetic IPv6 H2/H3
+44058022430 / 44058028697, endpoint-restart recovery H2/H3 44058035430 /
+44058041002. Positive cases require real same-epoch TX/RX progress and concurrent
+readers observing inactive/missing data at termination; refused profiles require
+unknown counters. All ten cases restore routes/DNS/adapter/WFP without watchdog.
+[Aggregate receipt](evidence/sdk-traffic-requalification.json). The separately
+pinned traffic runtime is requalified only for that disposable-CI scope. Native
+IPv6 Internet exit and installed Windows 10/11 acceptance remain open. Compatibility
+of the new service with the old SDK **PASS** (44059841735): 19 checks, actual SDK
+lifecycle, unsupported traffic capability with null counters. Original runtime receipts remain unchanged.
+
+All 15 packaged dependency notice sets from the aggregate SDK match archived
+bodies; 13 explicit source supplements remain. The separately guarded traffic
+notice bridge and unchanged 60-text client bundle PASS locally; four notice tests
+PASS. Package assembly supports this explicit SDK variant, requires network
+requalification and includes its exact runtime/profile/notice receipts. Actual
+installer qualification with the new SDK is pending; no release approval.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests

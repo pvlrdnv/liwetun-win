@@ -65,7 +65,8 @@ try {
     New-Item -ItemType Directory $payload | Out-Null
     Copy-Item (Join-Path $guiRoot '*') $payload -Recurse
     Copy-Item build/package-service/Release/liwetun_service.exe $payload
-    $pinFile = if ($env:SOURCE_PINNED -eq 'true') { 'native/sdk/runtime-sources.json' } else { 'native/sdk/runtime.json' }
+    if ($env:TRAFFIC_METRICS -eq 'true' -and $env:SOURCE_PINNED -ne 'true') { throw 'Traffic SDK requires immutable source pins' }
+    $pinFile = if ($env:TRAFFIC_METRICS -eq 'true') { 'native/sdk/runtime-traffic.json' } elseif ($env:SOURCE_PINNED -eq 'true') { 'native/sdk/runtime-sources.json' } else { 'native/sdk/runtime.json' }
     $pin = Get-Content $pinFile -Raw | ConvertFrom-Json
     Copy-Item $pinFile (Join-Path $evidence 'sdk-runtime-input.json')
     foreach ($file in @('trusttunnel.dll','wintun.dll')) {
@@ -107,6 +108,7 @@ try {
     if ($provenance.flutter_framework_revision -ne $noticePin.flutter_framework_commit -or $provenance.flutter_engine_revision -ne $noticePin.flutter_engine_commit -or $provenance.notice_verification.application_bundle.engine_notice_sha256 -ne $noticePin.engine_notice_sha256 -or $provenance.notice_verification.application_bundle.engine_notice_bodies_preserved -ne $true -or $provenance.notice_verification.license_approval -ne $false) { throw 'GUI notice/engine provenance mismatch' }
     $noticeArgs = @()
     if ($env:SOURCE_PINNED -eq 'true') { $noticeArgs += '--source-pinned' }
+    if ($env:TRAFFIC_METRICS -eq 'true') { $noticeArgs += '--traffic-metrics' }
     python tools/sdk/client_notices.py @noticeArgs --bundle (Join-Path $payload 'data/flutter_assets/NOTICES.Z') --report (Join-Path $evidence 'client-notice-bytes.json')
     if ($LASTEXITCODE -ne 0) { throw 'Packaged client notice bytes missing or changed' }
     $checks.Add('native_and_engine_notice_bytes_verified_not_legal_approval')
@@ -114,7 +116,12 @@ try {
     Copy-Item third_party/sdk (Join-Path $payload 'notices') -Recurse
     Copy-Item third_party/rust (Join-Path $payload 'notices') -Recurse
     if ($env:SOURCE_PINNED -eq 'true') {
-        Copy-Item native/sdk/notice-sources.json (Join-Path $payload 'notices/sdk/CANDIDATE_SOURCE_RECEIPT.json')
+        $candidateNotices = if ($env:TRAFFIC_METRICS -eq 'true') { 'native/sdk/notice-traffic.json' } else { 'native/sdk/notice-sources.json' }
+        Copy-Item $candidateNotices (Join-Path $payload 'notices/sdk/CANDIDATE_SOURCE_RECEIPT.json')
+        if ($env:TRAFFIC_METRICS -eq 'true') {
+            Copy-Item native/sdk/traffic-inputs.json (Join-Path $payload 'notices/sdk/TRAFFIC_PROFILE_INPUTS.json')
+            Copy-Item native/sdk/runtime-traffic.json (Join-Path $payload 'notices/sdk/TRAFFIC_RUNTIME_INPUT.json')
+        }
         Copy-Item native/sdk/source-pins.json (Join-Path $payload 'notices/sdk/SOURCE_PINS.json')
     }
     if ($Installer) {

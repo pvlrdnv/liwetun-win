@@ -1,0 +1,76 @@
+{
+  "source_run": 44059841735,
+  "source_commit": "0cc151217d2ef943fac7f0ec83fffb79046c6ae4",
+  "sdk_runtime_input": {
+    "source_run": 43918219945,
+    "source_commit": "9c8bfd5edf0fbed94d2c1d8da70a3e0b6d4b4272",
+    "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+    "privacy_policy_version": 1,
+    "files": {
+      "trusttunnel.dll": "bb91455a9859fe7f8c0b78eaac643d9eb64230649dd063cf2283abde69be73a1",
+      "wintun.dll": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce"
+    },
+    "source_pinned_candidate": true,
+    "source_pin_manifest_sha256": "cf9d5d299aeae007c9314b4235d8a45ad52076de46da5e5150e952d3d05cd474",
+    "conan_input_lock_sha256": "2680c44369acf682190acbb322273a3a0a648edcbbba851e99b0c0166595c246",
+    "network_requalified": true,
+    "release_qualified": false,
+    "network_qualification_scope": "disposable_ci_ordinary_ipv4_and_synthetic_ipv6_aaaa",
+    "qualification_receipt": "docs/evidence/sdk-source-requalification.json",
+    "windows_10_qualified": false,
+    "windows_11_qualified": false,
+    "native_ipv6_egress_qualified": false
+  },
+  "qualification": {
+    "core_runtime_ready": 1,
+    "dns_and_default_routes_unchanged": true,
+    "release_ready": false,
+    "sdk_lifecycle": {
+      "core_state_observed": true,
+      "adapter_seen": true,
+      "stopped_and_cleaned": true
+    },
+    "checks": [
+      "old_disconnect_discards_unread_reply_reproduced",
+      "protocol_bounds",
+      "unsigned_service_denied",
+      "unsigned_client_denied_by_service",
+      "signed_owner_query",
+      "unknown_metrics_and_core_state_preserved",
+      "read_only_traffic_capability_without_fabricated_zero_metrics",
+      "busy_pipe_waits_without_resending",
+      "delayed_client_consumes_reply_before_disconnect",
+      "invalid_profile_denied",
+      "oversized_frame_denied",
+      "idempotent_stop",
+      "different_signer_denied_by_service",
+      "different_owner_sid_denied_even_to_admin",
+      "sdk_canary_no_raw_logs_or_files",
+      "real_wintun_create_close",
+      "real_sdk_start_observe_stop",
+      "service_uninstalled",
+      "dns_and_default_routes_unchanged"
+    ],
+    "production_single_traffic_fixture": false,
+    "driver_cycle": {
+      "adapter_created": true,
+      "adapter_removed": true
+    },
+    "test_mode_no_global_routes": true,
+    "test_mode_tun_network": false,
+    "signed_service_ipc": "verified",
+    "production_refused_endpoint_lifecycle": false
+  },
+  "traffic_capability": {
+    "code": 0,
+    "flags": 0,
+    "instance": null,
+    "epoch": null,
+    "at_ms": null,
+    "tx": null,
+    "rx": null,
+    "last_tx_ms": null,
+    "last_rx_ms": null,
+    "core_state": null
+  }
+}

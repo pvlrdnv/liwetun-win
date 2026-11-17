@@ -103,3 +103,17 @@ dependencies fail; packages still needing source supplements remain explicit.
 The GUI notice bundle stays unchanged unless a real text change requires review.
 Twelve local integrity/source-pin/closure tests passed. Actual candidate notice
 comparison awaits successful DLL compilation; this is not distribution approval.
+
+
+## Aggregate-traffic candidate notice bridge
+
+SDK run 44038398682 is a separate candidate, recorded in runtime-traffic.json.
+Its actual locked graph matches conan-sources.lock; all 15 packaged notice sets
+match archived bodies. The same 13 source supplements remain explicit. The
+notice-traffic.json bridge ties the actual source run/commit, immutable recipe
+lock, traffic-profile manifest and ABI header digest to that inventory.
+`verify_notices.py --source-pinned --traffic-metrics` and the corresponding
+client-notice check pass with the same 60 original texts. They do not promote the
+runtime or approve redistribution. Packaging for this variant also requires its
+network requalification and embeds the actual traffic input receipts. Installer
+qualification and distribution audit remain separate.

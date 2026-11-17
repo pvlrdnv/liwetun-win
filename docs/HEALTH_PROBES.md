@@ -112,6 +112,30 @@ changes, new-instance reset, atomic overflow rejection, clock regression,
 callback failure and four concurrent update/read threads. Windows compilation, those counter tests, the full SDK and null-read export
 checks passed in 44038398682; the separate runtime-traffic.json pins actual bytes.
 Actual pinned-source preparation and four Python guards also passed locally.
-The optional service read command / GUI observations are implemented and locally
-tested, but Windows service/GUI and actual traffic-counter qualification remain
-pending. No Internet/DNS Connected state is enabled.
+The optional service read command / GUI observations passed Windows compilation
+and tests: service 44057085561, GUI 44057954554 (227 Dart + 6 Rust + 6 desktop
+cases). H2/H3 actual counter progress and concurrent teardown passed with ten
+network/refusal/fault/recovery/synthetic-IPv6 cases; see sdk-traffic-requalification.
+All network/WFP baselines restored without watchdog. GUI admission is tested on
+an unsigned workspace; a live signed GUI displaying real tunnel counters is a
+separate acceptance gate. No Internet/DNS Connected state is enabled.
+
+
+## Service and report integration
+
+The optional read-only IPC command 5 adds a 104-byte frame: the unchanged 32-byte
+base reply, a per-instance random signed-safe token, and the 64-byte snapshot.
+Existing command frames and protocol version remain unchanged. A 32-byte refusal
+from an older service does not cause the client to wait for a nonexistent tail.
+The service withdraws the borrowed SDK pointer before teardown and uses a short
+mutex around snapshot access; it never holds that lock during slow SDK stop.
+Unsupported or invalid data become nullable unknown values at the Flutter boundary.
+
+Controller polls discard late results after Start/Stop changes their operation
+epoch. A bounded 20-second rolling counter window clears on instance/state-epoch
+changes, resets, monotonic regression or a gap over five seconds; observations
+also expire after five wall-clock seconds. It classifies only the measured
+registered endpoint-client payload. Bypassed/internal DNS/other adapter traffic
+is outside these totals; TX-only is not evidence that the server is blocked.
+Summary schema v3 adds those scoped facts; closed event schema stays v1. Current
+state labels continue to require a separate Internet check, which is unavailable.

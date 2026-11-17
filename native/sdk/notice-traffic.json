@@ -1,0 +1,383 @@
+{
+  "recipe_closure_verified": true,
+  "release_qualified": false,
+  "license_review": "pending; collection is not an approval to redistribute",
+  "missing_notice_packages": 13,
+  "packages": [
+    {
+      "ref": "dns-libs/2.11.0-alpha.1-3-g3d6359be@adguard/oss#814dd3dce603926a25fe382f4f9f1370",
+      "context": "host",
+      "license": "Apache-2.0",
+      "package_id": "d7f37906915dec7f37678daa2bc140374d7da77c",
+      "prev": "a4e34d6ea33aaeab62021687eb11a018",
+      "notices": [],
+      "notice_status": "missing"
+    },
+    {
+      "ref": "cxxopts/3.1.1#b358aff6883980b4f0915734a5c8214a",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      "prev": "f4dfdc9b149c1875d795ceac4820564f",
+      "notices": [
+        {
+          "file": "001/000.txt",
+          "sha256": "aa324fbe633a96546bebca975fbbab65caa175894bd00cfa13d7335e7363400c",
+          "bytes": 1055
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "libevent/2.1.11@adguard/oss#d83df250f97d2c9ad77acdb865d03cf4",
+      "context": "host",
+      "license": null,
+      "package_id": "2f5c52c07b8ffffc6ddb1ce81f34e6ba43bbd28b",
+      "prev": "fec9c592455dfa0126b24844e63a83cf",
+      "notices": [],
+      "notice_status": "missing"
+    },
+    {
+      "ref": "openssl/boring-2026-05-08@adguard/oss#2e2280e85258e377e88d92132af79428",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "abdfbb31f73ee22a26e5c65b7f54f45d",
+      "notices": [],
+      "notice_status": "missing"
+    },
+    {
+      "ref": "libsodium/1.0.18@adguard/oss#e7aeedcb8077c3d577a27c97f943b947",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "0260b5d855778f4ce32f557599b1fce7",
+      "notices": [],
+      "notice_status": "missing"
+    },
+    {
+      "ref": "libuv/1.41.0@adguard/oss#311f317edcf383bd7aeddcc51308f380",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "710f751838208e16e38f4f0277721586",
+      "notices": [
+        {
+          "file": "005/000.txt",
+          "sha256": "6d20216ae022fbeed23916f48508fd807ece3d8464992330643b0e64e5c0c24b",
+          "bytes": 3143
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "klib/2021-04-06@adguard/oss#2fba69658655c2972a005c1b3502cab0",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "37eb8583c7107fd5541dbd0ce65cecb8",
+      "notices": [],
+      "notice_status": "missing"
+    },
+    {
+      "ref": "ldns/2021-03-29@adguard/oss#ac8bb875bbc36a5afbdadbacb0e3fb7e",
+      "context": "host",
+      "license": null,
+      "package_id": "a6e84d0ecdb737345d2bb017b5d8a9187afaec32",
+      "prev": "0cb6f4cc51cd1e480e882086bf021603",
+      "notices": [],
+      "notice_status": "missing"
+    },
+    {
+      "ref": "magic_enum/0.9.5#768c09bb424bda31d224304693b50fb3",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      "prev": "f9173d81294187c1cebdfcb1fcd8051c",
+      "notices": [
+        {
+          "file": "008/000.txt",
+          "sha256": "cf451c612ef409b7692b51aa74eeb2b8df1ec9be38e6f7f72b8740f489ca1387",
+          "bytes": 1080
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "native_libs_common/8.2.0@adguard/oss#6b7b1cebaf95d4e77e19f9ed4f803094",
+      "context": "host",
+      "license": "Apache-2.0",
+      "package_id": "c338d4fd8e9bddb50cb8a7f06e01fe8a8c25b22e",
+      "prev": "488464f9a6186e64cc7a3963a6f72515",
+      "notices": [],
+      "notice_status": "missing"
+    },
+    {
+      "ref": "brotli/1.1.0#3f631ef77008f7b5eb388780116371a3",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "962ed21f3f050380ec26ad52cbae2bbab859e792",
+      "prev": "241f5c1b13989f710317d3dcfbd62c2c",
+      "notices": [
+        {
+          "file": "010/000.txt",
+          "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94",
+          "bytes": 1084
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "fmt/12.1.0#6baf0fb8351783472b94ee6e36232391",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "e58e5d944427862a94af8190d98b819a2dac2241",
+      "prev": "2a46b6eba8a9b2ccfba4835bc4b37c08",
+      "notices": [
+        {
+          "file": "011/000.txt",
+          "sha256": "07580f2a3b35709ce703d523f447b242f6dfec7582a8c0df102c7fa2849375f8",
+          "bytes": 1431
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "llhttp/9.3.0@adguard/oss#d4c606ade7f77345c3bf71199c495d0e",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "2f2f80bf96f4c31ef7859db9bff595e502bdf096",
+      "prev": "421b979297970548996eb0bd9746fa74",
+      "notices": [
+        {
+          "file": "012/000.txt",
+          "sha256": "ebca854e0134cd256d673627c20499f42577eb74bacf08b9f25b626a73c91277",
+          "bytes": 1105
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "nghttp2/1.56.0@adguard/oss#efa70b7e694cebdb09c96a2a3a75255f",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "f156c5349d014db21b743182fe101f49",
+      "notices": [],
+      "notice_status": "missing"
+    },
+    {
+      "ref": "nghttp3/1.0.0@adguard/oss#0a49dc3df4c0ec9e1db87dd356dfc7af",
+      "context": "host",
+      "license": null,
+      "package_id": "c425ccc19dde2b6d03235cf5b0b63adf5983c80d",
+      "prev": "7a17788c9af562004a85f6ae9548bfcb",
+      "notices": [],
+      "notice_status": "missing"
+    },
+    {
+      "ref": "ngtcp2/1.22.1@adguard/oss#36d9b5ab7bae5525760e9ab0c3dec1b4",
+      "context": "host",
+      "license": null,
+      "package_id": "2f5c52c07b8ffffc6ddb1ce81f34e6ba43bbd28b",
+      "prev": "eedc09dfc80e52a2e56421ae66fb044c",
+      "notices": [],
+      "notice_status": "missing"
+    },
+    {
+      "ref": "pcre2/10.37@adguard/oss#e9120818270c6f02b943e6864ff8f21c",
+      "context": "host",
+      "license": "BSD-3-Clause",
+      "package_id": "4db712ccd76ef0bda5b6ef9226d9da09c23d9c01",
+      "prev": "53edeaf2cdad8ef280e285b69d2084c5",
+      "notices": [],
+      "notice_status": "missing"
+    },
+    {
+      "ref": "gtest/1.14.0#f8f0757a574a8dd747d16af62d6eb1b7",
+      "context": "host",
+      "license": "BSD-3-Clause",
+      "package_id": "34aac66723cb607d6008490c423b31338951f67e",
+      "prev": "99b101ba3bf7861c0ad38fbff05a96af",
+      "notices": [
+        {
+          "file": "017/000.txt",
+          "sha256": "9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138",
+          "bytes": 1475
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "tldregistry/2022-12-26@adguard/oss#a37e4c059ba30270e7f0f9888c0bd890",
+      "context": "host",
+      "license": null,
+      "package_id": "c425ccc19dde2b6d03235cf5b0b63adf5983c80d",
+      "prev": "3081933ee4f2ec252ecd297b20bef278",
+      "notices": [],
+      "notice_status": "missing"
+    },
+    {
+      "ref": "ada/2.7.4#e86909dd9cb9714ca39dbc12f7f41053",
+      "context": "host",
+      "license": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "02426299de0e4bcc2448e54153c76611",
+      "notices": [
+        {
+          "file": "019/000.txt",
+          "sha256": "508d4676d4083e874df706f302d9d42e5e7f9aed3f5a7ea614dc6d2b2252a22f",
+          "bytes": 11342
+        },
+        {
+          "file": "019/001.txt",
+          "sha256": "af0d7d2cef91fc243cf4ad98570b03d1f26f5e0227cad0f5f4a7376e2feb3160",
+          "bytes": 1071
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "cmake/3.31.12#71c3a0c80cc89cde62956db9e69550e0",
+      "context": "build",
+      "license": "BSD-3-Clause",
+      "package_id": "522dcea5982a3f8a5b624c16477e47195da2f84f",
+      "prev": "0588c712b46769fce5d28f37302d129c",
+      "notices": [
+        {
+          "file": "020/000.txt",
+          "sha256": "1fdeb38075c36e6c6f14c7c625a6e3b1bc111f08da58c0b7ae85084906eadd8e",
+          "bytes": 5613
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "detours/2021-04-14@adguard/oss#4631c1416196d39fc29ca4d32e8e8a3f",
+      "context": "host",
+      "license": null,
+      "package_id": "1f83e44fd27615c9f8ae9d2f1cdbc53f8db7e601",
+      "prev": "4f9dc71412b995c2586507cf17399a7e",
+      "notices": [],
+      "notice_status": "missing"
+    },
+    {
+      "ref": "nlohmann_json/3.12.0#2d634ab0ec8d9f56353e5ccef6d6612c",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      "prev": "2ea4b814fc9da53f7cdf5b7d68052688",
+      "notices": [
+        {
+          "file": "022/000.txt",
+          "sha256": "46a65cffd1ea955132d95a8dd921640714a8d6b537d2e4e482d31145ae95b603",
+          "bytes": 1076
+        },
+        {
+          "file": "022/001.txt",
+          "sha256": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff",
+          "bytes": 10280
+        },
+        {
+          "file": "022/002.txt",
+          "sha256": "5a93d5831e1297ab10fe643e1a631e83be392896da14ee2951285a79012df69d",
+          "bytes": 1460
+        },
+        {
+          "file": "022/003.txt",
+          "sha256": "b6a8bf63ae2c95b0aa256ee774680d7bd18f21f457da75466f7610b3b16acc4e",
+          "bytes": 34670
+        },
+        {
+          "file": "022/004.txt",
+          "sha256": "b85dcd3e453d05982552c52b5fc9e0bdd6d23c6f8e844b984a88af32570b0cc0",
+          "bytes": 1078
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "gtest/1.14.0#f8f0757a574a8dd747d16af62d6eb1b7",
+      "context": "host",
+      "license": "BSD-3-Clause",
+      "package_id": "34aac66723cb607d6008490c423b31338951f67e",
+      "prev": "99b101ba3bf7861c0ad38fbff05a96af",
+      "notices": [
+        {
+          "file": "023/000.txt",
+          "sha256": "9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138",
+          "bytes": 1475
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "http_parser/2.9.4#98d91690d6fd021e9e624218a85d9d97",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "2f2f80bf96f4c31ef7859db9bff595e502bdf096",
+      "prev": "ffd7f93b8ecf2422aa644c213f851154",
+      "notices": [
+        {
+          "file": "024/000.txt",
+          "sha256": "79e6ba8b687cb54786207342b9b6fcee0ac10218453ed9009b84d949b2233cc0",
+          "bytes": 1077
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "tomlplusplus/3.3.0#3109e968b4a517f395e638753c6faa43",
+      "context": "host",
+      "license": "MIT",
+      "package_id": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      "prev": "27e922b4e373419ae48f1f1e7e5d8a3d",
+      "notices": [
+        {
+          "file": "025/000.txt",
+          "sha256": "529bc3900a9571e49db285b0df432397e70b881cc3bf48de6667ae74ff4b06d8",
+          "bytes": 1094
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "zlib/1.3.1#cac0f6daea041b0ccf42934163defb20",
+      "context": "host",
+      "license": "Zlib",
+      "package_id": "2f2f80bf96f4c31ef7859db9bff595e502bdf096",
+      "prev": "0ce2810e11a98d3094c9afa096402211",
+      "notices": [
+        {
+          "file": "026/000.txt",
+          "sha256": "cd71bb78391bd288dfcce9b381e3bd847eaa18ecff0fe93aff33510e21c4b65d",
+          "bytes": 1323
+        }
+      ],
+      "notice_status": "collected_for_review"
+    },
+    {
+      "ref": "gtest/1.14.0#f8f0757a574a8dd747d16af62d6eb1b7",
+      "context": "host",
+      "license": "BSD-3-Clause",
+      "package_id": "34aac66723cb607d6008490c423b31338951f67e",
+      "prev": "99b101ba3bf7861c0ad38fbff05a96af",
+      "notices": [
+        {
+          "file": "027/000.txt",
+          "sha256": "9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138",
+          "bytes": 1475
+        }
+      ],
+      "notice_status": "collected_for_review"
+    }
+  ],
+  "sdk_source_run": 44038398682,
+  "sdk_source_commit": "84f9da68a2fee2e7cb4cb42ef2f80e264aad4d08",
+  "source_pin_manifest_sha256": "cf9d5d299aeae007c9314b4235d8a45ad52076de46da5e5150e952d3d05cd474",
+  "conan_input_lock_sha256": "2680c44369acf682190acbb322273a3a0a648edcbbba851e99b0c0166595c246",
+  "traffic_profile_manifest_sha256": "40d21c0edd085dc7bae109ae97f9bc0ef0d338e42e83c8e712c872383bd88686"
+}

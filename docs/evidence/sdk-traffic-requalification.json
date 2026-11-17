@@ -1,0 +1,94 @@
+{
+  "sdk_source_run": 44038398682,
+  "sdk_source_commit": "84f9da68a2fee2e7cb4cb42ef2f80e264aad4d08",
+  "service_run": 44057085561,
+  "gui_run": 44057954554,
+  "cases": [
+    {
+      "run": 44057092836,
+      "protocol": "http2",
+      "profile": "valid",
+      "termination": "stop",
+      "family": "ipv4",
+      "passed": true
+    },
+    {
+      "run": 44057100839,
+      "protocol": "http3",
+      "profile": "valid",
+      "termination": "stop",
+      "family": "ipv4",
+      "passed": true
+    },
+    {
+      "run": 44057998261,
+      "protocol": "http2",
+      "profile": "valid",
+      "termination": "lease-death",
+      "family": "ipv4",
+      "passed": true
+    },
+    {
+      "run": 44058004150,
+      "protocol": "http2",
+      "profile": "valid",
+      "termination": "service-crash",
+      "family": "ipv4",
+      "passed": true
+    },
+    {
+      "run": 44058009712,
+      "protocol": "http2",
+      "profile": "wrong-auth",
+      "termination": "stop",
+      "family": "ipv4",
+      "passed": true
+    },
+    {
+      "run": 44058016409,
+      "protocol": "http2",
+      "profile": "wrong-ca",
+      "termination": "stop",
+      "family": "ipv4",
+      "passed": true
+    },
+    {
+      "run": 44058022430,
+      "protocol": "http2",
+      "profile": "valid",
+      "termination": "stop",
+      "family": "synthetic-ipv6",
+      "passed": true
+    },
+    {
+      "run": 44058028697,
+      "protocol": "http3",
+      "profile": "valid",
+      "termination": "stop",
+      "family": "synthetic-ipv6",
+      "passed": true
+    },
+    {
+      "run": 44058035430,
+      "protocol": "http2",
+      "profile": "valid",
+      "termination": "endpoint-restart",
+      "family": "ipv4",
+      "passed": true
+    },
+    {
+      "run": 44058041002,
+      "protocol": "http3",
+      "profile": "valid",
+      "termination": "endpoint-restart",
+      "family": "ipv4",
+      "passed": true
+    }
+  ],
+  "all_cases_passed": true,
+  "scope": "disposable_ci_ordinary_ipv4_faults_recovery_and_synthetic_ipv6_with_aggregate_counters",
+  "source_difference": "3804c97..0cc1512 changes only an expected UI test string",
+  "native_ipv6_exit_qualified": false,
+  "desktop_acceptance": false,
+  "release_qualified": false
+}

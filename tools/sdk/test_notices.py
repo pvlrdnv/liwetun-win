@@ -4,7 +4,8 @@ import shutil
 import tempfile
 import unittest
 
-from verify_notices import ROOT, verify_sdk, verify_rust, check_candidate_notices
+from verify_notices import ROOT, verify_sdk, verify_rust, verify_candidate_sdk, check_candidate_notices, read_json
+from unittest.mock import patch
 
 
 class NoticeIntegrityTests(unittest.TestCase):
@@ -26,6 +27,18 @@ class NoticeIntegrityTests(unittest.TestCase):
     def test_current_archived_sets_match_exact_dependency_locks(self):
         self.assertEqual(verify_sdk(), 38)
         self.assertEqual(verify_rust(), 22)
+
+    def test_traffic_candidate_requires_its_own_exact_provenance(self):
+        self.assertEqual(verify_candidate_sdk(traffic_metrics=True), 38)
+        for field in ['traffic_profile_manifest_sha256', 'traffic_abi_header_sha256', 'sdk_variant']:
+            def altered(path):
+                data = read_json(path)
+                if path.name == 'runtime-traffic.json':
+                    data[field] = 'synthetic_wrong_provenance'
+                return data
+            with self.subTest(field=field), patch('verify_notices.read_json', side_effect=altered):
+                with self.assertRaisesRegex(ValueError, 'traffic_notice_provenance_mismatch'):
+                    verify_candidate_sdk(traffic_metrics=True)
 
     def test_tampered_missing_extra_or_escaping_notices_fail(self):
         for mode in ('tamper', 'missing', 'extra', 'escape', 'recipe_drift'):
