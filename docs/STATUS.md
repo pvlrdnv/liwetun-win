@@ -8,7 +8,7 @@ receive. Missing-response deadlines pass H2 with the original fixture and H2/H3
 with an explicitly modified diagnostic endpoint that wakes a parked H3 reader.
 The same-commit original H3 fixture still fails pre-Stop remote-close acceptance.
 [Full comparison](evidence/owned-probe-wakeup-44123761038.json).
-**33 local Python checks PASS**; actual Windows CI compiled and exercised the
+**35 local Python checks PASS**; actual Windows CI compiled and exercised the
 service. Normal package modes remain OFF; the separate SDK/endpoint candidates
 are not a shipped health capability. Product HTTPS/DNS health, live
 bypass/migration negatives, adapter ownership, trusted signing/distribution and
@@ -22,8 +22,23 @@ disarm, but no verified echo/success, no cancellation/deadline, unknown service
 observations and remote EOF before Stop. The fixture records only closed totals
 including an invalid-reply count; no token/frame is logged. No native worker,
 SDK ABI/binary, service command or GUI capability changed. **35 local Python
-checks**, Python/YAML and diff checks PASS; actual Windows H2/H3 and shared
-negative-observer deadline regression are pending.
+checks**, Python/YAML and diff checks PASS. Actual Windows wrong-nonce controls
+**PASS**, source `dae28a7`: H2/original endpoint 44130232049 (**514 ms**) and
+H3/reader-wakeup fixture 44130231978 (**952 ms**). Both independently received
+one deliberate bad reply, with flags 15 / TX 24 / RX 24, same epoch and disarm,
+but `echo_verified=false`, `qualified=false` and unknown service observations.
+Receiver EOF preceded Stop; route/DNS/adapter/WFP baselines restored without
+watchdog action. [Closed reports](evidence/owned-probe-wrong-nonce-44130231978.json).
+
+Shared-observer H3 deadline regression **PASS** (44130232830 attempt 2,
+**4327 ms** total), preserving timeout/disarm, receiver EOF before Stop,
+unknown service observations and complete network/WFP restoration. Attempt 1
+failed while fetching the endpoint artifact with HTTP 503 egress-limit text,
+before native/service tests; [closed infrastructure receipt](evidence/owned-probe-infrastructure-44130232830-attempt1.json).
+Successful attempt-2 evidence was retrieved by exact artifact ID 14350141597;
+name-only download had selected attempt 1. No raw logs or signed artifact URLs
+were archived. No native SDK/producer/IPC/UI or production admission change;
+HTTPS/DNS health and live bypass/migration negatives remain open.
 
 ## Development evidence and history
 

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "source_run": 44130232830,
+  "run_attempt": 1,
+  "source_commit": "dae28a716c661b555c235c3778516d2aa5dee8ac",
+  "mode": "deadline",
+  "protocol": "http3",
+  "failure_stage": "endpoint_artifact_fetch",
+  "reason": "artifact_http503_egress_limit",
+  "service_started": false,
+  "native_test_executed": false,
+  "retry_pending": false,
+  "raw_logs_included": false,
+  "signed_artifact_urls_included": false,
+  "release_ready": false,
+  "retry_attempt": 2,
+  "retry_conclusion": "success",
+  "retry_receipt": "docs/evidence/owned-probe-wrong-nonce-44130231978.json"
+}

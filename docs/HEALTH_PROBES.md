@@ -441,7 +441,7 @@ comparison receipt above. This supports the parked-reader explanation in the
 pinned diagnostic endpoint while preserving the original endpoint limitation.
 
 
-## Mismatched response control — Windows qualification pending
+## Mismatched response control — focused H2/H3 PASS
 
 The explicit wrong-nonce fixture sends one exact 24-byte response with zero nonce
 for a request that requires a nonzero token. It never exports/logs either token.
@@ -452,6 +452,21 @@ observations. Receiver EOF is required before the harness sends Stop. This check
 that correct transport/path counts alone cannot establish response semantics.
 A shared bounded observer covers deadline and mismatched-response cases, retaining
 closed worker/receiver facts on failure. **35 local Python tests PASS**;
-Windows H2/H3 and deadline-observer regression are pending. H3 uses the explicitly
+Windows H2/H3 and deadline-observer regression results follow. H3 uses the explicitly
 pinned reader-wakeup diagnostic endpoint; the original fixture limitation stays
 open. No product health capability or production endpoint is introduced.
+
+
+Source dae28a7 actual wrong-nonce H2 44130232049 / H3 44130231978 PASS:
+514 / 952 ms total, SDK flags 15 with exact TX 24 / RX 24 and same epoch, but
+no verified echo or successful request. The independent fixture recorded exactly
+one deliberate invalid reply; service observations stayed unknown. Remote EOF
+preceded Stop; final network/WFP restoration passed without watchdog.
+H2 used the original diagnostic endpoint, H3 the explicit reader-wakeup candidate.
+Shared-observer H3 deadline 44130232830 attempt 2 also PASS (4327 ms), with the
+original strict timeout oracle. Attempt 1 failed only during artifact fetch with
+HTTP 503 before service start and is preserved separately without raw logs/URLs.
+[All native reports](evidence/owned-probe-wrong-nonce-44130231978.json),
+[closed infrastructure record](evidence/owned-probe-infrastructure-44130232830-attempt1.json).
+The native producer and SDK bytes are unchanged; neither negative-case acceptance
+nor aggregate/flow byte counts enables application HTTPS/DNS/Internet health.
