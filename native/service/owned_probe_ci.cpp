@@ -87,7 +87,7 @@ DWORD OwnedIpv4(const health::AttachedTun& attachment, uint32_t& issue) {
   return selected;
 }
 #endif
-Socket Connect(const health::AttachedTun& attachment, bool exclusive, ULONGLONG deadline,
+Socket ConnectOnce(const health::AttachedTun& attachment, bool exclusive, ULONGLONG deadline,
                const std::atomic<bool>& cancel, uint32_t& issue) {
   issue = 1;
   Socket socket(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP));
@@ -106,8 +106,9 @@ Socket Connect(const health::AttachedTun& attachment, bool exclusive, ULONGLONG 
   if (!source.sin_addr.s_addr) return Socket{};
   issue = 4;
   if (bind(socket.value, reinterpret_cast<sockaddr*>(&source), sizeof(source)) != 0) return Socket{};
-  // Exact local control, with the actual TUN source but no forced outgoing IF.
-  target.sin_addr.s_addr = htonl(INADDR_LOOPBACK); target.sin_port = htons(38557);
+  // Same-address local delivery: bind and peer both use the verified TUN IP,
+  // with no forced outgoing IF and no alias/address supplied by the caller.
+  target.sin_addr = source.sin_addr; target.sin_port = htons(38557);
 #else
   const DWORD interface_index = htonl(attachment.index);
   issue = 5;
@@ -127,6 +128,21 @@ Socket Connect(const health::AttachedTun& attachment, bool exclusive, ULONGLONG 
   }
   issue = 0;
   return socket;
+}
+Socket Connect(const health::AttachedTun& attachment, bool exclusive, ULONGLONG deadline,
+               const std::atomic<bool>& cancel, uint32_t& issue) {
+#ifdef LIWETUN_TEST_OWNED_BYPASS
+  // The fixture can bind its receiver only after this owned address exists.
+  // Retry with fresh descriptors before arm; no old tuple/token is registered.
+  while (!cancel.load() && GetTickCount64() < deadline) {
+    auto socket = ConnectOnce(attachment, exclusive, deadline, cancel, issue);
+    if (socket.value != INVALID_SOCKET) return socket;
+    Sleep(25);
+  }
+  return Socket{};
+#else
+  return ConnectOnce(attachment, exclusive, deadline, cancel, issue);
+#endif
 }
 IoResult Transfer(SOCKET socket, std::array<char, 24>& bytes, bool writing, ULONGLONG deadline,
               const std::atomic<bool>& cancel) {

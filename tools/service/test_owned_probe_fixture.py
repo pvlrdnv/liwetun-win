@@ -2,6 +2,7 @@ import socket
 import struct
 import time
 import unittest
+from unittest.mock import patch
 from owned_probe_fixture import (OwnedProbeSink, REQUEST, REPLY, TARGET, validate_report,
                                  validate_cancel_report, validate_deadline_report, validate_wrong_nonce_report,
                                  validate_migration_report, validate_epoch_change_report, validate_bypass_report)
@@ -10,6 +11,11 @@ from endpoint_forwarder import EndpointForwarder
 
 
 class OwnedProbeFixtureTests(unittest.TestCase):
+    def test_owned_address_listener_requires_explicit_disposable_windows(self):
+        with patch.dict('os.environ', {'GITHUB_ACTIONS': 'false'}):
+            with self.assertRaises(ValueError):
+                OwnedProbeSink(port=0, owned_address='198.18.0.1')
+
     def test_local_bypass_success_cannot_supply_endpoint_path_evidence(self):
         value = dict(schema_version=4, stage=9, socket_failure=0, connected=True, nonexclusive_rejected=True,
                      arm_accepted=True, echo_verified=True, same_instance_epoch=True, state_epoch_changed=False,

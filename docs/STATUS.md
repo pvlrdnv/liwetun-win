@@ -138,6 +138,33 @@ Windows probe-contract workflow; local C++ compilation remains unavailable.
 Windows diagnosis are pending. No production endpoint, TLS bypass or GUI health
 capability is introduced.
 
+HTTP framing MSVC/security contracts **PASS** (44143544601), source `a309430`:
+all existing slot/socket contracts and new binary nonce, arbitrary fragmentation,
+truncation, wrong response, limits, duplicate/ambiguous headers, redirect, cookie
+and compression refusal cases. [Receipt](evidence/health-http-contract-44143544601.json).
+No TLS handshake or application health claim.
+
+Closed bypass diagnostic 44143544310 FAIL at socket setup code 7 / connect wait;
+lookup and source bind were reached, but no connection/request was accepted.
+[Original diagnostic](evidence/owned-probe-bypass-diagnostic-44143544310.json).
+The local fixture now binds only the task adapter's one preferred IPv4, accepts
+only a peer with that same address, and is released before SDK adapter teardown.
+Native bypass connects to that same verified local address with fresh descriptors
+retried only before arm inside the existing deadline. It no longer assumes
+cross-interface delivery to 127.0.0.1 from the TUN source. No network policy,
+routes, DNS, trust, SDK or acceptance criterion changed. **39 local Python tests**
+PASS; same-address local bypass qualification pending.
+
+Internal borrowed-socket Schannel candidate is implemented separately from the
+service: TLS 1.2 only, automatic name/chain validation, strong crypto, no implicit
+client certificate, cache-only revocation/chain retrieval, explicit leaf time
+check, bounded wire/record processing and closed outcomes. No validation bypass
+or trust-store write. Incomplete/extra input and terminal error handling are
+implemented. Initial MSVC compile/no-network cancellation/deadline/name guards
+are pending; real TLS/HTTP/path and TLS 1.3/graceful shutdown qualification remain
+open. [Contract and primary references](HEALTH_HTTPS_V1.md). No UI/production
+health capability is enabled.
+
 ## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the

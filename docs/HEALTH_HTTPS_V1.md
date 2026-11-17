@@ -1,8 +1,8 @@
 # HTTPS probe candidate contract
 
-Status: bounded HTTP framing/reply reducer implemented; Windows compilation and
-contract tests pending. TLS transport and live SDK-owned HTTPS are not yet
-implemented/qualified. This document does not enable application health.
+Status: bounded HTTP framing/reply reducer PASS on MSVC (44143544601). Internal
+Schannel/borrowed-socket TLS candidate implemented; compilation/preflight and real
+handshake qualification pending. Live SDK-owned HTTPS remains unimplemented. This document does not enable application health.
 
 ## Reserved fixture target and wire contract
 
@@ -27,7 +27,7 @@ This reserved-host builder is not a public arbitrary-URL service API. Production
 admission needs a separately agreed fixed endpoint contract, privacy policy,
 bootstrap/rotation policy and qualification. LikeWeb/server work is out of scope.
 
-## Planned TLS boundary
+## TLS candidate boundary
 
 Use the service-owned exclusive TCP socket, arm SDK correlation before any TLS
 I/O, retain the descriptor through proof reading and disarm before close. TLS
@@ -59,3 +59,16 @@ Primary Microsoft references inspected 2026-11-17:
 DNS remains a distinct probe/design boundary: successful HTTPS, including a
 response from a dedicated fixture, does not establish the Windows DNS resolver
 path or Internet DNS health.
+
+
+The initial transport candidate restricts negotiation to TLS 1.2, uses fresh
+Schannel credentials with automatic validation, no default client certificates,
+strong crypto and cache-only chain/revocation retrieval. Unknown/offline
+revocation errors are not ignored. It separately checks the returned leaf's time
+validity, supports incomplete/extra encrypted input, caps total wire data and
+crypto iterations, and rejects renegotiation. Each context is used on one thread;
+errors make the channel unusable. No trust store is mutated by the library.
+These are implemented policies, not yet proved handshake/runtime guarantees.
+TLS 1.3, graceful TLS shutdown, OS crypto-call cancellation/bounds and production
+certificate/revocation behavior still require dedicated work/qualification.
+The module is not linked into the shipped service/UI and has no public IPC entry.

@@ -32,7 +32,11 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Health HTTP contract build failed' }
           & ./build/health-http.exe
           if ($LASTEXITCODE -ne 0) { throw 'Health HTTP contract failed' }
-          @{source_commit='${{ github.sha }}'; slot_contract_passed=$true; actual_loopback_socket_boundary_passed=$true; http_response_contract_passed=$true; synthetic_context_not_sdk_tun=$true; tunnel_started=$false; network_configuration_changed=$false; live_sdk_path_qualified=$false; https_transport_qualified=$false; release_ready=$false} | ConvertTo-Json | Set-Content build/probe-evidence/contract.json
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_WIN32_WINNT=0x0A00 native/health/test_schannel_probe.cpp /Fobuild/health-tls.obj /Febuild/health-tls.exe /link secur32.lib crypt32.lib ws2_32.lib
+          if ($LASTEXITCODE -ne 0) { throw 'Health Schannel candidate build failed' }
+          & ./build/health-tls.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Health Schannel no-network guards failed' }
+          @{source_commit='${{ github.sha }}'; slot_contract_passed=$true; actual_loopback_socket_boundary_passed=$true; http_response_contract_passed=$true; schannel_compile_and_preflight_guards_passed=$true; schannel_handshake_tested=$false; synthetic_context_not_sdk_tun=$true; tunnel_started=$false; network_configuration_changed=$false; live_sdk_path_qualified=$false; https_transport_qualified=$false; release_ready=$false} | ConvertTo-Json | Set-Content build/probe-evidence/contract.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

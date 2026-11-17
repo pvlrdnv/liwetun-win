@@ -147,6 +147,22 @@ def restart_during_owned_request(endpoint, report_path):
     return restarted
 
 
+def owned_bypass_receiver():
+    """Bind only the task TUN's one preferred IPv4; never serialize its address."""
+    from owned_probe_fixture import OwnedProbeSink
+    deadline = time.monotonic() + 4
+    while time.monotonic() < deadline:
+        info = tun()
+        if info:
+            addresses = ps(f"@(Get-NetIPAddress -InterfaceIndex {int(info['index'])} -AddressFamily IPv4 | Where-Object AddressState -eq 'Preferred').IPAddress | ConvertTo-Json -Compress")
+            if isinstance(addresses, str):
+                addresses = [addresses]
+            if isinstance(addresses, list) and len(addresses) == 1:
+                return OwnedProbeSink(port=38557, owned_address=addresses[0])
+        time.sleep(.025)
+    raise RuntimeError('owned_bypass_receiver_not_ready')
+
+
 def ordinary_https(origin, addresses, family=socket.AF_INET):
     source_matches = False
     try:
@@ -476,13 +492,13 @@ def main():
             raise RuntimeError('watchdog_not_ready')
         before = totals()
         stage = 'production_session'
-        if owned_probe_mode == 'bypass':
-            from owned_probe_fixture import OwnedProbeSink
-            local_receiver = OwnedProbeSink(port=38557)
         profile_file = protocol if profile == 'valid' else profile
         session = Child([str(client), '--network-session', str(directory / (profile_file + '.uri'))])
         if json.loads(session.receive())['code'] not in [0, 6]:
             raise RuntimeError('service_start_rejected')
+        if owned_probe_mode == 'bypass':
+            stage = 'owned_bypass_receiver_ready'
+            local_receiver = owned_bypass_receiver()
         if cancel_probe:
             stage = 'cancel_owned_request_during_receive'
             result['owned_probe_cancellation'] = cancel_owned_request(
@@ -506,6 +522,7 @@ def main():
                 result['owned_bypass_endpoint_receiver'] = endpoint_receiver
                 if any(endpoint_receiver[k] != 0 for k in ['valid_requests', 'request_bytes', 'replies_sent', 'reply_bytes']):
                     raise RuntimeError('owned_probe_bypass_not_qualified')
+                local_receiver.close() # Release the task-bound listener before SDK adapter removal.
         if negative_probe:
             result['ordinary_https_probe_attempted'] = False
             result['application_dns_probe_attempted'] = False
@@ -824,6 +841,7 @@ def main():
                         'owned_probe_migration_not_qualified',
                         'owned_probe_epoch_change_not_qualified', 'endpoint_restart_failed',
                         'owned_probe_bypass_not_qualified',
+                        'owned_bypass_receiver_not_ready',
                         'owned_socket_path_not_qualified', 'invalid_owned_probe_report'})
         reason = error.args[0] if error.args else None
         result['failure_reason'] = reason if isinstance(reason, str) and reason in reasons else 'unknown'
@@ -831,6 +849,8 @@ def main():
             result['wfp_probe_stage'] = getattr(error, 'wfp_stage', 'unknown')
             result['wfp_query_code'] = getattr(error, 'wfp_query_code', None)
     finally:
+        if local_receiver:
+            local_receiver.close()
         if session:
             session.close('stop')
         restored = wait_clean(baseline)

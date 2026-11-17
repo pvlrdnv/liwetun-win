@@ -1,7 +1,9 @@
-"""Synthetic owned-socket receiver; fixed frames, loopback only, closed totals."""
+"""Synthetic receiver; loopback by default, explicit CI-owned address only, closed totals."""
 import socket
 import threading
 import time
+import os
+import ipaddress
 
 TARGET = ('198.18.0.10', 38556)
 REQUEST = b'liwetun-path-v1:'
@@ -11,12 +13,19 @@ assert len(REQUEST) == len(REPLY) == 16
 
 
 class OwnedProbeSink:
-    def __init__(self, port=38556, mode='echo'):
+    def __init__(self, port=38556, mode='echo', owned_address=None):
         if mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce', 'migration', 'epoch-change', 'bypass']:
             raise ValueError('invalid_owned_probe_mode')
         self.mode = mode
+        if owned_address is not None:
+            if os.name != 'nt' or os.environ.get('GITHUB_ACTIONS') != 'true':
+                raise ValueError('owned_address_requires_disposable_windows')
+            address = ipaddress.IPv4Address(owned_address)
+            if address.is_global or address.is_loopback or address.is_unspecified or address.is_multicast or address.is_reserved:
+                raise ValueError('invalid_owned_receiver_address')
+        self.owned_address = owned_address
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind(('127.0.0.1', port))
+        self.socket.bind((owned_address or '127.0.0.1', port))
         self.socket.listen(4)
         self.socket.settimeout(.2)
         self.address = self.socket.getsockname()
@@ -39,11 +48,14 @@ class OwnedProbeSink:
     def serve(self):
         while not self.stop.is_set():
             try:
-                client, _ = self.socket.accept()
+                client, peer = self.socket.accept()
             except socket.timeout:
                 continue
             except OSError:
                 return
+            if self.owned_address is not None and peer[0] != self.owned_address:
+                client.close()
+                continue
             self.count('accepted')
             with client:
                 client.settimeout(.2)
