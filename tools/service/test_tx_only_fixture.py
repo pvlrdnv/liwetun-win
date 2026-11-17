@@ -1,13 +1,27 @@
 import socket
 import time
 import unittest
-from production_network import aggregate_window
+from production_network import aggregate_window, forwarder_delta
 from tx_only_fixture import TxOnlySink, PAYLOAD, TARGET
 from endpoint_forwarder import EndpointForwarder
 from physical_forwarder import Forwarder
 
 
 class TxOnlyFixtureTests(unittest.TestCase):
+    def test_forwarder_window_uses_closed_totals_and_refuses_unknown_or_reset(self):
+        fields = ('tcp_connected', 'tcp_bytes', 'tcp_denied', 'udp_forwarded',
+                  'udp_replies', 'udp_denied_packets', 'udp_denied_payload_bytes')
+        before = dict.fromkeys(fields, 0)
+        after = dict(before, udp_denied_packets=2, udp_denied_payload_bytes=96)
+        delta = forwarder_delta(before, dict(after, ignored='never exported'))
+        self.assertEqual(set(delta), set(fields))
+        self.assertEqual(delta['udp_denied_payload_bytes'], 96)
+        for invalid in [dict(after, tcp_bytes=None), dict(after, tcp_bytes=True), {}]:
+            with self.assertRaises(RuntimeError):
+                forwarder_delta(before, invalid)
+        with self.assertRaises(RuntimeError):
+            forwarder_delta(after, before)
+
     def test_owned_sink_accepts_fragmented_fixed_frames_without_response(self):
         sink = TxOnlySink(port=0)
         try:

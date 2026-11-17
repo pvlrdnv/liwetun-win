@@ -181,14 +181,25 @@ restored the baseline without watchdog. Original failed reports are retained.
 Follow-up keeps the flow open for idle and extends only that exact diagnostic
 forwarder's lifetime to 75 seconds (others retain 30); it also requires an
 unchanged sink receipt across idle. Cause of the post-close bytes is not yet
-established. Follow-up Windows execution pending.
+established. Open-flow follow-up **H3 PASS** (44066619081): +672 TX / 0 RX,
+then 20,998 ms of zero TX/RX growth with an unchanged sink receipt. **H2 FAIL**
+(44066611999): sink still received exactly 672 bytes and sent none, but aggregate
+TX grew by 720 during sending and another 48 during idle. Both restored network/
+WFP without watchdog. [H2 receipt](evidence/tx-only-44066611999.json),
+[H3 receipt](evidence/tx-only-44066619081.json). Cause remains unestablished;
+no SDK change or relaxed idle oracle. The fixture now records closed window deltas
+for forwarded/denied TCP and UDP payload totals, without destinations or payloads,
+to distinguish other runner activity. **23 Python tests PASS**; new CI pending.
 The independent deadline is 120 seconds only for this longer fixture.
 
 Optional-tail parsing is factored for Windows contract tests: an old 32-byte
 refusal must not read a tail or retain a previous snapshot; a partial/missing tail
 is timeout/unknown, while malformed full data is malformed/unknown. Valid data
 also requires admitted runtime state. Clock-error samples no longer expose an
-unobserved monotonic instant. New counter/wire Windows checks and GUI build pending.
+unobserved monotonic instant. Counter/wire contract, Windows GUI build, 227 Dart + 6 Rust + 6 desktop tests
+**PASS** (44064479119). [Receipt](evidence/windows-traffic-4b71e69.json).
+This still does not exercise live signed GUI traffic display. Installer with this
+GUI and the aggregate SDK is running (44068126242), ephemeral CI signing only.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests

@@ -111,7 +111,27 @@ class ForwarderTest(unittest.TestCase):
         client.sendall(b'\x05\x01\x00\x01\x7f\x00\x00\x01\x00\x03')
         self.assertEqual(exact(client, 10)[:2], b'\x05\x02')
         self.assertEqual(proxy.stats()['destination_denied'], 1)
+        self.assertEqual(proxy.stats()['tcp_denied'], 1)
         self.assertEqual(proxy.stats()['tcp_connected'], 0)
+
+    def test_rejected_udp_counts_only_payload_totals_without_forwarding(self):
+        proxy = self.start()
+        client, _ = self.authenticate(proxy)
+        client.sendall(b'\x05\x03\x00\x01' + b'\x00' * 6)
+        reply = exact(client, 10)
+        relay = socket.inet_ntoa(reply[4:8]), struct.unpack('!H', reply[8:10])[0]
+        # Documentation address: the rejected packet cannot open any exit.
+        header = b'\x00\x00\x00\x01\xc0\x00\x02\x01\x00\x7b'
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
+            udp.settimeout(.3)
+            udp.sendto(header + b'synthetic-only', relay)
+            with self.assertRaises(socket.timeout):
+                udp.recv(4096)
+        data = proxy.stats()
+        self.assertEqual(data['udp_denied_packets'], 1)
+        self.assertEqual(data['udp_denied_payload_bytes'], len(b'synthetic-only'))
+        self.assertEqual(data['udp_forwarded'], 0)
+        self.assertTrue(all(type(value) is int for value in data.values()))
 
     def test_ipv6_tcp_fixture_maps_only_fixed_destination(self):
         with echo(socket.SOCK_STREAM) as address:

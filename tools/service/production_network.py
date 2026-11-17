@@ -156,6 +156,9 @@ def observe_tx_only_and_idle(session, addresses, endpoint, protocol):
     from tx_only_fixture import TARGET, PAYLOAD
     source_matches = False
     transport_before = totals()
+    # Closed totals only, including rejected traffic from other runner tasks.
+    # Never retain a destination, process identity or payload from those tasks.
+    forwarder_before = endpoint.command('stats')['local_forwarder_counts']
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as stream:
         stream.settimeout(5)
         stream.connect(TARGET)  # Ordinary route/source selection; no bind/host route.
@@ -168,7 +171,8 @@ def observe_tx_only_and_idle(session, addresses, endpoint, protocol):
             time.sleep(.05)
             sent.append(session.command('traffic'))
         outgoing = aggregate_window(sent, tx_only=True)
-        marker = endpoint.command('stats')['tx_only_sink']
+        endpoint_after_send = endpoint.command('stats')
+        marker = endpoint_after_send['tx_only_sink']
         for _ in range(20):
             if marker['matched_frames'] == 21:
                 break
@@ -181,7 +185,8 @@ def observe_tx_only_and_idle(session, addresses, endpoint, protocol):
             time.sleep(max(0, started + index - time.monotonic()))
             idle.append(session.command('traffic'))
         quiet = aggregate_window(idle, tx_only=False)
-        after_idle = endpoint.command('stats')['tx_only_sink']
+        endpoint_after_idle = endpoint.command('stats')
+        after_idle = endpoint_after_idle['tx_only_sink']
     sink_ok = (marker['matched_frames'] == 21 and marker['sent_bytes'] == 0
                and marker['received_bytes'] == 21 * len(PAYLOAD) and marker['rejected_frames'] == 0
                and marker == after_idle)
@@ -193,9 +198,23 @@ def observe_tx_only_and_idle(session, addresses, endpoint, protocol):
                 socket_source_is_tun=source_matches, owned_sink_receipt=marker,
                 sink_receipt_after_idle=after_idle, socket_kept_open_during_idle=True,
                 outgoing_window=outgoing, idle_window=quiet,
+                outgoing_forwarder_delta=forwarder_delta(forwarder_before, endpoint_after_send['local_forwarder_counts']),
+                idle_forwarder_delta=forwarder_delta(endpoint_after_send['local_forwarder_counts'], endpoint_after_idle['local_forwarder_counts']),
                 response_read_attempted=False, total_payload_bytes=21 * len(PAYLOAD),
                 endpoint_transport_bytes=transport_delta,
                 sdk_notification_threshold_bytes=102400)
+
+
+def forwarder_delta(before, after):
+    fields = ('tcp_connected', 'tcp_bytes', 'tcp_denied', 'udp_forwarded',
+              'udp_replies', 'udp_denied_packets', 'udp_denied_payload_bytes')
+    if any(type(value.get(key)) is not int or value[key] < 0
+           for value in (before, after) for key in fields):
+        raise RuntimeError('invalid_forwarder_totals')
+    result = {key: after[key] - before[key] for key in fields}
+    if any(value < 0 for value in result.values()):
+        raise RuntimeError('invalid_forwarder_totals')
+    return result
 
 
 def main():

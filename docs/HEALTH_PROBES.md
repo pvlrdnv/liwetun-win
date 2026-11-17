@@ -141,7 +141,7 @@ Summary schema v3 adds those scoped facts; closed event schema stays v1. Current
 state labels continue to require a separate Internet check, which is unavailable.
 
 
-## Tiny TX-only / idle observation fixture — Windows pending
+## Tiny TX-only / idle observation fixture — H3 CI PASS, H2 unresolved
 
 An explicit `traffic_pattern=tx-only` case uses a fixed benchmark TCP address
 translated only by the diagnostic endpoint's local forwarder to its owned
@@ -152,4 +152,14 @@ epoch, with no gap over five seconds, positive TX and unchanged RX. A subsequent
 20-second window must have unchanged TX/RX. Both windows remain scoped aggregate
 counter facts, not DNS/Internet proof. The independent guard permits 120 seconds
 for this longer case; ordinary tests retain their original deadlines. Local sink,
-allowlist and observation guards pass; actual Windows execution is pending.
+allowlist and observation guards pass. Open-flow Windows H3 run 44066619081
+passed +672 TX / zero RX followed by 20,998 ms unchanged TX/RX and unchanged sink
+receipt. H2 run 44066611999 retained the exact sink receipt but aggregate TX grew
+by 720 during sending and 48 during idle, so the complete case failed. Both
+restored baseline routes/DNS/adapter/WFP without watchdog. These counters cover
+all registered endpoint-client flows, not only the owned test socket. Their
+source of additional bytes remains unestablished; the next fixture records only
+closed per-window forwarded/denied TCP/UDP totals. No destination/body logs and
+no SDK/oracle change. Original post-close failures and follow-up results remain
+archived in docs/evidence/tx-only-*.json. This is disposable Server 2022 CI, not
+Windows 10/11 desktop acceptance.

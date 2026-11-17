@@ -62,7 +62,8 @@ class Forwarder:
                                      'synthetic_dns_requests', 'synthetic_dns_replies',
                                      'synthetic_aaaa_requests', 'synthetic_aaaa_replies',
                                      'tcp_ipv6_destination_connected', 'synthetic_ipv6_echo_requests',
-                                     'synthetic_ipv6_echo_replies'], 0)
+                                     'synthetic_ipv6_echo_replies', 'tcp_denied',
+                                     'udp_denied_packets', 'udp_denied_payload_bytes'], 0)
 
     def count(self, name, amount=1):
         with self.lock:
@@ -109,6 +110,7 @@ class Forwarder:
     def tcp(self, client, destination):
         if not self.tcp_allowed(destination):
             self.count('destination_denied')
+            self.count('tcp_denied')
             client.sendall(b'\x05\x02\x00\x01' + b'\x00' * 6)
             return
         with self.connect_tcp(destination) as upstream:
@@ -176,6 +178,8 @@ class Forwarder:
                     target = self.ipv6_echo
                 else:
                     self.count('destination_denied')
+                    self.count('udp_denied_packets')
+                    self.count('udp_denied_payload_bytes', len(payload))
                     continue
                 upstream.sendto(payload, target)
                 self.count('udp_forwarded')
