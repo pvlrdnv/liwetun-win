@@ -278,7 +278,6 @@ class SchannelProbe {
       case CRYPT_E_REVOCATION_OFFLINE:
       case CRYPT_E_NO_REVOCATION_CHECK:
       case CRYPT_E_REVOKED:
-      case SEC_E_CERT_REVOKED:
       case CERT_E_REVOKED: return TlsResult::RevocationRejected;
       case SEC_I_INCOMPLETE_CREDENTIALS: return TlsResult::ClientAuthRejected;
       default: return TlsResult::TlsRejected;

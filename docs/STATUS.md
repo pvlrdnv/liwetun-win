@@ -8,12 +8,16 @@ receive. Missing-response deadlines pass H2 with the original fixture and H2/H3
 with an explicitly modified diagnostic endpoint that wakes a parked H3 reader.
 The same-commit original H3 fixture still fails pre-Stop remote-close acceptance.
 [Full comparison](evidence/owned-probe-wakeup-44123761038.json).
-**35 local Python checks PASS**; actual Windows CI compiled and exercised the
-service. Normal package modes remain OFF; the separate SDK/endpoint candidates
-are not a shipped health capability. Product HTTPS/DNS health, live
-bypass/migration negatives, adapter ownership, trusted signing/distribution and
-separate Windows 10/11 desktop acceptance remain open. No production/LikeWeb or
-owner-device network/trust changes.
+Live wrong-nonce, actual flow migration, actual epoch change and same-address
+local bypass rejection now pass focused H2/H3 CI; the latter does not establish
+SDK recovery bypass selection. **39 local Python checks PASS**; actual Windows
+CI compiled and exercised the service. Six normal-package test flags remain OFF.
+The separate SDK/endpoint candidates are not a shipped health capability.
+Schannel compilation/preflight passed; real HTTPS controls exposed an unavailable
+revocation-information acceptance, now under explicit per-certificate validation
+and expanded CI. Product HTTPS/DNS health, adapter ownership, trusted signing /
+distribution and separate Windows 10/11 desktop acceptance remain open. No
+production/LikeWeb or owner-device network/trust changes.
 
 Next negative prerequisite: `owned_probe_mode=wrong-nonce` now returns an exact
 24-byte reply with a zero nonce, which cannot match the worker's nonzero token.
@@ -208,7 +212,9 @@ success for each non-root certificate in the verified chain. CI adds a distinct
 synthetic CA, fresh CRL, valid issued leaf and actually revoked issued leaf to
 check both acceptance and refusal; only the fixture's exact CRL context is added
 and deleted in disposable CI. Local CA/CRL generation and OpenSSL positive CRL
-verification PASS. Windows compilation and expanded TLS matrix pending.
+verification PASS. Windows attempt 44168154406 stopped at compilation: an unsupported symbolic
+status constant was referenced; it is removed. No TLS fixture/root installation
+ran in that attempt. Expanded Windows matrix rerun pending.
 
 ## Development evidence and history
 
