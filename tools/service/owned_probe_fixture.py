@@ -122,14 +122,17 @@ def validate_report(value):
     boolean_fields = {'connected', 'nonexclusive_rejected', 'arm_accepted', 'echo_verified',
                       'same_instance_epoch', 'state_epoch_changed', 'disarmed', 'cancelled', 'receive_cancelled', 'receive_timed_out', 'qualified', 'proves_dns',
                       'proves_https', 'proves_internet', 'identifiers_exported', 'release_ready'}
-    expected = boolean_fields | {'schema_version', 'stage', 'snapshot_flags', 'tx_bytes', 'rx_bytes'}
+    expected = boolean_fields | {'schema_version', 'stage', 'socket_failure', 'snapshot_flags', 'tx_bytes', 'rx_bytes'}
     if not isinstance(value, dict) or set(value) != expected:
         raise ValueError('invalid_owned_probe_report')
     if any(type(value[key]) is not bool for key in boolean_fields):
         raise ValueError('invalid_owned_probe_report')
-    if (type(value['schema_version']) is not int or value['schema_version'] != 3
+    if (type(value['schema_version']) is not int or value['schema_version'] != 4
             or type(value['stage']) is not int or not 1 <= value['stage'] <= 9
             or type(value['snapshot_flags']) is not int or not 1 <= value['snapshot_flags'] <= 1023):
+        raise ValueError('invalid_owned_probe_report')
+    if (type(value['socket_failure']) is not int or not 0 <= value['socket_failure'] <= 12
+            or (value['connected'] and value['socket_failure'] != 0)):
         raise ValueError('invalid_owned_probe_report')
     for key in ['tx_bytes', 'rx_bytes']:
         n = value[key]

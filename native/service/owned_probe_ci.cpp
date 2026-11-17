@@ -36,6 +36,7 @@ template <typename F> struct Cleanup {
 };
 struct Result {
   uint32_t stage = 1;
+  uint32_t socket_failure = 0; // Closed CI stages only; never OS text/address/identifier.
   bool connected = false, nonexclusive_rejected = false, armed = false;
   bool echoed = false, same_epoch = false, disarmed = false, cancelled = false, qualified = false;
   bool receive_cancelled = false;
@@ -58,14 +59,18 @@ IoResult Wait(SOCKET socket, bool writing, ULONGLONG deadline, const std::atomic
   }
 }
 #ifdef LIWETUN_TEST_OWNED_BYPASS
-DWORD OwnedIpv4(const health::AttachedTun& attachment) {
+DWORD OwnedIpv4(const health::AttachedTun& attachment, uint32_t& issue) {
   DWORD size = 0;
-  if (GetIpAddrTable(nullptr, &size, FALSE) != ERROR_INSUFFICIENT_BUFFER ||
-      size < sizeof(MIB_IPADDRTABLE) || size > 65536) return 0;
+  issue = 9; // Address table size query.
+  if (GetIpAddrTable(nullptr, &size, FALSE) != ERROR_INSUFFICIENT_BUFFER) return 0;
+  issue = 10; // Bounded table layout.
+  if (size < sizeof(MIB_IPADDRTABLE) || size > 65536) return 0;
   std::vector<unsigned char> buffer(size);
   auto* table = reinterpret_cast<MIB_IPADDRTABLE*>(buffer.data());
-  if (GetIpAddrTable(table, &size, FALSE) != NO_ERROR ||
-      table->dwNumEntries > (buffer.size() - offsetof(MIB_IPADDRTABLE, table)) / sizeof(MIB_IPADDRROW)) return 0;
+  if (GetIpAddrTable(table, &size, FALSE) != NO_ERROR || size > buffer.size() ||
+      size < offsetof(MIB_IPADDRTABLE, table) ||
+      table->dwNumEntries > (size - offsetof(MIB_IPADDRTABLE, table)) / sizeof(MIB_IPADDRROW)) return 0;
+  issue = 11; // No unambiguous preferred address on the held SDK attachment.
   DWORD selected = 0;
   for (DWORD i = 0; i < table->dwNumEntries; ++i) {
     const auto& entry = table->table[i];
@@ -76,16 +81,19 @@ DWORD OwnedIpv4(const health::AttachedTun& attachment) {
     row.Address.Ipv4.sin_family = AF_INET; row.Address.Ipv4.sin_addr.s_addr = entry.dwAddr;
     if (GetUnicastIpAddressEntry(&row) != NO_ERROR || row.DadState != IpDadStatePreferred ||
         row.InterfaceIndex != attachment.index || row.InterfaceLuid.Value != attachment.luid) continue;
-    if (selected && selected != entry.dwAddr) return 0;
+    if (selected && selected != entry.dwAddr) { issue = 12; return 0; }
     selected = entry.dwAddr;
   }
   return selected;
 }
 #endif
-Socket Connect(const health::AttachedTun& attachment, bool exclusive, ULONGLONG deadline, const std::atomic<bool>& cancel) {
+Socket Connect(const health::AttachedTun& attachment, bool exclusive, ULONGLONG deadline,
+               const std::atomic<bool>& cancel, uint32_t& issue) {
+  issue = 1;
   Socket socket(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP));
   if (socket.value == INVALID_SOCKET) return Socket{};
   const int enabled = exclusive ? 1 : 0;
+  issue = 2;
   u_long nonblocking = 1;
   if (setsockopt(socket.value, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
           reinterpret_cast<const char*>(&enabled), sizeof(enabled)) != 0 ||
@@ -94,22 +102,30 @@ Socket Connect(const health::AttachedTun& attachment, bool exclusive, ULONGLONG 
   target.sin_family = AF_INET;
 #ifdef LIWETUN_TEST_OWNED_BYPASS
   sockaddr_in source{};
-  source.sin_family = AF_INET; source.sin_addr.s_addr = OwnedIpv4(attachment);
-  if (!source.sin_addr.s_addr || bind(socket.value, reinterpret_cast<sockaddr*>(&source), sizeof(source)) != 0) return Socket{};
+  source.sin_family = AF_INET; source.sin_addr.s_addr = OwnedIpv4(attachment, issue);
+  if (!source.sin_addr.s_addr) return Socket{};
+  issue = 4;
+  if (bind(socket.value, reinterpret_cast<sockaddr*>(&source), sizeof(source)) != 0) return Socket{};
   // Exact local control, with the actual TUN source but no forced outgoing IF.
   target.sin_addr.s_addr = htonl(INADDR_LOOPBACK); target.sin_port = htons(38557);
 #else
   const DWORD interface_index = htonl(attachment.index);
+  issue = 5;
   if (setsockopt(socket.value, IPPROTO_IP, IP_UNICAST_IF,
           reinterpret_cast<const char*>(&interface_index), sizeof(interface_index)) != 0) return Socket{};
   target.sin_addr.s_addr = htonl(0xc612000a); // Fixed CI receiver: 198.18.0.10:38556.
   target.sin_port = htons(38556);
 #endif
+  issue = 6;
   if (connect(socket.value, reinterpret_cast<sockaddr*>(&target), sizeof(target)) != 0) {
-    if (WSAGetLastError() != WSAEWOULDBLOCK || Wait(socket.value, true, deadline, cancel) != IoResult::Complete) return Socket{};
+    if (WSAGetLastError() != WSAEWOULDBLOCK) return Socket{};
+    issue = 7;
+    if (Wait(socket.value, true, deadline, cancel) != IoResult::Complete) return Socket{};
+    issue = 8;
     int error = 0, size = sizeof(error);
     if (getsockopt(socket.value, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&error), &size) != 0 || error) return Socket{};
   }
+  issue = 0;
   return socket;
 }
 IoResult Transfer(SOCKET socket, std::array<char, 24>& bytes, bool writing, ULONGLONG deadline,
@@ -145,14 +161,14 @@ bool WriteResult(const std::wstring& path, const Result& result) {
   const std::string rx = observed ? std::to_string(result.sample.rx) : "null";
   char output[1536]{};
   const int length = std::snprintf(output, sizeof(output),
-      "{\"schema_version\":3,\"stage\":%u,\"connected\":%s,\"nonexclusive_rejected\":%s,"
+      "{\"schema_version\":4,\"stage\":%u,\"socket_failure\":%u,\"connected\":%s,\"nonexclusive_rejected\":%s,"
       "\"arm_accepted\":%s,\"echo_verified\":%s,\"same_instance_epoch\":%s,\"disarmed\":%s,\"cancelled\":%s,"
       "\"receive_cancelled\":%s,\"receive_timed_out\":%s,"
       "\"state_epoch_changed\":%s,"
       "\"snapshot_flags\":%u,\"tx_bytes\":%s,\"rx_bytes\":%s,\"qualified\":%s,"
       "\"proves_dns\":false,\"proves_https\":false,\"proves_internet\":false,"
       "\"identifiers_exported\":false,\"release_ready\":false}\n",
-      result.stage, boolean(result.connected), boolean(result.nonexclusive_rejected), boolean(result.armed),
+      result.stage, result.socket_failure, boolean(result.connected), boolean(result.nonexclusive_rejected), boolean(result.armed),
       boolean(result.echoed), boolean(result.same_epoch), boolean(result.disarmed), boolean(result.cancelled),
       boolean(result.receive_cancelled), boolean(result.receive_timed_out), boolean(result.state_epoch_changed), result.sample.flags,
       tx.c_str(), rx.c_str(), boolean(result.qualified));
@@ -204,7 +220,7 @@ void Backend::RunOwnedProbe() noexcept {
     const auto deadline = GetTickCount64() + 4000;
     result.stage = 2;
     {
-      auto ordinary = Connect(attachment, false, deadline, owned_cancel_);
+      auto ordinary = Connect(attachment, false, deadline, owned_cancel_, result.socket_failure);
       if (ordinary.value == INVALID_SOCKET) throw 1;
       result.stage = 3;
       std::lock_guard lock(core_mutex_);
@@ -214,7 +230,7 @@ void Backend::RunOwnedProbe() noexcept {
       if (!result.nonexclusive_rejected) { owned_disarm_(observed_core_, request.token); throw 1; }
     }
     result.stage = 4;
-    auto socket = Connect(attachment, true, deadline, owned_cancel_);
+    auto socket = Connect(attachment, true, deadline, owned_cancel_, result.socket_failure);
     result.connected = socket.value != INVALID_SOCKET;
     if (!result.connected) throw 1;
     Cleanup cleanup{[this, instance, token = request.token, &result] {

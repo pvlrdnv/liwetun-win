@@ -114,6 +114,30 @@ was selected. All six CI flags must be OFF for packaging. **38 local Python
 checks**, syntax/YAML and diff checks PASS; actual H2/H3 bypass, ordinary-echo
 regression and six-flag package exclusion pending.
 
+Local-bypass source `b8b3c42`: H2 44141143587 / H3 44141144365 both FAIL before
+initial TCP connection (worker stage 2, zero receiver requests), not a qualified
+bypass control. Ordinary H2 echo 44141144058 PASS. Final route/DNS/adapter cleanup
+passed without watchdog; failed cases did not reach post-Stop WFP measurement.
+[Original setup reports](evidence/owned-probe-bypass-setup-44141143587.json).
+Six-flag-OFF installer 44141143337 PASS, 14 groups and preserved four source-input
+digests with the prior aggregate SDK; no tunnel started, ephemeral signing only.
+[Package receipt](evidence/package-bypass-44141143337.json).
+Native CI report v4 now adds a closed socket-setup code (0..12), including source
+query/layout/membership/ambiguity, bind, interface selection, connect/wait/status.
+No raw OS error, address or interface identifier is emitted. No acceptance oracle
+or destination changed; the precise setup failure remains pending live diagnosis.
+
+Added a separate bounded HTTP nonce-response parser and reserved-host request
+builder, not yet a TLS client. It caps headers/fields/body, handles arbitrary
+fragmentation and binary nonce bytes, rejects redirects/ambiguity/cookies/
+compression/incorrect replies/truncation, and returns only a closed enum.
+[Candidate HTTPS contract](HEALTH_HTTPS_V1.md) records target/privacy/TLS boundaries
+and official Microsoft references. Portable C++ security cases are added to the
+Windows probe-contract workflow; local C++ compilation remains unavailable.
+**38 local Python tests** PASS; HTTP C++ compilation/contract and v4 socket-setup
+Windows diagnosis are pending. No production endpoint, TLS bypass or GUI health
+capability is introduced.
+
 ## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the

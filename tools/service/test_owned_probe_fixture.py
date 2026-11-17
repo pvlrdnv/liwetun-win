@@ -11,7 +11,7 @@ from endpoint_forwarder import EndpointForwarder
 
 class OwnedProbeFixtureTests(unittest.TestCase):
     def test_local_bypass_success_cannot_supply_endpoint_path_evidence(self):
-        value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
+        value = dict(schema_version=4, stage=9, socket_failure=0, connected=True, nonexclusive_rejected=True,
                      arm_accepted=True, echo_verified=True, same_instance_epoch=True, state_epoch_changed=False,
                      disarmed=True, cancelled=False, receive_cancelled=False, receive_timed_out=False,
                      snapshot_flags=3, tx_bytes=0, rx_bytes=0, qualified=False,
@@ -29,7 +29,7 @@ class OwnedProbeFixtureTests(unittest.TestCase):
             validate_bypass_report(value, dict(receiver, owner_closed=0))
 
     def test_epoch_change_requires_real_changed_epoch_and_discarded_observations(self):
-        value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
+        value = dict(schema_version=4, stage=9, socket_failure=0, connected=True, nonexclusive_rejected=True,
                      arm_accepted=True, echo_verified=False, same_instance_epoch=False, state_epoch_changed=True,
                      disarmed=True, cancelled=False, receive_cancelled=False, receive_timed_out=False,
                      snapshot_flags=129, tx_bytes=None, rx_bytes=None, qualified=False,
@@ -49,7 +49,7 @@ class OwnedProbeFixtureTests(unittest.TestCase):
             validate_report(dict(value, snapshot_flags=15, tx_bytes=24, rx_bytes=24))
 
     def test_migration_oracle_requires_invalidated_proof_even_with_valid_reply_and_same_epoch(self):
-        value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
+        value = dict(schema_version=4, stage=9, socket_failure=0, connected=True, nonexclusive_rejected=True,
                      arm_accepted=True, echo_verified=True, same_instance_epoch=True, state_epoch_changed=False, disarmed=True,
                      cancelled=False, receive_cancelled=False, receive_timed_out=False,
                      snapshot_flags=33, tx_bytes=None, rx_bytes=None, qualified=False,
@@ -90,7 +90,7 @@ class OwnedProbeFixtureTests(unittest.TestCase):
             receiver.close()
 
     def test_wrong_nonce_oracle_requires_bidirectional_path_but_no_echo_or_success(self):
-        value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
+        value = dict(schema_version=4, stage=9, socket_failure=0, connected=True, nonexclusive_rejected=True,
                      arm_accepted=True, echo_verified=False, same_instance_epoch=True, state_epoch_changed=False, disarmed=True,
                      cancelled=False, receive_cancelled=False, receive_timed_out=False,
                      snapshot_flags=15, tx_bytes=24, rx_bytes=24, qualified=False,
@@ -127,7 +127,7 @@ class OwnedProbeFixtureTests(unittest.TestCase):
             receiver.close()
 
     def test_deadline_oracle_requires_one_sided_endpoint_bytes_and_no_reply_or_cancel(self):
-        value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
+        value = dict(schema_version=4, stage=9, socket_failure=0, connected=True, nonexclusive_rejected=True,
                      arm_accepted=True, echo_verified=False, same_instance_epoch=True, state_epoch_changed=False, disarmed=True,
                      cancelled=False, receive_cancelled=False, receive_timed_out=True,
                      snapshot_flags=7, tx_bytes=24, rx_bytes=0, qualified=False,
@@ -165,7 +165,7 @@ class OwnedProbeFixtureTests(unittest.TestCase):
             receiver.close()
 
     def test_cancel_oracle_rejects_timeout_success_echo_or_unclosed_socket(self):
-        value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
+        value = dict(schema_version=4, stage=9, socket_failure=0, connected=True, nonexclusive_rejected=True,
                      arm_accepted=True, echo_verified=False, same_instance_epoch=False, state_epoch_changed=False, disarmed=True,
                      cancelled=True, receive_cancelled=True, receive_timed_out=False, snapshot_flags=1, tx_bytes=None, rx_bytes=None, qualified=False,
                      proves_dns=False, proves_https=False, proves_internet=False,
@@ -228,7 +228,7 @@ class OwnedProbeFixtureTests(unittest.TestCase):
                 proxy.close()
 
     def test_success_oracle_rejects_bypass_expiry_unknown_epoch_and_unverified_response(self):
-        value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
+        value = dict(schema_version=4, stage=9, socket_failure=0, connected=True, nonexclusive_rejected=True,
                      arm_accepted=True, echo_verified=True, same_instance_epoch=True, state_epoch_changed=False, disarmed=True, cancelled=False, receive_cancelled=False, receive_timed_out=False,
                      snapshot_flags=15, tx_bytes=24, rx_bytes=24, qualified=True, proves_dns=False,
                      proves_https=False, proves_internet=False, identifiers_exported=False, release_ready=False)
@@ -236,6 +236,6 @@ class OwnedProbeFixtureTests(unittest.TestCase):
         for field, replacement in [('snapshot_flags', 17), ('snapshot_flags', 65), ('echo_verified', False),
                                    ('same_instance_epoch', False), ('nonexclusive_rejected', False),
                                    ('rx_bytes', None), ('disarmed', False), ('cancelled', True), ('tx_bytes', True),
-                                   ('proves_https', True), ('unexpected', 'never export')]:
+                                   ('proves_https', True), ('socket_failure', True), ('socket_failure', 9), ('unexpected', 'never export')]:
             with self.assertRaises(ValueError):
                 validate_report(dict(value, **{field: replacement}))
