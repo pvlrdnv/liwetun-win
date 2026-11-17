@@ -27,8 +27,9 @@ class ServiceChannel {
     Job(Job&&) = default;
     Job& operator=(Job&&) = default;
   };
-  struct Completion { Result result; liwetun::Reply reply; };
+  struct Completion { Result result; liwetun::Reply reply; liwetun::TrafficReply traffic; bool is_traffic; };
   static Value Encode(const liwetun::Reply& reply);
+  static Value EncodeTraffic(const liwetun::TrafficReply& reply);
   void Run();
   HWND window_;
   std::unique_ptr<flutter::MethodChannel<Value>> channel_;

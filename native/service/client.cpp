@@ -3,7 +3,7 @@
 #include <bcrypt.h>
 
 namespace liwetun {
-Reply ServiceRequest(Command command, const std::string& profile, bool start_service) {
+Reply ServiceRequest(Command command, const std::string& profile, bool start_service, TrafficReply* traffic_reply) {
   Reply reply{};
   reply.code = Code::UntrustedInstallation;
   reply.core_state = UINT32_MAX;
@@ -53,6 +53,24 @@ Reply ServiceRequest(Command command, const std::string& profile, bool start_ser
       (reply.core_state != UINT32_MAX && reply.core_state > 5)) {
     reply = Reply{}; reply.code = Code::Malformed; reply.core_state = UINT32_MAX;
   }
+  if (command == Command::Traffic && traffic_reply && reply.code == Code::Ok) {
+    // Read the unchanged base first: an older service can explicitly refuse
+    // this extension with its ordinary 32-byte error, without a tail timeout.
+    if (!PipeIo(pipe.get(), nullptr, &traffic_reply->instance,
+        static_cast<DWORD>(sizeof(TrafficReply) - sizeof(Reply)), false) ||
+        traffic_reply->instance > traffic::kMaximum || !traffic::Valid(traffic_reply->sample) ||
+        ((traffic_reply->sample.flags & traffic::kValid) &&
+          (traffic_reply->instance == 0 || reply.state != State::TunnelReady || reply.core_state != 2))) {
+      *traffic_reply = TrafficReply{};
+      reply = Reply{}; reply.code = Code::Malformed; reply.core_state = UINT32_MAX;
+    }
+  }
   return reply;
 }
+TrafficReply ServiceTrafficRequest() {
+  TrafficReply result;
+  result.status = ServiceRequest(Command::Traffic, {}, false, &result);
+  return result;
+}
+
 }

@@ -60,3 +60,10 @@ crash, and a failed write leaves new events in memory. See JOURNAL_STORAGE.md.
 The report does not yet replace all manual
 observations. No arbitrary shell scripts or corporate software modifications
 are part of this owner workflow.
+
+
+Diagnostic summary v3 adds scoped native traffic observations when available.
+Unknown/invalid/stale observations have null counters, not invented zeros; the
+monotonic instance/epoch window does not prove DNS or Internet health. Event schema
+remains v1. New aggregate SDK, service/GUI integration and actual counter traffic
+qualification are separate from desktop owner acceptance and trusted release signing.

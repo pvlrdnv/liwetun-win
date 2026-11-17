@@ -297,7 +297,7 @@ class _HomeState extends State<_Home> {
                     ServiceState.connecting =>
                       'Служба запускает туннель. Работа интернета ещё не подтверждена.',
                     ServiceState.tunnelReady =>
-                      'Передача данных через туннель ещё не подтверждена.',
+                      'Работа интернета через туннель ещё не проверена.',
                     ServiceState.recovering =>
                       'Связь восстанавливается. Состояние интернета неизвестно.',
                     ServiceState.error =>
@@ -326,6 +326,11 @@ class _HomeState extends State<_Home> {
             ],
           ),
         ),
+      ),
+      const SizedBox(height: 16),
+      Text(
+        widget.controller.trafficNotice,
+        style: const TextStyle(fontSize: 12),
       ),
       const SizedBox(height: 20),
       FilledButton.icon(

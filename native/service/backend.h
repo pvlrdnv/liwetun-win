@@ -17,12 +17,14 @@ class Backend {
   void Shutdown();
   bool Busy() const { return busy_.load(); }
   void Snapshot(Reply& reply) const;
+  void SnapshotTraffic(TrafficReply& reply) const;
   HANDLE Done() const { return done_.get(); }
  private:
   using StateCallback = void (*)(void*, int);
   using InfoCallback = void (*)(void*, void*);
   using CoreStart = trusttunnel_s* (*)(const char*, bool, StateCallback, void*, InfoCallback, void*);
   using CoreStop = void (*)(trusttunnel_s*);
+  using TrafficRead = uint32_t (*)(trusttunnel_s*, uint32_t, traffic::Snapshot*);
   using Decode = char* (*)(const char*);
   using Free = void (*)(char*);
   bool Load(const Image& service);
@@ -39,6 +41,10 @@ class Backend {
   Image sdk_, wintun_;
   CoreStart start_ = nullptr;
   CoreStop stop_fn_ = nullptr;
+  TrafficRead traffic_read_ = nullptr;
+  mutable std::mutex core_mutex_;
+  trusttunnel_s* observed_core_ = nullptr;
+  uint64_t instance_ = 0;
   Decode decode_ = nullptr;
   Free free_ = nullptr;
   Handle done_;

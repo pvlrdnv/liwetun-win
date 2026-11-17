@@ -158,7 +158,16 @@ void WINAPI Main(DWORD, LPWSTR*) {
           }
         }
         if (!payload.empty()) SecureZeroMemory(payload.data(), payload.size());
-        if (PipeIo(pipe.get(), stopping.get(), &reply, sizeof(reply), true)) {
+        TrafficReply traffic;
+        void* response = &reply;
+        DWORD response_size = static_cast<DWORD>(sizeof(reply));
+        if (Valid(request) && request.command == Command::Traffic && reply.code == Code::Ok) {
+          traffic.status = reply;
+          backend.SnapshotTraffic(traffic);
+          response = &traffic;
+          response_size = static_cast<DWORD>(sizeof(traffic));
+        }
+        if (PipeIo(pipe.get(), stopping.get(), response, response_size, true)) {
           // Write completion only queues the reply. DisconnectNamedPipe would
           // discard it if the client has not read yet. Wait for this one-shot
           // client to close after consuming/validating the reply; PipeIo keeps

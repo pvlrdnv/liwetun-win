@@ -1,0 +1,24 @@
+{
+  "source_run": 44038398682,
+  "source_commit": "84f9da68a2fee2e7cb4cb42ef2f80e264aad4d08",
+  "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+  "privacy_policy_version": 1,
+  "files": {
+    "trusttunnel.dll": "fcafa344cd1ce143a928c3f1cfc63f25686e7f6b739aa7ed58d4736d082d1ca5",
+    "wintun.dll": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce"
+  },
+  "source_pinned_candidate": true,
+  "source_pin_manifest_sha256": "cf9d5d299aeae007c9314b4235d8a45ad52076de46da5e5150e952d3d05cd474",
+  "conan_input_lock_sha256": "2680c44369acf682190acbb322273a3a0a648edcbbba851e99b0c0166595c246",
+  "network_requalified": false,
+  "release_qualified": false,
+  "network_qualification_scope": "not_requalified",
+  "qualification_receipt": "docs/evidence/sdk-traffic-44038398682.json",
+  "windows_10_qualified": false,
+  "windows_11_qualified": false,
+  "native_ipv6_egress_qualified": false,
+  "traffic_abi": 1,
+  "traffic_profile_manifest_sha256": "40d21c0edd085dc7bae109ae97f9bc0ef0d338e42e83c8e712c872383bd88686",
+  "traffic_abi_header_sha256": "1541911357ef9fe588da9894167e4d39df263b8527a1a3a2fa738017768c22bd",
+  "sdk_variant": "aggregate_traffic_candidate"
+}

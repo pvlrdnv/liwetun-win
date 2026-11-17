@@ -13,6 +13,8 @@ import 'native/trusttunnel.dart';
 import 'native/service.dart';
 import 'native/storage.dart';
 import 'native/desktop.dart';
+import 'native/traffic.dart';
+import 'domain/traffic_health.dart';
 
 enum ProfileStorageState { memoryOnly, loading, saved, saving, blocked }
 
@@ -113,6 +115,7 @@ final class AppController extends ChangeNotifier {
     ServiceGateway? service,
     StorageGateway? storage,
     DesktopGateway? desktop,
+    TrafficGateway? traffic,
     DateTime Function()? clock,
     SubscriptionTransport? subscriptionTransport,
     int Function(int maximum)? jitter,
@@ -121,6 +124,7 @@ final class AppController extends ChangeNotifier {
        _service = service ?? const WindowsService(),
        _storage = storage ?? const WindowsStorage(),
        _desktop = desktop ?? const WindowsDesktop(),
+       _traffic = traffic ?? const WindowsTraffic(),
        _clock = clock ?? DateTime.now,
        _subscriptionTransport =
            subscriptionTransport ?? HttpSubscriptionTransport(),
@@ -136,6 +140,21 @@ final class AppController extends ChangeNotifier {
   final ServiceGateway _service;
   final StorageGateway _storage;
   final DesktopGateway _desktop;
+  final TrafficGateway _traffic;
+  String get trafficNotice {
+    final observation = journal.trafficObservation;
+    if (!observation.usable) return 'Показатели трафика пока недоступны.';
+    final window = switch (journal.trafficHealth) {
+      TrafficHealth.unknown => 'Набираем окно наблюдения 20 секунд.',
+      TrafficHealth.idle => 'В окне наблюдения нет учтённого трафика.',
+      TrafficHealth.flowing => 'В окне наблюдения есть входящие данные.',
+      TrafficHealth.outgoingWithoutReply =>
+        'В окне наблюдения есть отправка без входящих данных.',
+    };
+    return 'Учтённые данные соединений через сервер: отправлено ${observation.tx} Б, получено ${observation.rx} Б. '
+        '$window Проверка интернета и DNS отдельно ещё недоступна.';
+  }
+
   bool _closeToTray = false;
   bool get closeToTray => _closeToTray;
   bool desktopAvailable = false;
@@ -925,6 +944,7 @@ final class AppController extends ChangeNotifier {
     }
     _requesting = true;
     _serviceEpoch++;
+    journal.invalidateTraffic();
     notifyListeners();
     final stopping = _stopPossible;
     if (stopping && _activeConnection?.sourceId != null) {
@@ -1020,6 +1040,19 @@ final class AppController extends ChangeNotifier {
           EventId.serviceObservationLost,
           reason: ReasonCode.serviceUnavailable,
         );
+      }
+      if (response.code == ServiceCode.ok &&
+          response.state == ServiceState.tunnelReady) {
+        TrafficObservation observation;
+        try {
+          observation = await _traffic.read().timeout(
+            const Duration(seconds: 4),
+          );
+        } catch (_) {
+          observation = const TrafficObservation(code: ServiceCode.timeout);
+        }
+        if (_disposed || epoch != _serviceEpoch) return;
+        journal.observeTraffic(observation);
       }
       notifyListeners();
     } finally {

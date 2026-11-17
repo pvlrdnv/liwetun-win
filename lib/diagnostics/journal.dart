@@ -9,6 +9,8 @@ import '../domain/import_link.dart';
 import '../native/environment.dart';
 import '../native/service.dart';
 import '../native/storage.dart';
+import '../native/traffic.dart';
+import '../domain/traffic_health.dart';
 
 part 'journal_persistence.dart';
 
@@ -33,6 +35,11 @@ enum EventId {
   subscriptionAccessLost,
   subscriptionRefreshStarted,
   subscriptionRefreshFailed,
+  trafficObservationAvailable,
+  trafficObservationUnavailable,
+  trafficIdleObserved,
+  trafficFlowObserved,
+  trafficOutgoingWithoutReplyObserved,
 }
 
 enum ReasonCode {
@@ -118,6 +125,62 @@ final class Journal {
   void observeService(ServiceStatus status) {
     _serviceObservation = status;
     _serviceObservedAt = _clock().toUtc();
+    if (status.code != ServiceCode.ok ||
+        status.state != ServiceState.tunnelReady) {
+      invalidateTraffic();
+    }
+  }
+
+  final TrafficWindow _trafficWindow = TrafficWindow();
+  TrafficObservation? _trafficObservation;
+  DateTime? _trafficObservedAt;
+  TrafficHealth _trafficHealth = TrafficHealth.unknown;
+  bool get _trafficFresh {
+    final observed = _trafficObservedAt;
+    if (observed == null) return false;
+    final age = _clock().toUtc().difference(observed);
+    return !age.isNegative && age <= const Duration(seconds: 5);
+  }
+
+  TrafficObservation get trafficObservation => _trafficFresh
+      ? (_trafficObservation ?? const TrafficObservation())
+      : const TrafficObservation();
+  TrafficHealth get trafficHealth =>
+      _trafficFresh ? _trafficHealth : TrafficHealth.unknown;
+  void invalidateTraffic() {
+    _trafficObservation = null;
+    _trafficHealth = TrafficHealth.unknown;
+    _trafficWindow.clear();
+  }
+
+  void observeTraffic(TrafficObservation value) {
+    if (_serviceObservation?.code != ServiceCode.ok ||
+        _serviceObservation?.state != ServiceState.tunnelReady) {
+      invalidateTraffic();
+      return;
+    }
+    if (!_trafficFresh) _trafficWindow.clear();
+    final previous = _trafficObservation;
+    final oldHealth = _trafficHealth;
+    _trafficObservation = value;
+    _trafficObservedAt = _clock().toUtc();
+    _trafficHealth = _trafficWindow.observe(value);
+    if (value.usable && previous?.usable != true) {
+      record(EventId.trafficObservationAvailable);
+    }
+    if (!value.usable && previous?.usable == true) {
+      record(EventId.trafficObservationUnavailable);
+    }
+    if (oldHealth != _trafficHealth &&
+        _trafficHealth != TrafficHealth.unknown) {
+      record(switch (_trafficHealth) {
+        TrafficHealth.idle => EventId.trafficIdleObserved,
+        TrafficHealth.flowing => EventId.trafficFlowObserved,
+        TrafficHealth.outgoingWithoutReply =>
+          EventId.trafficOutgoingWithoutReplyObserved,
+        TrafficHealth.unknown => EventId.trafficObservationUnavailable,
+      });
+    }
   }
 
   void record(
@@ -163,7 +226,7 @@ final class Journal {
   Uint8List exportZip() {
     final snapshot = events;
     final summary = {
-      'schema_version': 2,
+      'schema_version': 3,
       'app_version': '0.1.0+1',
       'environment': environment.toJson(),
       'journal_storage': _disk.state.name,
@@ -181,7 +244,19 @@ final class Journal {
             : null,
       },
       'core_versions': <String, String>{},
-      'traffic_metrics': 'unknown',
+      'traffic_metrics': trafficObservation.usable
+          ? 'endpoint_client_payload'
+          : 'unknown',
+      'traffic_observation': {
+        ...trafficObservation.toJson(),
+        'observed_at': _trafficObservedAt?.toIso8601String(),
+        'window': trafficHealth.name,
+        'scope': 'registered_endpoint_client_payload',
+        'minimum_window_ms': 20000,
+        'maximum_sample_gap_ms': 5000,
+        'proves_internet': false,
+        'proves_dns': false,
+      },
       'event_count': snapshot.length,
       'period_start': snapshot.isEmpty
           ? null

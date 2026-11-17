@@ -106,6 +106,12 @@ try {
     $runtimeReady = $query.runtime_ready
     $checks.Add('signed_owner_query')
     $checks.Add('unknown_metrics_and_core_state_preserved')
+    $traffic = (& $client --traffic | ConvertFrom-Json)
+    $expectedTrafficFlags = if ($env:TRAFFIC_METRICS -eq 'true') { 1 } else { 0 }
+    if ($LASTEXITCODE -ne 0 -or $traffic.code -ne 0 -or $traffic.flags -ne $expectedTrafficFlags -or $null -ne $traffic.instance -or $null -ne $traffic.epoch -or $null -ne $traffic.at_ms -or $null -ne $traffic.tx -or $null -ne $traffic.rx -or $null -ne $traffic.last_tx_ms -or $null -ne $traffic.last_rx_ms -or $null -ne $traffic.core_state) { throw 'Inactive traffic capability fabricated observations' }
+    New-Item -ItemType Directory -Force build/service-evidence | Out-Null
+    $traffic | ConvertTo-Json | Set-Content build/service-evidence/traffic-capability.json
+    $checks.Add('read_only_traffic_capability_without_fabricated_zero_metrics')
     $holding = [System.Diagnostics.Process]::new()
     $holding.StartInfo = [System.Diagnostics.ProcessStartInfo]::new($client, '--hold-pipe')
     $holding.StartInfo.UseShellExecute = $false

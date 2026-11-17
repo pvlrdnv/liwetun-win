@@ -17,6 +17,16 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: x64
+      - name: Verify aggregate counter and wire validation without network
+        run: |
+          New-Item -ItemType Directory -Force build | Out-Null
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX native/traffic/test_counter.cpp /Fobuild/traffic-counter.obj /Febuild/traffic-counter.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Aggregate counter contract build failed' }
+          & ./build/traffic-counter.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Aggregate counter contract checks failed' }
       - name: Install pinned development tools on disposable runner
         run: |
           $flutterDir = Join-Path $env:RUNNER_TEMP 'liwetun-flutter'
@@ -96,6 +106,9 @@ jobs:
             runner_os = 'windows-2022'
             executable_sha256 = (Get-FileHash -Algorithm SHA256 $exe).Hash.ToLowerInvariant()
             native_import = 'verified'
+            aggregate_counter_contract = 'verified_without_network'
+            traffic_read_admission = 'untrusted_installation_rejected_before_service_access'
+            diagnostic_summary_schema = 3
             protected_storage_channel = 'verified'
             desktop_tray_contract = 'conditional_capability_guard_verified'
             desktop_tray_available = $tray.available

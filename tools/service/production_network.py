@@ -113,12 +113,31 @@ def recovery_evidence_valid(protocol, state, https_ok, https_tun, dns_ok, dns_tu
                     if key != protocol))
 
 
+def aggregate_progress(before, after):
+    """Closed counter evidence only; endpoint/DNS transport proof stays separate."""
+    def valid(value):
+        return (isinstance(value, dict) and type(value.get('code')) is int and value.get('code') == 0 and value.get('flags') == 3
+                and value.get('core_state') == 2
+                and all(type(value.get(key)) is int and 0 <= value[key] <= 2**63 - 1
+                        for key in ['instance', 'epoch', 'at_ms', 'tx', 'rx'])
+                and value['instance'] > 0 and value['epoch'] > 0)
+    observed = valid(before) and valid(after)
+    same = observed and before['instance'] == after['instance'] and before['epoch'] == after['epoch']
+    monotonic = observed and after['at_ms'] > before['at_ms'] and after['tx'] >= before['tx'] and after['rx'] >= before['rx']
+    tx = after['tx'] - before['tx'] if same and monotonic else None
+    rx = after['rx'] - before['rx'] if same and monotonic else None
+    return dict(passed=bool(same and monotonic and tx > 0 and rx > 0),
+                same_instance_and_epoch=bool(same), monotonic=bool(monotonic),
+                tx_delta=tx, rx_delta=rx, proves_dns=False, proves_internet=False)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--client', type=str, required=True)
     args = parser.parse_args()
     if os.name != 'nt' or os.environ.get('GITHUB_ACTIONS') != 'true':
         raise RuntimeError('disposable_windows_required')
+    traffic_required = os.environ.get('TRAFFIC_METRICS') == 'true'
     run_id = os.environ['GITHUB_RUN_ID']
     distro = os.environ['LIWETUN_CI_DISTRO']
     if not re.fullmatch(r'[0-9]{1,20}', run_id) or distro != 'LiWeTunCI' + run_id:
@@ -165,7 +184,7 @@ def main():
     if tun() is not None:
         raise RuntimeError('preexisting_adapter')
     stage = 'fixture_preparation'
-    endpoint = forwarder = session = watchdog = wfp_watch = None
+    endpoint = forwarder = session = watchdog = wfp_watch = traffic_watch = None
     restored = False
     try:
         physical = ps("""
@@ -275,6 +294,15 @@ def main():
                     https_addresses = [https_addresses]
                 if not isinstance(https_addresses, list) or not https_addresses:
                     raise RuntimeError('ipv6_tun_address_missing')
+            if traffic_required:
+                stage = 'aggregate_traffic_baseline'
+                for _ in range(10):
+                    traffic_before = session.command('traffic')
+                    if traffic_before.get('flags') == 3:
+                        break
+                    time.sleep(.1)
+                else:
+                    raise RuntimeError('aggregate_traffic_unavailable')
             stage = 'ordinary_https'
             delivered, source = ordinary_https(SYNTHETIC_IPV6 if synthetic_ipv6 else origin,
                                                https_addresses,
@@ -374,6 +402,19 @@ def main():
                           adapter_absent_at_refusal=info is None,
                           endpoint_bytes_by_transport=refusal_delta,
                           endpoint_tcp_connections=refusal_stats['tcp_connected'])
+        if traffic_required:
+            stage = 'aggregate_traffic_observation'
+            traffic_after = session.command('traffic')
+            result['aggregate_traffic_after'] = traffic_after
+            if profile == 'valid':
+                progress = aggregate_progress(traffic_before, traffic_after)
+                result.update(aggregate_traffic_before=traffic_before, aggregate_traffic_progress=progress)
+                traffic_ok = traffic_ok and progress['passed']
+            else:
+                unavailable = (not traffic_after.get('flags', 0) & 2
+                               and traffic_after.get('tx') is None and traffic_after.get('rx') is None)
+                result['aggregate_traffic_unknown_after_refusal'] = unavailable
+                traffic_ok = traffic_ok and unavailable
         if termination == 'endpoint-restart':
             if not traffic_ok:
                 raise RuntimeError('pre_recovery_traffic_failed')
@@ -436,6 +477,11 @@ def main():
             result.update(recovery_attempts=attempts, recovered_without_new_start=recovered,
                           desktop_sleep_or_network_change_qualified=False)
             traffic_ok = traffic_ok and recovered
+        if traffic_required and profile == 'valid':
+            stage = 'concurrent_traffic_reader'
+            traffic_watch = Child([str(client), '--traffic-watch'])
+            if traffic_watch.receive() != 'ready':
+                raise RuntimeError('aggregate_traffic_watcher_not_ready')
         stage = 'terminate_and_restore'
         # No stdin EOF/graceful Stop in this fault case: Child.close without a
         # command kills exactly its owned process. The service must detect loss
@@ -481,6 +527,15 @@ def main():
             wfp_restored = (wfp_restored and wfp_after.get('passed') is True
                             and result['retained_service_process_ended'])
         result['sdk_wfp_sessions_restored'] = wfp_restored
+        if traffic_watch:
+            stage = 'concurrent_traffic_reader_completion'
+            watched = json.loads(traffic_watch.receive())
+            watcher_exit = traffic_watch.process.wait(timeout=15)
+            watched['exit_code'] = watcher_exit
+            result['aggregate_traffic_concurrent_stop'] = watched
+            traffic_ok = (traffic_ok and watcher_exit == 0 and watched.get('passed') is True
+                          and watched.get('tunnel_started_by_watcher') is False
+                          and watched.get('inactive_after_active', 0) > 0)
         result['passed'] = traffic_ok and restored and wfp_restored
     except Exception as error:
         result['failed_stage'] = stage
@@ -512,6 +567,8 @@ def main():
                 result['passed'] = False
                 result['deadline_result_unavailable'] = True
             watchdog.close()
+        if traffic_watch:
+            traffic_watch.close()
         if endpoint:
             endpoint.close('quit')
         if forwarder:

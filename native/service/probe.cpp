@@ -19,8 +19,50 @@ std::optional<bool> AdapterPresent(const wchar_t* alias) {
   FreeMibTable(table);
   return found;
 }
+void PrintTraffic(const TrafficReply& data) {
+  const auto& sample = data.sample;
+  const bool valid = (sample.flags & traffic::kValid) != 0;
+  auto optional = [](uint64_t value, bool known) {
+    if (known && value <= traffic::kMaximum) std::cout << value;
+    else std::cout << "null";
+  };
+  std::cout << "{\"code\":" << static_cast<uint32_t>(data.status.code)
+      << ",\"flags\":" << sample.flags << ",\"instance\":";
+  optional(data.instance, data.instance != 0);
+  std::cout << ",\"epoch\":"; optional(sample.epoch, sample.epoch != 0);
+  std::cout << ",\"at_ms\":"; optional(sample.at_ms, sample.epoch != 0);
+  std::cout << ",\"tx\":"; optional(sample.tx, valid);
+  std::cout << ",\"rx\":"; optional(sample.rx, valid);
+  std::cout << ",\"last_tx_ms\":"; optional(sample.last_tx_ms, valid);
+  std::cout << ",\"last_rx_ms\":"; optional(sample.last_rx_ms, valid);
+  std::cout << ",\"core_state\":"; optional(sample.state, sample.state <= 5);
+  std::cout << "}" << std::endl;
+}
 int wmain(int argc, wchar_t** argv) {
   const std::wstring mode = argc >= 2 ? argv[1] : L"";
+  if (mode == L"--traffic-watch" && argc == 2) {
+    wchar_t disposable[8]{};
+    if (GetEnvironmentVariableW(L"GITHUB_ACTIONS", disposable, 8) != 4 || std::wstring(disposable) != L"true") return 70;
+    auto data = ServiceTrafficRequest();
+    if (!(data.sample.flags & traffic::kValid)) { std::cout << "not_ready" << std::endl; return 71; }
+    std::cout << "ready" << std::endl;
+    const ULONGLONG deadline = GetTickCount64() + 8000;
+    unsigned reads = 1, inactive = 0;
+    bool valid = true;
+    while (GetTickCount64() < deadline && reads < 1000) {
+      data = ServiceTrafficRequest();
+      ++reads;
+      valid = valid && traffic::Valid(data.sample);
+      if (!(data.sample.flags & traffic::kValid)) ++inactive;
+      Sleep(5);
+    }
+    const bool passed = valid && inactive > 0;
+    std::cout << "{\"passed\":" << (passed ? "true" : "false")
+        << ",\"reads\":" << reads << ",\"inactive_after_active\":" << inactive
+        << ",\"tunnel_started_by_watcher\":false}" << std::endl;
+    return passed ? 0 : 72;
+  }
+  if (mode == L"--traffic" && argc == 2) { PrintTraffic(ServiceTrafficRequest()); return 0; }
   if (mode == L"--wfp-state" && argc == 2) return InspectOwnedWfpSessions();
   if (mode == L"--wfp-watch" && argc == 2) return InspectOwnedWfpSessions(true);
   if (mode == L"--disconnect-regression") {
@@ -83,6 +125,9 @@ int wmain(int argc, wchar_t** argv) {
     std::string command;
     while (std::getline(std::cin, command)) {
       if (command == "query") print(ServiceRequest(Command::Query));
+      else if (command == "traffic") {
+        PrintTraffic(ServiceTrafficRequest());
+      }
       else if (command == "stop") { print(ServiceRequest(Command::Stop)); return 0; }
       else return 51;
     }
@@ -170,6 +215,11 @@ int wmain(int argc, wchar_t** argv) {
     request.command = Command::Start;
     request.length = kMaxPayload + 1;
     if (Valid(request)) return 3;
+    request.command = Command::Traffic;
+    request.length = 0;
+    if (!Valid(request)) return 4;
+    request.length = 1;
+    if (Valid(request)) return 5;
     std::cout << "protocol_checks_passed\n";
     return 0;
   }

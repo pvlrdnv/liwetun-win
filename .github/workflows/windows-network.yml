@@ -6,6 +6,10 @@ on:
         description: Qualify the separately pinned immutable-source SDK candidate
         type: boolean
         default: false
+      traffic_metrics:
+        description: Qualify the separate aggregate-traffic SDK candidate (requires source_pins)
+        type: boolean
+        default: false
       sdk_run_id:
         description: Successful SDK qualification run in this repository
         required: true
@@ -78,6 +82,7 @@ jobs:
     timeout-minutes: 35
     env:
       SOURCE_PINNED: ${{ inputs.source_pins }}
+      TRAFFIC_METRICS: ${{ inputs.traffic_metrics }}
       SDK_RUN_ID: ${{ inputs.sdk_run_id }}
       GH_TOKEN: ${{ github.token }}
       LIWETUN_CI_DISTRO: LiWeTunCI${{ github.run_id }}
@@ -104,6 +109,7 @@ jobs:
           arch: x64
       - name: Build real service with explicit disposable network fixture mode
         run: |
+          if ($env:TRAFFIC_METRICS -eq 'true' -and $env:LIWETUN_PRODUCTION_PROBE -ne 'true') { throw 'Aggregate traffic qualification requires ordinary traffic mode' }
           if ($env:LIWETUN_PRODUCTION_PROBE -ne 'true' -and $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4') { throw 'Synthetic IPv6 requires production probe mode' }
           rustup toolchain install 1.95.0 --profile minimal
           if ($LASTEXITCODE -ne 0) { throw 'Rust install failed' }
@@ -119,10 +125,14 @@ jobs:
       - name: Fetch previously qualified SDK from this repository
         run: |
           if ($env:SDK_RUN_ID -notmatch '^[0-9]{1,20}$') { throw 'Invalid SDK run ID' }
-          $pinFile = if ($env:SOURCE_PINNED -eq 'true') { 'native/sdk/runtime-sources.json' } else { 'native/sdk/runtime.json' }
+          if ($env:TRAFFIC_METRICS -eq 'true' -and $env:SOURCE_PINNED -ne 'true') { throw 'Traffic SDK requires immutable source pins' }
+          $pinFile = if ($env:TRAFFIC_METRICS -eq 'true') { 'native/sdk/runtime-traffic.json' } elseif ($env:SOURCE_PINNED -eq 'true') { 'native/sdk/runtime-sources.json' } else { 'native/sdk/runtime.json' }
           $pin = Get-Content $pinFile -Raw | ConvertFrom-Json
           if ($env:SOURCE_PINNED -eq 'true') {
             if ($pin.source_pin_manifest_sha256 -ne (Get-FileHash native/sdk/source-pins.json -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.conan_input_lock_sha256 -ne (Get-FileHash native/sdk/conan-sources.lock -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.source_pinned_candidate -ne $true -or $pin.release_qualified -ne $false) { throw 'Candidate SDK source receipt mismatch' }
+          }
+          if ($env:TRAFFIC_METRICS -eq 'true') {
+            if ($pin.traffic_profile_manifest_sha256 -ne (Get-FileHash native/sdk/traffic-inputs.json -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.traffic_abi_header_sha256 -ne (Get-FileHash native/traffic/traffic_abi.h -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.traffic_abi -ne 1 -or $pin.sdk_variant -ne 'aggregate_traffic_candidate') { throw 'Traffic SDK receipt mismatch' }
           }
           if ($env:SDK_RUN_ID -ne [string]$pin.source_run) { throw 'SDK run does not match reviewed runtime manifest' }
           $run = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:SDK_RUN_ID" | ConvertFrom-Json

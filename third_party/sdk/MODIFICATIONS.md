@@ -43,3 +43,21 @@ packages include `SOURCE_PINS.json` and `CANDIDATE_SOURCE_RECEIPT.json` alongsid
 these notices. The original archived notice inventory retains its earlier
 build provenance; the separate candidate receipt checks the new build's package
 notice bodies and identifies packages still relying on source supplements.
+
+Optional aggregate-traffic profile (`tools/sdk/traffic_profile.py`), for the
+separately recorded `runtime-traffic.json` candidate only:
+
+- Adds an aggregate-only positive-byte observer before the existing per-connection
+  statistics notification threshold. Forwarded deltas contain no flow identifier,
+  address, domain or application name. Existing registered endpoint-client flows
+  define the scope; this is not a complete DNS or adapter traffic total.
+- Adds closed internal/public aggregate event forwarding and an optional callback
+  in the pinned TrustTunnel wrapper. Existing raw logger suppression and disabled
+  per-destination event generation stay in place.
+- Adds a fixed-size read-only snapshot export with state epochs, monotonic times,
+  bounded totals and invalidity flags. Counter failures are contained and do not
+  escape into routing callbacks. No routing/TLS/DNS/recovery policy change.
+- Modified source files have an explicit LiWeTun modification header. Exact
+  canonical input, added-header and output digests are recorded separately in
+  `traffic-inputs.json` / `traffic-profile.json`. This profile is opt-in and does
+  not replace either previous qualified runtime receipt.

@@ -15,6 +15,7 @@ import 'package:liwetun/domain/subscription.dart';
 import 'package:liwetun/network/subscription_transport.dart';
 import 'package:liwetun/native/environment.dart';
 import 'package:liwetun/native/desktop.dart';
+import 'package:liwetun/native/traffic.dart';
 import 'package:liwetun/diagnostics/journal.dart';
 
 final class _RealHttp extends HttpOverrides {}
@@ -44,6 +45,12 @@ void main() {
       'runtime_ready': null,
       'core_state': null,
     });
+    final traffic = await const WindowsTraffic().read();
+    expect(traffic.code, ServiceCode.untrustedInstallation);
+    expect(traffic.supported, false);
+    expect(traffic.valid, false);
+    expect(traffic.tx, isNull);
+    expect(traffic.rx, isNull);
     final capabilities = await WindowsTrustTunnel.channel
         .invokeMapMethod<String, dynamic>('capabilities');
     expect(capabilities?['canInspect'], true);

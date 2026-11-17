@@ -14,6 +14,30 @@ ServiceChannel::Value ServiceChannel::Encode(const liwetun::Reply& reply) {
       {Value("coreState"), reply.core_state <= 5 ? Value(static_cast<int32_t>(reply.core_state)) : Value()},
   });
 }
+ServiceChannel::Value ServiceChannel::EncodeTraffic(const liwetun::TrafficReply& reply) {
+  const auto& sample = reply.sample;
+  const bool supported = (sample.flags & liwetun::traffic::kSupported) != 0;
+  const bool valid = supported && (sample.flags & liwetun::traffic::kValid) != 0;
+  const auto number = [](uint64_t value, bool known) -> Value {
+    return known && value <= liwetun::traffic::kMaximum ? Value(static_cast<int64_t>(value)) : Value();
+  };
+  const auto base = Encode(reply.status);
+  const auto& values = std::get<flutter::EncodableMap>(base);
+  return Value(flutter::EncodableMap{
+      {Value("code"), values.at(Value("code"))},
+      {Value("supported"), Value(supported)},
+      {Value("valid"), Value(valid)},
+      {Value("flags"), Value(static_cast<int32_t>(sample.flags))},
+      {Value("instance"), number(reply.instance, supported && reply.instance != 0)},
+      {Value("epoch"), number(sample.epoch, supported && sample.epoch != 0)},
+      {Value("atMs"), number(sample.at_ms, supported && sample.epoch != 0)},
+      {Value("tx"), number(sample.tx, valid)},
+      {Value("rx"), number(sample.rx, valid)},
+      {Value("lastTxMs"), number(sample.last_tx_ms, valid)},
+      {Value("lastRxMs"), number(sample.last_rx_ms, valid)},
+      {Value("coreState"), sample.state <= 5 ? Value(static_cast<int32_t>(sample.state)) : Value()},
+  });
+}
 ServiceChannel::ServiceChannel(flutter::BinaryMessenger* messenger, HWND window) : window_(window) {
   channel_ = std::make_unique<flutter::MethodChannel<Value>>(
       messenger, "top.likeweb.liwetun/service", &flutter::StandardMethodCodec::GetInstance());
@@ -41,6 +65,7 @@ ServiceChannel::ServiceChannel(flutter::BinaryMessenger* messenger, HWND window)
     liwetun::Command command;
     std::string profile;
     if (call.method_name() == "query") command = liwetun::Command::Query;
+    else if (call.method_name() == "traffic") command = liwetun::Command::Traffic;
     else if (call.method_name() == "stop") command = liwetun::Command::Stop;
     else if (call.method_name() == "start") {
       command = liwetun::Command::Start;
@@ -61,7 +86,11 @@ ServiceChannel::ServiceChannel(flutter::BinaryMessenger* messenger, HWND window)
     if (stopping_ || jobs_.size() >= 4) {
       if (!profile.empty()) SecureZeroMemory(profile.data(), profile.size());
       liwetun::Reply reply{}; reply.code = liwetun::Code::Busy; reply.core_state = UINT32_MAX;
-      result->Success(Encode(reply)); return;
+      if (command == liwetun::Command::Traffic) {
+        liwetun::TrafficReply traffic; traffic.status = reply;
+        result->Success(EncodeTraffic(traffic));
+      } else { result->Success(Encode(reply)); }
+      return;
     }
     jobs_.emplace_back(command, std::move(profile), std::move(result));
     wake_.notify_one();
@@ -81,15 +110,18 @@ void ServiceChannel::Run() {
     if (stopping_) return;
     Job job = std::move(jobs_.front()); jobs_.pop_front();
     lock.unlock();
-    auto reply = liwetun::ServiceRequest(job.command, job.profile, job.command == liwetun::Command::Start);
+    liwetun::TrafficReply traffic;
+    const bool is_traffic = job.command == liwetun::Command::Traffic;
+    auto reply = is_traffic ? (traffic = liwetun::ServiceTrafficRequest()).status :
+        liwetun::ServiceRequest(job.command, job.profile, job.command == liwetun::Command::Start);
     lock.lock();
     if (stopping_) return;
-    completions_.push_back({std::move(job.result), reply});
+    completions_.push_back({std::move(job.result), reply, traffic, is_traffic});
     PostMessageW(window_, kCompletion, 0, 0);
   }
 }
 void ServiceChannel::Complete() {
   std::deque<Completion> values;
   { std::lock_guard lock(mutex_); values.swap(completions_); }
-  for (auto& value : values) value.result->Success(Encode(value.reply));
+  for (auto& value : values) value.result->Success(value.is_traffic ? EncodeTraffic(value.traffic) : Encode(value.reply));
 }

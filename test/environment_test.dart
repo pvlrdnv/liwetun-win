@@ -104,7 +104,7 @@ void main() {
       expect(summary()['service_observation']['code'], isNull);
       journal.observeService(const ServiceStatus(code: ServiceCode.denied));
       var report = summary();
-      expect(report['schema_version'], 2);
+      expect(report['schema_version'], 3);
       expect(report['environment']['windows_api_build'], 19045);
       expect(report['service_observation']['code'], 'denied');
       expect(report['service_observation']['state'], isNull);

@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include "../traffic/traffic_validate.h"
 
 namespace liwetun {
 constexpr wchar_t kServiceName[] = L"LiWeTun";
@@ -7,7 +8,7 @@ constexpr wchar_t kPipeName[] = L"\\\\.\\pipe\\LiWeTun.Control.v1";
 constexpr uint32_t kMagic = 0x3154574c;
 constexpr uint32_t kVersion = 1;
 constexpr uint32_t kMaxPayload = 8192;
-enum class Command : uint32_t { Ping = 1, Query = 2, Start = 3, Stop = 4 };
+enum class Command : uint32_t { Ping = 1, Query = 2, Start = 3, Stop = 4, Traffic = 5 };
 enum class Code : uint32_t {
   Ok, Malformed, Denied, Busy, RuntimeUnavailable, ProfileRejected, CoreFailure,
   ServiceUnavailable, Timeout, UntrustedInstallation
@@ -30,12 +31,20 @@ struct Reply {
   uint32_t runtime_ready = 0;
   uint32_t core_state = 0;
 };
+// Optional read-only extension. Existing command replies stay exactly 32 bytes.
+struct TrafficReply {
+  Reply status;
+  uint64_t instance = 0;
+  traffic::Snapshot sample;
+};
+static_assert(sizeof(TrafficReply) == 104);
+static_assert(offsetof(TrafficReply, instance) == sizeof(Reply));
 static_assert(sizeof(Request) == 24);
 static_assert(sizeof(Reply) == 32);
 inline bool Valid(const Request& r) {
   const auto command = static_cast<uint32_t>(r.command);
   return r.magic == kMagic && r.version == kVersion && r.nonce != 0 &&
-      command >= 1 && command <= 4 && r.length <= kMaxPayload &&
+      command >= 1 && command <= 5 && r.length <= kMaxPayload &&
       (r.command == Command::Start ? r.length >= 20 : r.length == 0);
 }
 }  // namespace liwetun

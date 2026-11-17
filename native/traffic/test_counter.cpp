@@ -1,4 +1,5 @@
 #include "traffic_counter.h"
+#include "traffic_validate.h"
 #include <atomic>
 #include <cstdlib>
 #include <thread>
@@ -13,6 +14,16 @@ int main() {
   Check(initial.flags == kSupported && initial.last_tx_ms == kAbsent && initial.epoch == 1);
   counter.State(2);
   auto ready = counter.Read();
+  Check(Valid(ready) && Valid(Snapshot{}));
+  auto bad = ready;
+  bad.flags |= 128;
+  Check(!Valid(bad));
+  bad = ready; bad.last_rx_ms = 1;
+  Check(!Valid(bad));
+  bad = ready; bad.tx = kMaximum + 1;
+  Check(!Valid(bad));
+  bad = ready; bad.flags |= kObservationGap;
+  Check(!Valid(bad));
   Check(ready.flags == (kSupported | kValid) && ready.tx == 0 && ready.rx == 0);
   counter.Add(3, 0); // Below upstream threshold; one-sided traffic is observed immediately.
   auto tx = counter.Read();

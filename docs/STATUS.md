@@ -116,11 +116,27 @@ overflow/clock/state/gap validity. Callback failures cannot escape into routing.
 Nine exact canonical-LF baseline file digests and added-header digests are pinned;
 all guards/anchors pass before vendor edits. Real pinned-source privacy + traffic
 preparation PASS locally; four source-guard tests PASS. Local C++ compilation is
-unavailable (no compiler installed); Windows counter/concurrency tests, full SDK
-build and read-only ABI export checks are prepared but pending. This is an opt-in
+unavailable (no compiler installed). Windows counter/concurrency tests, full SDK
+build and read-only ABI export checks **PASS** (44038398682), source 84f9da6.
+[Receipt](evidence/sdk-traffic-44038398682.json). The DLL hash is recorded in
+`native/sdk/runtime-traffic.json`, separate from both existing runtime pins. This is an opt-in
 `traffic_metrics=true, source_pins=true` SDK workflow, with a distinct version and
-receipt. Existing runtime/source candidate pins and application metrics remain
-unchanged/unavailable. No network/desktop/release qualification of this SDK yet.
+receipt. Existing runtime/source candidate pins remain unchanged. No network/desktop/release
+qualification of this SDK yet.
+
+The service now implements optional read-only command 5 with a 104-byte reply;
+existing command replies stay 32 bytes / protocol v1. It borrows the active SDK
+pointer under a short mutex, withdraws it before teardown, and adds a signed-safe
+random instance token so a restart cannot alias another counter epoch. Unsupported
+SDKs and missing/invalid data remain unknown. The GUI worker marshals only closed
+numeric/boolean metadata; controller polling drops late snapshots after Stop.
+A 20-second rolling counter window resets on restart, epoch/counter/clock change
+or >5-second sample gaps. Actual Internet/DNS validation remains unavailable.
+Diagnostic summary v3 includes scoped/fresh counter facts; events remain schema1.
+**227 local Dart tests + analyze PASS**, including seven new observation/report/
+late-reply cases. All 18 Python network fixture tests PASS. Actual Windows
+service/GUI + H2/H3 counter progress and concurrent Stop/crash reads are prepared;
+qualification pending. Old SDK compatibility remains a separate check.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests

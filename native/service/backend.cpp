@@ -1,6 +1,7 @@
 #include "backend.h"
 #include "liwetun_native.h"
 #include <cstring>
+#include <bcrypt.h>
 #include <stdexcept>
 
 namespace liwetun {
@@ -41,6 +42,7 @@ bool Backend::Load(const Image& service) {
   stop_fn_ = reinterpret_cast<CoreStop>(GetProcAddress(module_, "trusttunnel_stop_ex"));
   decode_ = reinterpret_cast<Decode>(GetProcAddress(module_, "trusttunnel_decode_deeplink"));
   free_ = reinterpret_cast<Free>(GetProcAddress(module_, "trusttunnel_free_deeplink_string"));
+  traffic_read_ = reinterpret_cast<TrafficRead>(GetProcAddress(module_, "liwetun_traffic_snapshot_v1"));
   return start_ && stop_fn_ && decode_ && free_;
 }
 Code Backend::Start(std::string uri) {
@@ -78,6 +80,25 @@ void Backend::Snapshot(Reply& reply) const {
   reply.runtime_ready = ready_ ? 1u : 0u;
   if (reply.state == State::Error) reply.code = Code::CoreFailure;
 }
+void Backend::SnapshotTraffic(TrafficReply& reply) const {
+  if (!traffic_read_) { Snapshot(reply.status); return; }
+  reply.sample.flags = traffic::kSupported;
+  std::unique_lock lock(core_mutex_, std::try_to_lock);
+  if (!lock.owns_lock()) {
+    reply.sample.flags |= traffic::kObservationGap;
+  } else if (observed_core_) {
+    reply.instance = instance_;
+    traffic::Snapshot candidate;
+    if (traffic_read_(observed_core_, sizeof(candidate), &candidate) == 1 && traffic::Valid(candidate)) {
+      reply.sample = candidate;
+    } else {
+      reply.sample.flags |= traffic::kObservationGap;
+    }
+  }
+  Snapshot(reply.status);
+  if (reply.instance == 0 || reply.status.state != State::TunnelReady ||
+      reply.status.core_state != reply.sample.state) reply.sample.flags &= ~traffic::kValid;
+}
 void Backend::OnState(void* context, int state) {
   auto* self = static_cast<Backend*>(context);
   if (state < 0 || state > 5) { self->state_ = State::Error; return; }
@@ -113,6 +134,13 @@ void Backend::Run() {
     }
     if (stopping || exiting) {
       intent_ = false;
+      {
+        // Withdraw the pointer before teardown. Readers only borrow it under
+        // this short lock; stop itself never holds the lock while joining SDK threads.
+        std::lock_guard lock(core_mutex_);
+        observed_core_ = nullptr;
+        instance_ = 0;
+      }
       if (core) { stop_fn_(core); core = nullptr; }
       busy_ = false;
       state_ = failed ? State::Error : State::Disconnected;
@@ -153,6 +181,15 @@ void Backend::Run() {
       if (!config.empty()) core = start_(config.c_str(), false, OnState, this, nullptr, nullptr);
     } catch (...) { core = nullptr; }
     Clear(uri); Clear(config);
+    {
+      uint64_t token = 0;
+      if (core && BCryptGenRandom(nullptr, reinterpret_cast<BYTE*>(&token), sizeof(token), BCRYPT_USE_SYSTEM_PREFERRED_RNG) >= 0) {
+        token &= traffic::kMaximum;
+      } else { token = 0; }
+      std::lock_guard lock(core_mutex_);
+      observed_core_ = core;
+      instance_ = token;
+    }
     if (!core) { intent_ = false; busy_ = false; state_ = State::Error; }
   }
   if (done_) SetEvent(done_.get());

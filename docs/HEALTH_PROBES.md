@@ -109,6 +109,9 @@ failure is latched and contained; it cannot escape into the routing callback.
 
 Portable tests cover tiny one-sided deltas, absent last-receive time, state-epoch
 changes, new-instance reset, atomic overflow rejection, clock regression,
-callback failure and four concurrent update/read threads. They require Windows
-compilation in this environment. Actual pinned-source preparation and four Python
-guards passed locally. No application display or network qualification yet.
+callback failure and four concurrent update/read threads. Windows compilation, those counter tests, the full SDK and null-read export
+checks passed in 44038398682; the separate runtime-traffic.json pins actual bytes.
+Actual pinned-source preparation and four Python guards also passed locally.
+The optional service read command / GUI observations are implemented and locally
+tested, but Windows service/GUI and actual traffic-counter qualification remain
+pending. No Internet/DNS Connected state is enabled.
