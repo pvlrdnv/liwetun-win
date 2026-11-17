@@ -151,8 +151,8 @@ final class AppController extends ChangeNotifier {
       TrafficHealth.outgoingWithoutReply =>
         'В окне наблюдения есть отправка без входящих данных.',
     };
-    return 'Учтённые данные соединений через сервер: отправлено ${observation.tx} Б, получено ${observation.rx} Б. '
-        '$window Проверка интернета и DNS отдельно ещё недоступна.';
+    return 'Учтённые данные соединений: отправка ${observation.tx} Б, приём ${observation.rx} Б. '
+        '$window Показатели могут включать фоновые приложения. Проверка интернета и DNS отдельно ещё недоступна.';
   }
 
   bool _closeToTray = false;

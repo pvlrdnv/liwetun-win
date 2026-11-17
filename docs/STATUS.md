@@ -221,7 +221,9 @@ and a new full window must accumulate before classification. **230 local Dart
 tests + analyze PASS**, including 26 metric/journal persistence cases and a
 stuck-monotonic-clock regression (30 polls produce one reset event).
 Windows GUI qualification for this change is pending. Event schema stays v1,
-summary v3, with only closed enum additions and no new free-form metadata.
+summary v3, with only closed enum additions and no new free-form metadata. UI
+counter wording now avoids implying remote delivery and explicitly includes
+background applications, consistent with the rejected-UDP fixture observation.
 
 Next native prerequisite is implemented as another opt-in SDK preparation:
 `attached_tun=true` requires source pins and the aggregate profile. Six exact
