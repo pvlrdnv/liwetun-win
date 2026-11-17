@@ -14,6 +14,7 @@ import 'package:liwetun/domain/profile_cache.dart';
 import 'package:liwetun/domain/subscription.dart';
 import 'package:liwetun/network/subscription_transport.dart';
 import 'package:liwetun/native/environment.dart';
+import 'package:liwetun/native/desktop.dart';
 import 'package:liwetun/diagnostics/journal.dart';
 
 final class _RealHttp extends HttpOverrides {}
@@ -471,6 +472,81 @@ void main() {
           );
           expect((await storage.load()).code, StorageCode.missing);
         }
+      }
+    },
+  );
+  testWidgets(
+    'actual tray capability keeps window reachable and persists opt-in',
+    (tester) async {
+      expect(Platform.environment['GITHUB_ACTIONS'], 'true');
+      const storage = WindowsStorage();
+      expect((await storage.load()).code, StorageCode.missing);
+      final controller = AppController();
+      var owned = false;
+      try {
+        await controller.initializeStorage();
+        await controller.initializeDesktop();
+        final initial = await WindowsDesktop.channel
+            .invokeMapMethod<String, dynamic>('query');
+        expect(initial?['available'], controller.desktopAvailable);
+        expect(initial?['closeToTray'], false);
+        expect(initial?['visible'], true);
+        if (controller.desktopAvailable) {
+          await controller.setCloseToTray(true);
+          owned = true;
+          for (
+            var attempt = 0;
+            attempt < 100 &&
+                controller.storageState == ProfileStorageState.saving;
+            attempt++
+          ) {
+            await tester.pump(const Duration(milliseconds: 50));
+          }
+          expect(controller.storageState, ProfileStorageState.saved);
+          expect(
+            ProfileCache.decode((await storage.load()).payload!).closeToTray,
+            true,
+          );
+          final hidden = await WindowsDesktop.channel
+              .invokeMapMethod<String, dynamic>('hide');
+          expect(hidden?['visible'], false);
+          expect(hidden?['closeToTray'], true);
+          expect(controller.stopPossible, false);
+          final shown = await WindowsDesktop.channel
+              .invokeMapMethod<String, dynamic>('show');
+          expect(shown?['visible'], true);
+          await controller.setCloseToTray(false);
+          for (
+            var attempt = 0;
+            attempt < 100 &&
+                controller.storageState == ProfileStorageState.saving;
+            attempt++
+          ) {
+            await tester.pump(const Duration(milliseconds: 50));
+          }
+          expect(
+            ProfileCache.decode((await storage.load()).payload!).closeToTray,
+            false,
+          );
+        } else {
+          await controller.setCloseToTray(true);
+          expect(controller.closeToTray, false);
+          final untouched = await WindowsDesktop.channel
+              .invokeMapMethod<String, dynamic>('hide');
+          expect(untouched?['visible'], true);
+          expect(untouched?['closeToTray'], false);
+        }
+      } finally {
+        await WindowsDesktop.channel.invokeMethod<void>('show');
+        await WindowsDesktop.channel.invokeMethod<void>('configure', {
+          'closeToTray': false,
+        });
+        controller.dispose();
+        if (owned) {
+          final latest = await storage.load();
+          expect((await storage.clear(latest.revision)).code, StorageCode.ok);
+        }
+        expect((await storage.load()).code, StorageCode.missing);
       }
     },
   );

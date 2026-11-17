@@ -8,6 +8,7 @@ project(runner LANGUAGES CXX)
 # Any new source files that you add to the application should be added here.
 add_executable(${BINARY_NAME} WIN32
   "flutter_window.cpp"
+  "desktop_channel.cpp"
   "main.cpp"
   "utils.cpp"
   "win32_window.cpp"
@@ -40,7 +41,7 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 # Add dependency libraries and include directories. Add any application-specific
 # dependencies here.
 target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
-target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
+target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib" "shell32.lib")
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../native/windows" "${CMAKE_CURRENT_BINARY_DIR}/liwetun_native")
 target_link_libraries(${BINARY_NAME} PRIVATE liwetun_native)
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../native/service/control.cmake")

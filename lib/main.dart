@@ -10,7 +10,8 @@ void main() {
   final controller = AppController();
   unawaited(controller.initializeJournal());
   unawaited(
-    controller.initializeStorage().then((_) {
+    controller.initializeStorage().then((_) async {
+      await controller.initializeDesktop();
       controller.enableAutomaticSubscriptionRefresh();
     }),
   );

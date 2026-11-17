@@ -64,6 +64,7 @@ DNS/IPv6 и приёмка на чистой Windows остаются отдел
 - [Обычные маршруты и границы их проверки](docs/PRODUCTION_ROUTING.md)
 - [Защищённое хранение профилей](docs/PROFILE_STORAGE.md)
 - [Хранение и ограничение журнала](docs/JOURNAL_STORAGE.md)
+- [Поведение окна и трея](docs/DESKTOP_TRAY.md)
 - [Зависимости и лицензионный комплект](docs/DEPENDENCY_CLOSURE.md)
 - [Состояние разработки](docs/STATUS.md)
 

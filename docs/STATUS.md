@@ -1,6 +1,6 @@
 # Development checkpoint — 2026-11-17
 
-## Active — subscription refresh Windows qualification
+## Active — tray qualification and H3 recovery observation
 
 Work continues in this independent repository. LikeWeb, production and the
 owner's corporate tunnel/network/trust configuration remain unchanged. No
@@ -74,9 +74,19 @@ refresh/filter suite: **11 PASS**; analyze PASS. Windows qualification **PASS**
 No production subscription fetch or LikeWeb API/server change. The v1 export
 contract remains a client proposal; an existing general feed is not assumed
 compatible. Other original-scope work includes route-bound health evidence,
-sleep/network-change recovery, tray, Hysteria2/Xray and release update handling.
+sleep/network-change recovery, tray desktop qualification, Hysteria2/Xray and release update handling.
 A readiness estimate for a basic manual-import TT client must not be presented
 as completion of the full handoff. WSL evidence does not establish Windows readiness.
+
+Tray lifecycle is implemented with an explicit close-to-tray switch, existing
+icon resource, Open/Exit menu, Explorer re-registration and visible-window
+fallback if the tray cannot be registered. The strict protected envelope v3
+persists the setting while decoding v1/v2 as false and preserving subscription
+revision/selection/deadlines. Default window close still exits. Exit releases
+the service lease; hiding retains it. No startup/autoconnect. **220 local Dart
+tests + analyze PASS**, including preference/cache failure and restoration.
+Native Windows build and a sixth capability-gated real tray/DPAPI test are
+prepared; qualification pending. [Behavior and limits](DESKTOP_TRAY.md).
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
@@ -700,7 +710,7 @@ The client is not release-ready. Unsigned workspace builds fail service admissio
 no service is installed on the owner's computer. Protected storage and actual
 GUI integration passed disposable Windows CI. The fresh installer prototype
 passed only disposable CI with temporary signing. No release-signed
-installer/updater, recovery/tray/startup, real metrics, route-bound
+installer/updater, recovery/startup, tray desktop acceptance, real metrics, route-bound
 health probes, kill switch or Hysteria2/Xray connection adapter.
 
 UNKNOWN until tested: clean Windows 10/11 installed GUI and ordinary-mode traffic,

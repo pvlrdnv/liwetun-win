@@ -12,6 +12,7 @@ import 'network/subscription_transport.dart';
 import 'native/trusttunnel.dart';
 import 'native/service.dart';
 import 'native/storage.dart';
+import 'native/desktop.dart';
 
 enum ProfileStorageState { memoryOnly, loading, saved, saving, blocked }
 
@@ -111,6 +112,7 @@ final class AppController extends ChangeNotifier {
     TrustTunnelInspector? inspector,
     ServiceGateway? service,
     StorageGateway? storage,
+    DesktopGateway? desktop,
     DateTime Function()? clock,
     SubscriptionTransport? subscriptionTransport,
     int Function(int maximum)? jitter,
@@ -118,6 +120,7 @@ final class AppController extends ChangeNotifier {
        _inspector = inspector ?? const WindowsTrustTunnel(),
        _service = service ?? const WindowsService(),
        _storage = storage ?? const WindowsStorage(),
+       _desktop = desktop ?? const WindowsDesktop(),
        _clock = clock ?? DateTime.now,
        _subscriptionTransport =
            subscriptionTransport ?? HttpSubscriptionTransport(),
@@ -132,6 +135,54 @@ final class AppController extends ChangeNotifier {
   final TrustTunnelInspector _inspector;
   final ServiceGateway _service;
   final StorageGateway _storage;
+  final DesktopGateway _desktop;
+  bool _closeToTray = false;
+  bool get closeToTray => _closeToTray;
+  bool desktopAvailable = false;
+  bool desktopBusy = false;
+
+  Future<void> initializeDesktop() async {
+    if (_disposed || desktopBusy) return;
+    desktopBusy = true;
+    try {
+      final status = await _desktop.configure(closeToTray);
+      if (!_disposed) desktopAvailable = status.available;
+    } catch (_) {
+      if (!_disposed) desktopAvailable = false;
+    } finally {
+      desktopBusy = false;
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  Future<String> setCloseToTray(bool enabled) async {
+    if (_disposed ||
+        desktopBusy ||
+        storageState == ProfileStorageState.loading) {
+      return 'Настройки ещё загружаются. Повторите позже.';
+    }
+    desktopBusy = true;
+    notifyListeners();
+    try {
+      final status = await _desktop.configure(enabled);
+      if (_disposed) return 'Приложение закрыто.';
+      desktopAvailable = status.available;
+      if (enabled && (!status.available || !status.closeToTray)) {
+        return 'Не удалось подтвердить включение трея Windows. Повторите проверку.';
+      }
+      _closeToTray = enabled;
+      _profilesChanged();
+      return enabled
+          ? 'Закрытие окна сворачивает LiWeTun в трей. Выход — через меню значка.'
+          : 'Закрытие окна завершает работу LiWeTun.';
+    } catch (_) {
+      return 'Не удалось изменить поведение окна. Повторите позже.';
+    } finally {
+      desktopBusy = false;
+      if (!_disposed) notifyListeners();
+    }
+  }
+
   final DateTime Function() _clock;
   final SubscriptionTransport _subscriptionTransport;
   final int Function(int maximum) _jitter;
@@ -466,6 +517,7 @@ final class AppController extends ChangeNotifier {
         links: _connections.map((item) => item.link),
         subscriptions: stores,
         selectedId: selection,
+        closeToTray: closeToTray,
       ).encode();
       _subscriptions = stores;
       _derivedConnections = derived;
@@ -632,6 +684,7 @@ final class AppController extends ChangeNotifier {
           derived.addAll(await _inspectSubscription(entry.key, entry.value));
           if (_disposed) return;
         }
+        _closeToTray = cache.closeToTray;
         _subscriptions = Map.of(cache.subscriptions);
         _derivedConnections = derived;
         _connections.addAll(restored);
@@ -687,6 +740,7 @@ final class AppController extends ChangeNotifier {
         final payload = ProfileCache(
           links: _connections.map((connection) => connection.link),
           selectedId: _selectedId,
+          closeToTray: closeToTray,
           subscriptions: _subscriptions,
         ).encode();
         final reply = await _storage.save(payload, _storageRevision);

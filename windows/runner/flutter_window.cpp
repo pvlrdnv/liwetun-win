@@ -28,6 +28,7 @@ bool FlutterWindow::OnCreate() {
   trusttunnel_channel_ = std::make_unique<TrustTunnelChannel>(flutter_controller_->engine()->messenger());
   service_channel_ = std::make_unique<ServiceChannel>(flutter_controller_->engine()->messenger(), GetHandle());
   storage_channel_ = std::make_unique<StorageChannel>(flutter_controller_->engine()->messenger(), GetHandle());
+  desktop_channel_ = std::make_unique<DesktopChannel>(flutter_controller_->engine()->messenger(), GetHandle());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -43,6 +44,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  desktop_channel_.reset();
   storage_channel_.reset();
   service_channel_.reset();
   trusttunnel_channel_.reset();
@@ -57,6 +59,8 @@ LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
+  if (desktop_channel_ && desktop_channel_->Handle(message, wparam, lparam)) return 0;
+  if (message == WM_CLOSE && desktop_channel_ && desktop_channel_->HideOnClose()) return 0;
   if (message == StorageChannel::kCompletion && storage_channel_) {
     storage_channel_->Complete();
     return 0;

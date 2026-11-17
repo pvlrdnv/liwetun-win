@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "win32_window.h"
+#include "desktop_channel.h"
 #include "trusttunnel_channel.h"
 #include "service_channel.h"
 #include "storage_channel.h"
@@ -35,6 +36,7 @@ class FlutterWindow : public Win32Window {
   std::unique_ptr<TrustTunnelChannel> trusttunnel_channel_;
   std::unique_ptr<ServiceChannel> service_channel_;
   std::unique_ptr<StorageChannel> storage_channel_;
+  std::unique_ptr<DesktopChannel> desktop_channel_;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

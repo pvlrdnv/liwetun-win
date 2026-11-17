@@ -518,6 +518,32 @@ class _HomeState extends State<_Home> {
         'Сохраните технический отчёт и передайте его поддержке самостоятельно.',
       ),
       Card(
+        child: SwitchListTile(
+          title: const Text('Сворачивать в трей при закрытии'),
+          subtitle: Text(
+            widget.controller.desktopAvailable
+                ? 'Открыть окно и выйти можно через значок LiWeTun. При сворачивании подключение продолжает работать.'
+                : 'Доступность трея Windows пока не подтверждена.',
+          ),
+          value: widget.controller.closeToTray,
+          onChanged:
+              widget.controller.desktopBusy ||
+                  widget.controller.storageState == ProfileStorageState.loading
+              ? null
+              : (enabled) async {
+                  final message = await widget.controller.setCloseToTray(
+                    enabled,
+                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(message)));
+                  }
+                },
+        ),
+      ),
+      const SizedBox(height: 16),
+      Card(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(

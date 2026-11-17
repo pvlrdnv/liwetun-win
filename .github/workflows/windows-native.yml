@@ -94,6 +94,8 @@ jobs:
             executable_sha256 = (Get-FileHash -Algorithm SHA256 $exe).Hash.ToLowerInvariant()
             native_import = 'verified'
             protected_storage_channel = 'verified'
+            desktop_tray_contract = 'capability_gated_hide_restore_and_dpapi'
+            desktop_tray_owner_acceptance = $false
             profile_restore_without_autoconnect = 'verified'
             subscription_cache_revoke_replay_restore = 'verified_without_network'
             subscription_https_ui_dpapi_revoke = 'verified_synthetic_loopback_no_tunnel'

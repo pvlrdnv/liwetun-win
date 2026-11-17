@@ -39,6 +39,11 @@ eligibility and separate unknown service/entitlement observations.
 
 ## Support
 
+An explicit close-to-tray switch persists in the protected profile envelope.
+Default closing exits; tray hiding keeps the connection running, and the tray
+menu opens the window or exits. Unavailable tray capability remains visible;
+see [tray lifecycle](DESKTOP_TRAY.md).
+
 Closed structured local events; preview archive composition and time range;
 user chooses where to save ZIP. Archive contains summary.json and events.jsonl,
 never profile names, URLs, addresses, configs or raw exceptions. No automatic

@@ -20,6 +20,7 @@ final class ProfileCache {
   ProfileCache({
     required Iterable<ImportedLink> links,
     this.selectedId,
+    this.closeToTray = false,
     Map<String, SubscriptionStore> subscriptions = const {},
   }) : links = List.unmodifiable(links),
        subscriptions = Map.unmodifiable(subscriptions);
@@ -28,6 +29,7 @@ final class ProfileCache {
   static const maxProfiles = 100;
   final List<ImportedLink> links;
   final String? selectedId;
+  final bool closeToTray;
   final Map<String, SubscriptionStore> subscriptions;
 
   /// Source-scoped selection never conflates profiles from different feeds.
@@ -39,10 +41,11 @@ final class ProfileCache {
   String encode() {
     _validate(links, selectedId, subscriptions);
     final text = jsonEncode({
-      'schema_version': subscriptions.isEmpty ? 1 : 2,
+      'schema_version': closeToTray ? 3 : (subscriptions.isEmpty ? 1 : 2),
+      if (closeToTray) 'close_to_tray': true,
       'links': links.map((link) => link.secret.value).toList(),
       'selected_id': selectedId,
-      if (subscriptions.isNotEmpty)
+      if (subscriptions.isNotEmpty || closeToTray)
         'subscriptions': subscriptions.map(
           (source, store) => MapEntry(source, jsonDecode(store.encodeCache())),
         ),
@@ -57,16 +60,18 @@ final class ProfileCache {
       final data = jsonDecode(text);
       if (data is! Map<String, dynamic>) _bad();
       final version = data['schema_version'];
-      if (version is! int || ![1, 2].contains(version)) {
+      if (version is! int || ![1, 2, 3].contains(version)) {
         throw const CacheException(CacheFailure.unsupported);
       }
       final keys = {
         'schema_version',
         'links',
         'selected_id',
-        if (version == 2) 'subscriptions',
+        if (version >= 2) 'subscriptions',
+        if (version == 3) 'close_to_tray',
       };
       if (data.length != keys.length || !keys.every(data.containsKey)) _bad();
+      if (version == 3 && data['close_to_tray'] is! bool) _bad();
       final raw = data['links'];
       if (raw is! List || raw.length > maxProfiles) _bad();
       final links = <ImportedLink>[];
@@ -81,7 +86,7 @@ final class ProfileCache {
       if (selected != null && selected is! String) _bad();
       final subscriptions = <String, SubscriptionStore>{};
       final observedNow = now ?? DateTime.now();
-      if (version == 2) {
+      if (version >= 2) {
         final rawSubscriptions = data['subscriptions'];
         if (rawSubscriptions is! Map<String, dynamic> ||
             rawSubscriptions.length > maxProfiles) {
@@ -98,6 +103,7 @@ final class ProfileCache {
       return ProfileCache(
         links: links,
         selectedId: selected,
+        closeToTray: version == 3 && data['close_to_tray'] == true,
         subscriptions: subscriptions,
       );
     } on CacheException {
