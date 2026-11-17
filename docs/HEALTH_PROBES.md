@@ -470,3 +470,26 @@ HTTP 503 before service start and is preserved separately without raw logs/URLs.
 [closed infrastructure record](evidence/owned-probe-infrastructure-44130232830-attempt1.json).
 The native producer and SDK bytes are unchanged; neither negative-case acceptance
 nor aggregate/flow byte counts enables application HTTPS/DNS/Internet health.
+
+
+## Actual per-flow migration control
+
+Default-OFF `LIWETUN_TEST_OWNED_MIGRATION` enables existing SDK early TCP ACK on
+only port 38556. The owned socket initially connects to the temporary upstream;
+first payload triggers the SDK's ordinary `initiate_connection_migration` path
+into its endpoint. No SDK, ABI, binary, callback or observation flag is patched.
+The producer stayed unchanged. H2 44136295359 / H3 44136296127 PASS: correct echo,
+same epoch, but SDK Migrated / flags 33, null counters and no successful request;
+remote EOF, unknown service observations and final network/WFP cleanup PASS.
+[Evidence](evidence/owned-probe-migration-44136295359.json).
+The normal H2 echo control and five-flag-OFF package also PASS; the candidate SDK
+is not packaged. This qualifies migration invalidation independent of a global
+epoch change; actual direct bypass remains separate.
+
+Report v3 next adds a closed state-epoch-changed observation after real endpoint
+loss. Its fixture waits for the owned request before restarting only its own
+endpoint. No epoch numbers reach reports. Changed epochs cannot retain armed
+facts or become success, including while the old socket still exists. Following
+failed I/O the native producer has a bounded 250 ms observation window, without
+holding the SDK lifetime lock over sleep/I/O. 37 local Python tests PASS; actual
+Windows epoch cases and v3 ordinary/migration regression are pending.

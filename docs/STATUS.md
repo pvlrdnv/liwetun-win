@@ -54,6 +54,28 @@ checks**, syntax/YAML and diff checks PASS; Windows migration and package
 exclusion qualification pending. This does not substitute for actual bypass,
 global state-epoch, HTTPS/DNS or desktop acceptance.
 
+Actual migration negative **PASS** on source `7e4a7cf`: H2 44136295359 and H3
+44136296127 (explicit reader-wakeup fixture). Both had correct echo and unchanged
+instance/epoch, but actual SDK flags 33 / Migrated, null proof counters,
+`qualified=false`, disarm and unknown service observations. Receiver EOF before
+Stop and final network/WFP restoration passed without watchdog. Ordinary H2 echo
+with migration flag OFF also PASS (44136295987).
+[All reports](evidence/owned-probe-migration-44136295359.json).
+Five-flag-OFF installer **PASS** (44136296788), 14 groups using the prior aggregate
+SDK and GUI, with preserved four pinned input receipt hashes; no tunnel start,
+ephemeral CI signing only. [Package receipt](evidence/package-migration-44136296788.json).
+
+The next explicit `epoch-change` fixture restarts only its owned diagnostic
+endpoint after a request is in flight. Worker report v3 adds a closed
+`state_epoch_changed` fact observed from the actual SDK counter under the existing
+lifetime lock, with no epoch IDs exported and no state/flag injection. Following
+failed I/O it observes for at most 250 ms without holding that lock while waiting.
+Changed epochs discard any armed/counted proof; endpoint loss must yield no
+success and unknown service observations, with receiver EOF before Stop and
+baseline network/WFP restoration. **37 local Python tests** and syntax/YAML/diff
+checks PASS. Actual H2/H3 epoch change and v3 echo/migration regressions pending.
+Direct bypass and application HTTPS/DNS health remain separate work.
+
 ## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the

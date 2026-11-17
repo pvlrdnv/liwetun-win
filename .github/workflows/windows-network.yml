@@ -28,6 +28,7 @@ on:
           - deadline
           - wrong-nonce
           - migration
+          - epoch-change
       traffic_pattern:
         description: Normal traffic or a tiny TX-only native counter observation window
         type: choice
@@ -147,7 +148,7 @@ jobs:
           if ($env:TRAFFIC_METRICS -eq 'true' -and $env:LIWETUN_PRODUCTION_PROBE -ne 'true') { throw 'Aggregate traffic qualification requires ordinary traffic mode' }
           if ($env:ATTACHED_TUN -eq 'true' -and ($env:SOURCE_PINNED -ne 'true' -or $env:TRAFFIC_METRICS -ne 'true')) { throw 'Attachment fence requires aggregate immutable-source profile' }
           if ($env:OWNED_PROBE -eq 'true' -and ($env:ATTACHED_TUN -ne 'true' -or $env:LIWETUN_PRODUCTION_PROFILE -ne 'valid' -or $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4' -or $env:LIWETUN_PRODUCTION_TERMINATION -ne 'stop' -or $env:LIWETUN_TRAFFIC_PATTERN -ne 'normal')) { throw 'Owned probe requires its focused IPv4 Stop/normal fixture' }
-          if ($env:LIWETUN_OWNED_PROBE_MODE -notin @('echo','cancel','deadline','wrong-nonce','migration') -or ($env:LIWETUN_OWNED_PROBE_MODE -ne 'echo' -and $env:OWNED_PROBE -ne 'true')) { throw 'Negative fixture requires owned probe mode' }
+          if ($env:LIWETUN_OWNED_PROBE_MODE -notin @('echo','cancel','deadline','wrong-nonce','migration','epoch-change') -or ($env:LIWETUN_OWNED_PROBE_MODE -ne 'echo' -and $env:OWNED_PROBE -ne 'true')) { throw 'Negative fixture requires owned probe mode' }
           if ($env:LIWETUN_ENDPOINT_STREAM_CLOSE -eq 'true' -and (!$env:LIWETUN_ENDPOINT_FIXTURE_RUN -or $env:OWNED_PROBE -ne 'true')) { throw 'Endpoint wakeup candidate requires explicit focused owned probe fixture' }
           if ($env:LIWETUN_PRODUCTION_PROBE -ne 'true' -and $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4') { throw 'Synthetic IPv6 requires production probe mode' }
           rustup toolchain install 1.95.0 --profile minimal

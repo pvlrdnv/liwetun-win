@@ -35,6 +35,7 @@ struct Result {
   bool echoed = false, same_epoch = false, disarmed = false, cancelled = false, qualified = false;
   bool receive_cancelled = false;
   bool receive_timed_out = false;
+  bool state_epoch_changed = false;
   probe::Snapshot sample;
 };
 enum class IoResult { Complete, Cancelled, Deadline, Failed };
@@ -106,15 +107,16 @@ bool WriteResult(const std::wstring& path, const Result& result) {
   const std::string rx = observed ? std::to_string(result.sample.rx) : "null";
   char output[1536]{};
   const int length = std::snprintf(output, sizeof(output),
-      "{\"schema_version\":2,\"stage\":%u,\"connected\":%s,\"nonexclusive_rejected\":%s,"
+      "{\"schema_version\":3,\"stage\":%u,\"connected\":%s,\"nonexclusive_rejected\":%s,"
       "\"arm_accepted\":%s,\"echo_verified\":%s,\"same_instance_epoch\":%s,\"disarmed\":%s,\"cancelled\":%s,"
       "\"receive_cancelled\":%s,\"receive_timed_out\":%s,"
+      "\"state_epoch_changed\":%s,"
       "\"snapshot_flags\":%u,\"tx_bytes\":%s,\"rx_bytes\":%s,\"qualified\":%s,"
       "\"proves_dns\":false,\"proves_https\":false,\"proves_internet\":false,"
       "\"identifiers_exported\":false,\"release_ready\":false}\n",
       result.stage, boolean(result.connected), boolean(result.nonexclusive_rejected), boolean(result.armed),
       boolean(result.echoed), boolean(result.same_epoch), boolean(result.disarmed), boolean(result.cancelled),
-      boolean(result.receive_cancelled), boolean(result.receive_timed_out), result.sample.flags,
+      boolean(result.receive_cancelled), boolean(result.receive_timed_out), boolean(result.state_epoch_changed), result.sample.flags,
       tx.c_str(), rx.c_str(), boolean(result.qualified));
   if (length <= 0 || static_cast<size_t>(length) >= sizeof(output)) return false;
   Handle file(CreateFileW(path.c_str(), GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_NEW,
@@ -202,6 +204,22 @@ void Backend::RunOwnedProbe() noexcept {
     result.receive_cancelled = received == IoResult::Cancelled;
     result.receive_timed_out = received == IoResult::Deadline;
     result.echoed = received == IoResult::Complete && response == expected;
+    // Observe actual state transitions following a failed receive, without
+    // changing SDK state or holding its lifetime lock over the wait. The bound
+    // leaves margin inside the existing five-second arm TTL after a 4 s I/O.
+    for (unsigned poll = 0; poll < 10 && !owned_cancel_.load(); ++poll) {
+      {
+        std::lock_guard lock(core_mutex_);
+        traffic::Snapshot current;
+        if (observed_core_ && instance_ == instance &&
+            traffic_read_(observed_core_, sizeof(current), &current) == 1 && traffic::Valid(current) &&
+            (current.flags & traffic::kSupported) && current.epoch > 0) {
+          result.state_epoch_changed = current.epoch != epoch;
+        }
+      }
+      if (result.state_epoch_changed || received == IoResult::Complete) break;
+      Sleep(25);
+    }
     result.stage = 8;
     {
       std::lock_guard lock(core_mutex_);
@@ -224,6 +242,10 @@ void Backend::RunOwnedProbe() noexcept {
   } catch (...) { result.qualified = false; }
   try {
     result.qualified = result.qualified && result.disarmed;
+    if (result.state_epoch_changed) {
+      result.qualified = false; result.same_epoch = false;
+      if (result.sample.flags & probe::kArmed) result.sample = probe::Snapshot{};
+    }
     result.cancelled = owned_cancel_.load();
     if (result.cancelled) { result.qualified = false; result.sample = probe::Snapshot{}; }
     const bool written = WriteResult(owned_report_, result);

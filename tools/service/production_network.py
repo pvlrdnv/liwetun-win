@@ -87,12 +87,14 @@ def cancel_owned_request(session, endpoint, report_path):
 def observe_owned_negative(session, endpoint, report_path, diagnostic, mode):
     """Require a completed rejected request and remote EOF before sending Stop."""
     from owned_probe_fixture import (validate_report, validate_deadline_report,
-                                     validate_wrong_nonce_report, validate_migration_report)
+                                     validate_wrong_nonce_report, validate_migration_report,
+                                     validate_epoch_change_report)
     validators = {'deadline': validate_deadline_report, 'wrong-nonce': validate_wrong_nonce_report,
-                  'migration': validate_migration_report}
+                  'migration': validate_migration_report, 'epoch-change': validate_epoch_change_report}
     reasons = {'deadline': 'owned_probe_deadline_not_qualified',
                'wrong-nonce': 'owned_probe_wrong_nonce_not_qualified',
-               'migration': 'owned_probe_migration_not_qualified'}
+               'migration': 'owned_probe_migration_not_qualified',
+               'epoch-change': 'owned_probe_epoch_change_not_qualified'}
     validate = validators[mode]
     started = time.monotonic()
     while time.monotonic() - started < 8:
@@ -123,6 +125,24 @@ def observe_owned_negative(session, endpoint, report_path, diagnostic, mode):
     else:
         result.update(stop_sent_before_rejection=False, unknown_after_rejection=True)
     return result
+
+
+def restart_during_owned_request(endpoint, report_path):
+    """Change actual SDK state through endpoint loss after the owned request is in flight."""
+    started = time.monotonic()
+    while time.monotonic() - started < 4:
+        receiver = endpoint.command('stats')['owned_probe_sink']
+        if report_path.exists():
+            raise RuntimeError('owned_probe_not_waiting')
+        if receiver['valid_requests'] == 1 and receiver['waiting_for_owner_close'] == 1:
+            break
+        time.sleep(.025)
+    else:
+        raise RuntimeError('owned_probe_not_waiting')
+    restarted = endpoint.command('restart')
+    if restarted != {'restarted': True, 'outage_seconds': 2}:
+        raise RuntimeError('endpoint_restart_failed')
+    return restarted
 
 
 def ordinary_https(origin, addresses, family=socket.AF_INET):
@@ -310,12 +330,13 @@ def main():
     attachment_guard = os.environ.get('ATTACHED_TUN') == 'true'
     owned_probe = os.environ.get('OWNED_PROBE') == 'true'
     owned_probe_mode = os.environ.get('LIWETUN_OWNED_PROBE_MODE', 'echo')
-    if owned_probe_mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce', 'migration'] or (owned_probe_mode != 'echo' and not owned_probe):
+    if owned_probe_mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce', 'migration', 'epoch-change'] or (owned_probe_mode != 'echo' and not owned_probe):
         raise RuntimeError('invalid_owned_probe_mode')
     cancel_probe = owned_probe and owned_probe_mode == 'cancel'
     negative_probe = owned_probe and owned_probe_mode != 'echo'
     negative_key = {'cancel': 'owned_probe_cancellation', 'deadline': 'owned_probe_deadline',
-                    'wrong-nonce': 'owned_probe_wrong_nonce', 'migration': 'owned_probe_migration'}.get(owned_probe_mode)
+                    'wrong-nonce': 'owned_probe_wrong_nonce', 'migration': 'owned_probe_migration',
+                    'epoch-change': 'owned_probe_epoch_change'}.get(owned_probe_mode)
     if owned_probe and not attachment_guard:
         raise RuntimeError('invalid_owned_probe_mode')
     if attachment_guard and not traffic_required:
@@ -464,7 +485,10 @@ def main():
             session = None
         elif negative_probe:
             stage = {'deadline': 'owned_request_receive_deadline', 'wrong-nonce': 'owned_request_wrong_nonce',
-                     'migration': 'owned_request_migration'}[owned_probe_mode]
+                     'migration': 'owned_request_migration', 'epoch-change': 'owned_request_epoch_change'}[owned_probe_mode]
+            if owned_probe_mode == 'epoch-change':
+                result['owned_probe_endpoint_restart'] = restart_during_owned_request(
+                    endpoint, client.parent / 'owned-probe-context.json')
             diagnostic_key = negative_key + '_observation'
             result[diagnostic_key] = {}
             result[negative_key] = observe_owned_negative(
@@ -786,6 +810,7 @@ def main():
         reasons.update({'owned_probe_not_waiting', 'owned_probe_cancellation_not_qualified',
                         'owned_probe_deadline_not_qualified', 'owned_probe_wrong_nonce_not_qualified',
                         'owned_probe_migration_not_qualified',
+                        'owned_probe_epoch_change_not_qualified', 'endpoint_restart_failed',
                         'owned_socket_path_not_qualified', 'invalid_owned_probe_report'})
         reason = error.args[0] if error.args else None
         result['failure_reason'] = reason if isinstance(reason, str) and reason in reasons else 'unknown'

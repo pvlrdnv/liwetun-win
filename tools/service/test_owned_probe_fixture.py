@@ -4,15 +4,35 @@ import time
 import unittest
 from owned_probe_fixture import (OwnedProbeSink, REQUEST, REPLY, TARGET, validate_report,
                                  validate_cancel_report, validate_deadline_report, validate_wrong_nonce_report,
-                                 validate_migration_report)
+                                 validate_migration_report, validate_epoch_change_report)
 from physical_forwarder import Forwarder
 from endpoint_forwarder import EndpointForwarder
 
 
 class OwnedProbeFixtureTests(unittest.TestCase):
+    def test_epoch_change_requires_real_changed_epoch_and_discarded_observations(self):
+        value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
+                     arm_accepted=True, echo_verified=False, same_instance_epoch=False, state_epoch_changed=True,
+                     disarmed=True, cancelled=False, receive_cancelled=False, receive_timed_out=False,
+                     snapshot_flags=129, tx_bytes=None, rx_bytes=None, qualified=False,
+                     proves_dns=False, proves_https=False, proves_internet=False,
+                     identifiers_exported=False, release_ready=False)
+        receiver = dict(valid_requests=1, request_bytes=24, replies_sent=0, reply_bytes=0,
+                        invalid_replies=0, rejected_frames=0, waiting_for_owner_close=0, owner_closed=1)
+        validate_epoch_change_report(value, receiver)
+        for flags in [1, 257, 513]:
+            validate_epoch_change_report(dict(value, snapshot_flags=flags), receiver)
+        for field, replacement in [('state_epoch_changed', False), ('same_instance_epoch', True),
+                                   ('echo_verified', True), ('qualified', True), ('disarmed', False),
+                                   ('snapshot_flags', 33), ('tx_bytes', 0), ('cancelled', True)]:
+            with self.assertRaises(ValueError):
+                validate_epoch_change_report(dict(value, **{field: replacement}), receiver)
+        with self.assertRaises(ValueError):
+            validate_report(dict(value, snapshot_flags=15, tx_bytes=24, rx_bytes=24))
+
     def test_migration_oracle_requires_invalidated_proof_even_with_valid_reply_and_same_epoch(self):
-        value = dict(schema_version=2, stage=9, connected=True, nonexclusive_rejected=True,
-                     arm_accepted=True, echo_verified=True, same_instance_epoch=True, disarmed=True,
+        value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
+                     arm_accepted=True, echo_verified=True, same_instance_epoch=True, state_epoch_changed=False, disarmed=True,
                      cancelled=False, receive_cancelled=False, receive_timed_out=False,
                      snapshot_flags=33, tx_bytes=None, rx_bytes=None, qualified=False,
                      proves_dns=False, proves_https=False, proves_internet=False,
@@ -52,8 +72,8 @@ class OwnedProbeFixtureTests(unittest.TestCase):
             receiver.close()
 
     def test_wrong_nonce_oracle_requires_bidirectional_path_but_no_echo_or_success(self):
-        value = dict(schema_version=2, stage=9, connected=True, nonexclusive_rejected=True,
-                     arm_accepted=True, echo_verified=False, same_instance_epoch=True, disarmed=True,
+        value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
+                     arm_accepted=True, echo_verified=False, same_instance_epoch=True, state_epoch_changed=False, disarmed=True,
                      cancelled=False, receive_cancelled=False, receive_timed_out=False,
                      snapshot_flags=15, tx_bytes=24, rx_bytes=24, qualified=False,
                      proves_dns=False, proves_https=False, proves_internet=False,
@@ -89,8 +109,8 @@ class OwnedProbeFixtureTests(unittest.TestCase):
             receiver.close()
 
     def test_deadline_oracle_requires_one_sided_endpoint_bytes_and_no_reply_or_cancel(self):
-        value = dict(schema_version=2, stage=9, connected=True, nonexclusive_rejected=True,
-                     arm_accepted=True, echo_verified=False, same_instance_epoch=True, disarmed=True,
+        value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
+                     arm_accepted=True, echo_verified=False, same_instance_epoch=True, state_epoch_changed=False, disarmed=True,
                      cancelled=False, receive_cancelled=False, receive_timed_out=True,
                      snapshot_flags=7, tx_bytes=24, rx_bytes=0, qualified=False,
                      proves_dns=False, proves_https=False, proves_internet=False,
@@ -127,8 +147,8 @@ class OwnedProbeFixtureTests(unittest.TestCase):
             receiver.close()
 
     def test_cancel_oracle_rejects_timeout_success_echo_or_unclosed_socket(self):
-        value = dict(schema_version=2, stage=9, connected=True, nonexclusive_rejected=True,
-                     arm_accepted=True, echo_verified=False, same_instance_epoch=False, disarmed=True,
+        value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
+                     arm_accepted=True, echo_verified=False, same_instance_epoch=False, state_epoch_changed=False, disarmed=True,
                      cancelled=True, receive_cancelled=True, receive_timed_out=False, snapshot_flags=1, tx_bytes=None, rx_bytes=None, qualified=False,
                      proves_dns=False, proves_https=False, proves_internet=False,
                      identifiers_exported=False, release_ready=False)
@@ -190,8 +210,8 @@ class OwnedProbeFixtureTests(unittest.TestCase):
                 proxy.close()
 
     def test_success_oracle_rejects_bypass_expiry_unknown_epoch_and_unverified_response(self):
-        value = dict(schema_version=2, stage=9, connected=True, nonexclusive_rejected=True,
-                     arm_accepted=True, echo_verified=True, same_instance_epoch=True, disarmed=True, cancelled=False, receive_cancelled=False, receive_timed_out=False,
+        value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
+                     arm_accepted=True, echo_verified=True, same_instance_epoch=True, state_epoch_changed=False, disarmed=True, cancelled=False, receive_cancelled=False, receive_timed_out=False,
                      snapshot_flags=15, tx_bytes=24, rx_bytes=24, qualified=True, proves_dns=False,
                      proves_https=False, proves_internet=False, identifiers_exported=False, release_ready=False)
         self.assertTrue(validate_report(value)['qualified'])
