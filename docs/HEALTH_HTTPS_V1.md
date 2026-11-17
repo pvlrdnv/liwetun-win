@@ -1,8 +1,8 @@
 # HTTPS probe candidate contract
 
 Status: HTTP/socket contracts and Schannel preflight PASS (44165060837).
-Real loopback TLS 1.2 matrix **13 cases PASS** (44168412480), with explicit
-per-certificate revocation verification. [Closed evidence](evidence/health-tls-44168412480.json).
+Real loopback TLS 1.2 matrix **16 cases PASS** (44169309801), with explicit
+per-certificate revocation verification. [Closed evidence](evidence/health-tls-44169309801.json).
 Live SDK-owned HTTPS remains unimplemented. This document does not enable
 application health.
 
@@ -70,7 +70,7 @@ revocation errors are not ignored. It separately checks the returned leaf's time
 validity, supports incomplete/extra encrypted input, caps total wire data and
 crypto iterations, and rejects renegotiation. Each context is used on one thread;
 errors make the channel unusable. No trust store is mutated by the library.
-The 13-case loopback matrix qualifies these focused TLS 1.2/HTTP and certificate
+The 16-case loopback matrix qualifies these focused TLS 1.2/HTTP and certificate
 controls only, without SDK/TUN or production trust/revocation bootstrap.
 TLS 1.3, graceful TLS shutdown, OS crypto-call cancellation/bounds and production
 certificate/revocation behavior still require dedicated work/qualification.
@@ -90,3 +90,9 @@ also requires explicit cache-only
 [CertVerifyRevocation](https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/nf-wincrypt-certverifyrevocation)
 success with its verified issuer and the read-only local-machine CA store.
 A separate CI-only CA/CRL pair tests valid and actually revoked issued leaves.
+
+The expanded matrix also refuses a required-client-certificate peer (which may
+produce a generic fatal-alert outcome), a TLS-1.3-only peer and a truncated HTTP
+body. Refusing TLS 1.3 is an intentional boundary, not TLS 1.3 qualification.
+Only the fixture knows the server configuration; a generic TLS rejection is not
+exported as a precise diagnosis of the peer's cause.

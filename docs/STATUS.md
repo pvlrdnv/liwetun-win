@@ -13,7 +13,7 @@ local bypass rejection now pass focused H2/H3 CI; the latter does not establish
 SDK recovery bypass selection. **39 local Python checks PASS**; actual Windows
 CI compiled and exercised the service. Six normal-package test flags remain OFF.
 The separate SDK/endpoint candidates are not a shipped health capability.
-Schannel compilation/preflight and the expanded 13-case real loopback HTTPS
+Schannel compilation/preflight and the expanded 16-case real loopback HTTPS
 matrix passed after explicit per-certificate revocation verification was added. Product HTTPS/DNS health, adapter ownership, trusted signing /
 distribution and separate Windows 10/11 desktop acceptance remain open. No
 production/LikeWeb or owner-device network/trust changes.
@@ -247,6 +247,25 @@ refusal for this known server fixture, with independently failed server handshak
 and zero HTTP/body still mandatory. The diagnostic is not relabeled as a known
 client-auth cause. All certificate-category controls remain exact. No Schannel
 code/policy changed. Contract regression 44168991601 PASS; extended rerun pending.
+
+Extended TLS matrix **16/16 PASS** (44169309801), source `f64b6ec`:
+all previous controls plus required-client-certificate refusal (generic TLS
+rejection, not a fabricated client-auth diagnosis), TLS-1.3-only peer refusal
+and truncated body refusal. Deadline **4016 ms**, receive cancellation **218 ms**.
+All receivers ended; exact temporary root absence and owned CRL deletion passed.
+[Full closed evidence/source digests](evidence/health-tls-44169309801.json).
+Schannel/HTTP/socket/slot contract regression also **PASS** (44168991601),
+[receipt](evidence/health-schannel-contract-44168991601.json). Local synthetic
+receiver regression **14 tests PASS** outside the socket-restricting sandbox;
+Python/YAML and diff checks PASS. No Flutter or shipped-service behavior changed.
+
+Next implementation: execute the qualified TLS/HTTP exchange on the service's
+fresh exclusive owned socket, arm before TLS I/O, require exact SDK path proof
+plus current instance/epoch/deadline and disarm before socket close. Qualify
+positive and negative controls on disposable CI before any public health DTO or
+UI capability admission. DNS correlation remains a separate guarded SDK task.
+Release certificate/revocation bootstrap policy, adapter ownership, trusted
+signing/distribution and separate desktop Windows 10/11 acceptance remain open.
 
 ## Development evidence and history
 
