@@ -7,6 +7,7 @@ import argparse
 import json
 from pathlib import Path
 import socket
+import signal
 import subprocess
 import threading
 import time
@@ -215,15 +216,22 @@ def main():
             stop_endpoint(child)
             raise
 
-    def stop_endpoint(child):
+    def stop_endpoint(child, graceful=False):
         # Retain only the Popen child; no PID/name/system-wide termination.
+        signal_sent = False
         if child.poll() is None:
-            child.terminate()
+            if graceful:
+                child.send_signal(signal.SIGINT)
+                signal_sent = True
+            else:
+                child.terminate()
         try:
             child.wait(timeout=5)
+            return graceful and signal_sent and child.returncode == 0
         except subprocess.TimeoutExpired:
             child.kill()
             child.wait(timeout=5)
+            return False
 
     endpoint = None
     try:
@@ -240,14 +248,17 @@ def main():
                     observation['owned_endpoint_udp_queues'] = owned_udp_queues(endpoint)
                     observation['local_forwarder_counts'] = local_exit.stats()
                 print(json.dumps(observation), flush=True)
-            elif command.strip() == 'restart':
-                stop_endpoint(endpoint)
+            elif command.strip() in ['restart', 'restart-graceful']:
+                graceful = command.strip() == 'restart-graceful'
+                gracefully_ended = stop_endpoint(endpoint, graceful=graceful)
                 ended = endpoint.poll() is not None
                 # A real bounded outage of this owned diagnostic endpoint only.
                 time.sleep(2)
                 endpoint = launch_endpoint()
-                print(json.dumps({'restarted': ended and endpoint.poll() is None,
-                                  'outage_seconds': 2}), flush=True)
+                observation = {'restarted': ended and endpoint.poll() is None, 'outage_seconds': 2}
+                if graceful:
+                    observation['graceful_shutdown'] = gracefully_ended
+                print(json.dumps(observation), flush=True)
             else:
                 break
     finally:

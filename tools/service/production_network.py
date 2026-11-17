@@ -139,8 +139,8 @@ def restart_during_owned_request(endpoint, report_path):
         time.sleep(.025)
     else:
         raise RuntimeError('owned_probe_not_waiting')
-    restarted = endpoint.command('restart')
-    if restarted != {'restarted': True, 'outage_seconds': 2}:
+    restarted = endpoint.command('restart-graceful')
+    if restarted != {'restarted': True, 'outage_seconds': 2, 'graceful_shutdown': True}:
         raise RuntimeError('endpoint_restart_failed')
     return restarted
 

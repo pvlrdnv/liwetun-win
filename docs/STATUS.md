@@ -76,6 +76,21 @@ baseline network/WFP restoration. **37 local Python tests** and syntax/YAML/diff
 checks PASS. Actual H2/H3 epoch change and v3 echo/migration regressions pending.
 Direct bypass and application HTTPS/DNS health remain separate work.
 
+Epoch-control source `01e1333`: H2 actual epoch change, H2 v3 echo and H3 v3
+migration PASS (44138099788 / 44138099764 / 44138099965), with baseline/WFP
+restoration. H3 abrupt two-second restart 44138099219 FAIL: it timed out while
+its actual SDK epoch still matched the old request. It was not counted as an
+epoch-change success; final route/DNS/adapter restoration passed without watchdog,
+but the failed case did not reach its final WFP measurement.
+[All original reports](evidence/owned-probe-epoch-abrupt-44138099219.json).
+Source inspection confirms that the endpoint handles SIGINT with a graceful
+shutdown sending an actual QUIC CONNECTION_CLOSE, whereas abrupt SIGTERM can
+leave H3 loss detection pending. The epoch fixture now separately requests
+`restart-graceful`, requires sending SIGINT to only its retained Popen child,
+zero exit without forced kill, and a fresh child after the same two-second gap.
+The ordinary abrupt recovery fixture is unchanged. Native producer, deadlines
+and acceptance oracle are unchanged; focused H2/H3 graceful epoch controls pending.
+
 ## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the
