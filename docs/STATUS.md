@@ -40,6 +40,20 @@ name-only download had selected attempt 1. No raw logs or signed artifact URLs
 were archived. No native SDK/producer/IPC/UI or production admission change;
 HTTPS/DNS health and live bypass/migration negatives remain open.
 
+The next live negative is actual per-flow migration without a global epoch
+change. A fifth default-OFF flag `LIWETUN_TEST_OWNED_MIGRATION` requires owned
+probe mode and enables the SDK's existing early TCP acknowledgement only on the
+fixed synthetic port 38556. Initial temporary-upstream acceptance then migrates
+to the actual endpoint on first payload. No SDK hook, ABI, binary or diagnostic
+flag is injected/modified. Native producer remains unchanged. Its new oracle
+requires a correct nonce response, same instance/epoch, disarm and SDK Migrated
+flag 33, with null path counters, unsuccessful request and unknown service
+observations. Receiver EOF before Stop and network/WFP cleanup remain mandatory.
+Normal package guards now require all five CI flags OFF. **36 local Python
+checks**, syntax/YAML and diff checks PASS; Windows migration and package
+exclusion qualification pending. This does not substitute for actual bypass,
+global state-epoch, HTTPS/DNS or desktop acceptance.
+
 ## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the

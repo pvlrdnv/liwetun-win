@@ -15,6 +15,9 @@ if ($cache -notcontains ('LIWETUN_TEST_ATTACHED_TUN:BOOL=' + $expectedAttachment
 $expectedOwned = if ($env:OWNED_PROBE -eq 'true') { 'ON' } else { 'OFF' }
 if ($expectedOwned -eq 'ON' -and ($expectedAttachment -ne 'ON' -or !$ProductionTraffic)) { throw 'Owned probe requires focused disposable network mode' }
 if ($cache -notcontains ('LIWETUN_TEST_OWNED_PROBE:BOOL=' + $expectedOwned)) { throw 'Owned probe compilation mode mismatch' }
+$expectedMigration = if ($env:LIWETUN_OWNED_PROBE_MODE -eq 'migration') { 'ON' } else { 'OFF' }
+if ($expectedMigration -eq 'ON' -and $expectedOwned -ne 'ON') { throw 'Migration control requires owned probe' }
+if ($cache -notcontains ('LIWETUN_TEST_OWNED_MIGRATION:BOOL=' + $expectedMigration)) { throw 'Owned migration compilation mode mismatch' }
 $root = Join-Path $env:ProgramFiles ('LiWeTun-CI-' + $env:GITHUB_RUN_ID)
 if (Test-Path $root) { throw 'Fresh isolated installation directory required' }
 $service = Join-Path $root 'liwetun_service.exe'
@@ -200,7 +203,7 @@ try {
     $checks.Add('service_uninstalled')
     if ((DnsSnapshot) -ne $dnsBefore -or (DefaultRoutes) -ne $routesBefore) { throw 'DNS or default routes were not restored after CI fixture' }
     $checks.Add('dns_and_default_routes_unchanged')
-    $result = @{checks=@($checks); core_runtime_ready=$runtimeReady; signed_service_ipc='verified'; driver_cycle=$driver; sdk_lifecycle=$lifecycle; test_mode_no_global_routes=(!$Network -and !$ProductionLifecycle); test_mode_tun_network=($Network -and !$ProductionTraffic); test_mode_attached_tun=($expectedAttachment -eq 'ON'); test_mode_owned_probe=($expectedOwned -eq 'ON'); production_refused_endpoint_lifecycle=[bool]$ProductionLifecycle; production_single_traffic_fixture=[bool]$ProductionTraffic; dns_and_default_routes_unchanged=$true; release_ready=$false}
+    $result = @{checks=@($checks); core_runtime_ready=$runtimeReady; signed_service_ipc='verified'; driver_cycle=$driver; sdk_lifecycle=$lifecycle; test_mode_no_global_routes=(!$Network -and !$ProductionLifecycle); test_mode_tun_network=($Network -and !$ProductionTraffic); test_mode_attached_tun=($expectedAttachment -eq 'ON'); test_mode_owned_probe=($expectedOwned -eq 'ON'); test_mode_owned_migration=($expectedMigration -eq 'ON'); production_refused_endpoint_lifecycle=[bool]$ProductionLifecycle; production_single_traffic_fixture=[bool]$ProductionTraffic; dns_and_default_routes_unchanged=$true; release_ready=$false}
     New-Item -ItemType Directory -Force build/service-evidence | Out-Null
     $result | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 build/service-evidence/qualification.json
 } finally {

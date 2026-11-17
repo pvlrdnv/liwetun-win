@@ -205,6 +205,11 @@ void Backend::Run() {
           // included_routes. Keep local discovery/broadcast out of the exit.
           config = "loglevel=\"error\"\nvpn_mode=\"general\"\nkillswitch_enabled=false\n"
               "exclusions=[\"224.0.0.0/4\",\"ff00::/8\",\"255.255.255.255\"]\n";
+#ifdef LIWETUN_TEST_OWNED_MIGRATION
+          // Disposable fixed-port experiment: real fake-upstream -> endpoint
+          // migration on first payload; no SDK callbacks/flags are injected.
+          config += "\nexclusions_tcp_early_ack_enabled=true\nexclusions_scannable_ports=\"38556\"\n";
+#endif
           config.append(endpoint, size);
           config += "\n[listener.tun]\ndevice_name=\"LiWeTun\"\n";
 #ifdef LIWETUN_TEST_NO_GLOBAL_ROUTES

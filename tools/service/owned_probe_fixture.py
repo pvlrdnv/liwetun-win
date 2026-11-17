@@ -12,7 +12,7 @@ assert len(REQUEST) == len(REPLY) == 16
 
 class OwnedProbeSink:
     def __init__(self, port=38556, mode='echo'):
-        if mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce']:
+        if mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce', 'migration']:
             raise ValueError('invalid_owned_probe_mode')
         self.mode = mode
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -198,4 +198,19 @@ def validate_wrong_nonce_report(value, receiver):
             and receiver['invalid_replies'] == 1 and receiver['rejected_frames'] == 0
             and receiver['owner_closed'] == 1 and receiver['waiting_for_owner_close'] == 0):
         raise ValueError('owned_probe_wrong_nonce_not_qualified')
+    return value
+
+
+def validate_migration_report(value, receiver):
+    validate_report(value)
+    if not (value['stage'] == 9 and value['connected'] and value['nonexclusive_rejected']
+            and value['arm_accepted'] and value['disarmed'] and value['same_instance_epoch']
+            and value['echo_verified'] and not value['qualified'] and not value['cancelled']
+            and not value['receive_timed_out'] and not value['receive_cancelled']
+            and value['snapshot_flags'] == 33 and value['tx_bytes'] is None and value['rx_bytes'] is None
+            and receiver['valid_requests'] == 1 and receiver['request_bytes'] == FRAME_BYTES
+            and receiver['replies_sent'] == 1 and receiver['reply_bytes'] == FRAME_BYTES
+            and receiver['invalid_replies'] == 0 and receiver['rejected_frames'] == 0
+            and receiver['owner_closed'] == 1 and receiver['waiting_for_owner_close'] == 0):
+        raise ValueError('owned_probe_migration_not_qualified')
     return value

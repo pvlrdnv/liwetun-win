@@ -3,12 +3,32 @@ import struct
 import time
 import unittest
 from owned_probe_fixture import (OwnedProbeSink, REQUEST, REPLY, TARGET, validate_report,
-                                 validate_cancel_report, validate_deadline_report, validate_wrong_nonce_report)
+                                 validate_cancel_report, validate_deadline_report, validate_wrong_nonce_report,
+                                 validate_migration_report)
 from physical_forwarder import Forwarder
 from endpoint_forwarder import EndpointForwarder
 
 
 class OwnedProbeFixtureTests(unittest.TestCase):
+    def test_migration_oracle_requires_invalidated_proof_even_with_valid_reply_and_same_epoch(self):
+        value = dict(schema_version=2, stage=9, connected=True, nonexclusive_rejected=True,
+                     arm_accepted=True, echo_verified=True, same_instance_epoch=True, disarmed=True,
+                     cancelled=False, receive_cancelled=False, receive_timed_out=False,
+                     snapshot_flags=33, tx_bytes=None, rx_bytes=None, qualified=False,
+                     proves_dns=False, proves_https=False, proves_internet=False,
+                     identifiers_exported=False, release_ready=False)
+        receiver = dict(valid_requests=1, request_bytes=24, replies_sent=1, reply_bytes=24,
+                        invalid_replies=0, rejected_frames=0, waiting_for_owner_close=0, owner_closed=1)
+        validate_migration_report(value, receiver)
+        for field, replacement in [('qualified', True), ('echo_verified', False), ('disarmed', False),
+                                   ('same_instance_epoch', False), ('snapshot_flags', 1), ('snapshot_flags', 17),
+                                   ('snapshot_flags', 15), ('tx_bytes', 0), ('rx_bytes', 0), ('cancelled', True)]:
+            with self.assertRaises(ValueError):
+                validate_migration_report(dict(value, **{field: replacement}), receiver)
+        for field, replacement in [('invalid_replies', 1), ('replies_sent', 0), ('owner_closed', 0)]:
+            with self.assertRaises(ValueError):
+                validate_migration_report(value, dict(receiver, **{field: replacement}))
+
     def test_wrong_nonce_receiver_sends_exact_frame_without_reflecting_token(self):
         receiver = OwnedProbeSink(port=0, mode='wrong-nonce')
         try:
