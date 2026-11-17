@@ -389,6 +389,21 @@ This avoids treating slow H3 connection preparation as a failed Stop or counting
 a deadline expiry as cancellation. **29 Python tests PASS**; updated Windows
 positive and cancellation qualification remains pending.
 
+Updated positive H2/H3 and explicit receive-cancellation H2/H3 **PASS**, source
+`1e7a579`: echo 44116428495 / 44116424941; cancellation 44117119550 / 44116425320.
+Cancellation receipts require `receive_cancelled=true`, disarm, no reply, null
+counters and remote EOF: **203 ms H2 / 250 ms H3** from Stop to receipt and close.
+All four cases restored routes/DNS/adapter/WFP without watchdog action. H3
+preparation took about 2.5 s, separately from its 250 ms Stop budget. The failed
+H2 attempt 44116428194 stopped at endpoint UDP preflight (no response frame,
+zero forwarded UDP), before tunnel/owned probe start; it remains archived.
+[All five reports](evidence/owned-probe-outcomes-44116424941.json).
+[Intermediate disarm reports](evidence/owned-probe-cancel-disarm-44115760730.json)
+retain H2's 187 ms explicit disarm and the old H3 preparation-bound failure.
+The separate probe runtime pin references the expanded focused CI receipt; full
+network matrix, live bypass/migration negatives, normal service/package admission,
+application HTTPS/DNS health, Windows 10/11 and release gates remain open.
+
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
 do not qualify those systems. New SDK artifacts retain for 14 days. Latest GUI

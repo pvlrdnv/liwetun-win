@@ -31,6 +31,6 @@
   "owned_socket_path_qualified": true,
   "https_health_qualified": false,
   "dns_health_qualified": false,
-  "qualification_scope": "disposable_ci_focused_service_owned_raw_tcp_ipv4_h2_h3_stop_only",
-  "qualification_receipt": "docs/evidence/owned-probe-live-44113354047.json"
+  "qualification_scope": "disposable_ci_focused_service_owned_raw_tcp_ipv4_h2_h3_echo_and_receive_cancellation_only",
+  "qualification_receipt": "docs/evidence/owned-probe-outcomes-44116424941.json"
 }

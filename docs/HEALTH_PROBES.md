@@ -361,3 +361,36 @@ SDK, without probe candidate admission. Cancel-during-I/O and bypass/migration
 live negative controls remain separate gates. This raw
 TCP marker does not verify TLS, HTTPS, DNS or Internet. No production health
 endpoint is selected/contacted; Connected remains unavailable.
+
+
+## Cancellation outcome evidence and teardown ordering
+
+The CI-only worker now distinguishes Complete / Cancelled / Deadline / Failed I/O
+internally; only the closed `receive_cancelled` boolean enters its report.
+Stop invalidates observations immediately, cancels and joins the socket worker
+without holding the core mutex, and retains the borrowed SDK until matching-token
+disarm completes. Only then does it withdraw the pointer and stop/unload the SDK.
+The original order could skip explicit disarm; historical reports retain that
+fact rather than treating core teardown as an explicit disarm result.
+
+The cancellation receiver sends no reply, holds the exact 24-byte request and
+observes owner EOF. The controller waits separately for bounded preparation,
+requires unknown service counters and no completed worker receipt before Stop,
+and then requires native receive cancellation, disarm, null observations and
+remote close within 1.5 seconds. Deadline expiry cannot satisfy the native
+cancellation fact. Both network and WFP baselines must still restore without the
+watchdog. Positive echo retains all nonce/path/epoch/count criteria.
+
+On source 1e7a579, updated positive H2/H3 PASS (44116428495 / 44116424941).
+H3 cancellation PASS (44116425320), 250 ms from Stop through worker receipt and
+remote EOF, including explicit disarm. Its total observation took 2734 ms,
+explaining why the old two-second preparation observer was too short for that
+run; the Stop budget itself was not relaxed. H2 44116428194 failed the existing
+endpoint UDP preflight before the tunnel/probe started; unchanged-source rerun
+44117119550 PASS, 203 ms Stop-to-receipt/EOF with receive cancellation and disarm.
+[All five closed reports](evidence/owned-probe-outcomes-44116424941.json).
+The earlier disarm-only H2 observation (44115760730) completed in 187 ms; H3's
+old preparation-bound failure and both original reports are
+[archived separately](evidence/owned-probe-cancel-disarm-44115760730.json).
+These remain disposable Server 2022 raw TCP experiments, with no native
+application HTTPS/DNS or Windows 10/11 desktop claim.
