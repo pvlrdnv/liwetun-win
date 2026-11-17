@@ -18,6 +18,13 @@ on:
         description: CI-only service-owned synthetic TCP path proof (requires all SDK profiles)
         type: boolean
         default: false
+      owned_probe_mode:
+        description: Exact echo or Stop while the owned receiver withholds its reply
+        type: choice
+        default: echo
+        options:
+          - echo
+          - cancel
       traffic_pattern:
         description: Normal traffic or a tiny TX-only native counter observation window
         type: choice
@@ -100,6 +107,7 @@ jobs:
       TRAFFIC_METRICS: ${{ inputs.traffic_metrics }}
       ATTACHED_TUN: ${{ inputs.attached_tun }}
       OWNED_PROBE: ${{ inputs.owned_probe }}
+      LIWETUN_OWNED_PROBE_MODE: ${{ inputs.owned_probe_mode }}
       LIWETUN_TRAFFIC_PATTERN: ${{ inputs.traffic_pattern }}
       SDK_RUN_ID: ${{ inputs.sdk_run_id }}
       GH_TOKEN: ${{ github.token }}
@@ -130,6 +138,7 @@ jobs:
           if ($env:TRAFFIC_METRICS -eq 'true' -and $env:LIWETUN_PRODUCTION_PROBE -ne 'true') { throw 'Aggregate traffic qualification requires ordinary traffic mode' }
           if ($env:ATTACHED_TUN -eq 'true' -and ($env:SOURCE_PINNED -ne 'true' -or $env:TRAFFIC_METRICS -ne 'true')) { throw 'Attachment fence requires aggregate immutable-source profile' }
           if ($env:OWNED_PROBE -eq 'true' -and ($env:ATTACHED_TUN -ne 'true' -or $env:LIWETUN_PRODUCTION_PROFILE -ne 'valid' -or $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4' -or $env:LIWETUN_PRODUCTION_TERMINATION -ne 'stop' -or $env:LIWETUN_TRAFFIC_PATTERN -ne 'normal')) { throw 'Owned probe requires its focused IPv4 Stop/normal fixture' }
+          if ($env:LIWETUN_OWNED_PROBE_MODE -notin @('echo','cancel') -or ($env:LIWETUN_OWNED_PROBE_MODE -eq 'cancel' -and $env:OWNED_PROBE -ne 'true')) { throw 'Cancellation fixture requires owned probe mode' }
           if ($env:LIWETUN_PRODUCTION_PROBE -ne 'true' -and $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4') { throw 'Synthetic IPv6 requires production probe mode' }
           rustup toolchain install 1.95.0 --profile minimal
           if ($LASTEXITCODE -ne 0) { throw 'Rust install failed' }

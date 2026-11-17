@@ -42,6 +42,46 @@ def source_is_tun(stream, addresses):
     return any(source == ipaddress.ip_address(address.split('%')[0]) for address in addresses)
 
 
+def cancel_owned_request(session, endpoint, report_path):
+    """Stop before the 4 s native deadline, with a receiver-held request in flight."""
+    from owned_probe_fixture import validate_cancel_report
+    started = time.monotonic()
+    while time.monotonic() - started < 2:
+        receiver = endpoint.command('stats')['owned_probe_sink']
+        if receiver['waiting_for_owner_close'] == 1 and receiver['valid_requests'] == 1:
+            break
+        time.sleep(.025)
+    else:
+        raise RuntimeError('owned_probe_not_waiting')
+    traffic = session.command('traffic')
+    unknown = (not traffic.get('flags', 0) & 2 and traffic.get('tx') is None and traffic.get('rx') is None)
+    if not unknown or report_path.exists() or time.monotonic() - started >= 2:
+        raise RuntimeError('owned_probe_not_waiting')
+    stop_started = time.monotonic()
+    reply = session.command('stop')
+    ack_ms = int((time.monotonic() - stop_started) * 1000)
+    # Wait for the service's worker receipt and remote EOF, not just Stop ACK.
+    while time.monotonic() - stop_started < 1.5:
+        receiver = endpoint.command('stats')['owned_probe_sink']
+        if report_path.exists() and receiver['owner_closed'] == 1 and receiver['waiting_for_owner_close'] == 0:
+            with report_path.open('rb') as source:
+                raw = source.read(4097)
+            if len(raw) <= 4096 and raw.endswith(b'\n'):
+                observation = validate_cancel_report(json.loads(raw), receiver)
+                break
+        time.sleep(.025)
+    else:
+        raise RuntimeError('owned_probe_cancellation_not_qualified')
+    elapsed_ms = int((time.monotonic() - stop_started) * 1000)
+    total_ms = int((time.monotonic() - started) * 1000)
+    if reply.get('code') != 0 or ack_ms >= 1500 or elapsed_ms >= 1500 or total_ms >= 3500:
+        raise RuntimeError('owned_probe_cancellation_not_qualified')
+    return dict(qualified=True, stop_ack_ms=ack_ms, worker_and_remote_close_ms=elapsed_ms,
+                observation_total_ms=total_ms, unknown_before_stop=unknown,
+                owned_socket_path=observation, owned_socket_receiver=receiver,
+                proves_https=False, proves_dns=False, release_ready=False)
+
+
 def ordinary_https(origin, addresses, family=socket.AF_INET):
     source_matches = False
     try:
@@ -226,6 +266,10 @@ def main():
     traffic_required = os.environ.get('TRAFFIC_METRICS') == 'true'
     attachment_guard = os.environ.get('ATTACHED_TUN') == 'true'
     owned_probe = os.environ.get('OWNED_PROBE') == 'true'
+    owned_probe_mode = os.environ.get('LIWETUN_OWNED_PROBE_MODE', 'echo')
+    if owned_probe_mode not in ['echo', 'cancel'] or (owned_probe_mode == 'cancel' and not owned_probe):
+        raise RuntimeError('invalid_owned_probe_mode')
+    cancel_probe = owned_probe and owned_probe_mode == 'cancel'
     if owned_probe and not attachment_guard:
         raise RuntimeError('invalid_owned_probe_mode')
     if attachment_guard and not traffic_required:
@@ -271,6 +315,7 @@ def main():
               'client_host_routes_added': False,
               'sdk_held_attachment_ci_guard_enabled': attachment_guard,
               'service_owned_socket_ci_probe_enabled': owned_probe,
+              'owned_probe_mode': owned_probe_mode,
               'attachment_context_proves_endpoint_traversal': False,
               'server_https_egress_bound_physical': True,
               'endpoint_udp_relay': 'wsl_local',
@@ -303,7 +348,8 @@ def main():
         (directory / 'dns-host.txt').write_text(str(dns_host))
         (directory / 'forwarder-inputs.json').write_text(json.dumps({
             'origin': origin, 'dns_host': str(dns_host), 'physical_index': physical['index'],
-            'synthetic_ipv6': synthetic_ipv6, 'tx_only': traffic_pattern == 'tx-only', 'owned_probe': owned_probe}))
+            'synthetic_ipv6': synthetic_ipv6, 'tx_only': traffic_pattern == 'tx-only',
+            'owned_probe': owned_probe, 'owned_probe_mode': owned_probe_mode}))
         wsl = ['wsl.exe', '-d', distro, '--']
         def linux(path):
             return subprocess.check_output(wsl + ['wslpath', '-u', path.as_posix()],
@@ -362,10 +408,18 @@ def main():
         session = Child([str(client), '--network-session', str(directory / (profile_file + '.uri'))])
         if json.loads(session.receive())['code'] not in [0, 6]:
             raise RuntimeError('service_start_rejected')
+        if cancel_probe:
+            stage = 'cancel_owned_request_during_receive'
+            result['owned_probe_cancellation'] = cancel_owned_request(
+                session, endpoint, client.parent / 'owned-probe-context.json')
+            session.close()
+            session = None
+            result['ordinary_https_probe_attempted'] = False
+            result['application_dns_probe_attempted'] = False
         info = None
         selected = False
         os.environ['LIWETUN_CI_ORIGIN'] = SYNTHETIC_IPV6 if synthetic_ipv6 else origin
-        for _ in range(20):
+        for _ in range(0 if cancel_probe else 20):
             state = session.command('query')
             info = tun()
             if info and info['dns']:
@@ -376,7 +430,9 @@ def main():
                 break
             time.sleep(.1)
         result['ordinary_origin_route_is_tun'] = selected
-        if profile == 'valid':
+        if cancel_probe:
+            traffic_ok = result['owned_probe_cancellation']['qualified']
+        elif profile == 'valid':
             if not info or not selected:
                 raise RuntimeError('production_route_not_selected')
             os.environ['LIWETUN_CI_DNS_HOST'] = str(dns_host)
@@ -414,6 +470,7 @@ def main():
                     raise RuntimeError('invalid_owned_probe_report')
                 observation = validate_report(json.loads(raw))
                 receiver = endpoint.command('stats')['owned_probe_sink']
+                result.update(owned_socket_path=observation, owned_socket_receiver=receiver)
                 if not observation['qualified'] or (receiver['valid_requests'] != 1 or receiver['replies_sent'] != 1
                         or receiver['request_bytes'] != FRAME_BYTES or receiver['reply_bytes'] != FRAME_BYTES
                         or receiver['rejected_frames'] != 0):
@@ -519,7 +576,7 @@ def main():
                           adapter_absent_at_refusal=info is None,
                           endpoint_bytes_by_transport=refusal_delta,
                           endpoint_tcp_connections=refusal_stats['tcp_connected'])
-        if traffic_required:
+        if traffic_required and not cancel_probe:
             stage = 'aggregate_traffic_observation'
             traffic_after = session.command('traffic')
             result['aggregate_traffic_after'] = traffic_after
@@ -603,7 +660,7 @@ def main():
             stage = 'tx_only_and_idle_counter_windows'
             result['tx_only_fixture'] = observe_tx_only_and_idle(session, addresses, endpoint, protocol)
             traffic_ok = traffic_ok and result['tx_only_fixture']['passed']
-        if traffic_required and profile == 'valid':
+        if traffic_required and profile == 'valid' and not cancel_probe:
             stage = 'concurrent_traffic_reader'
             traffic_watch = Child([str(client), '--traffic-watch'])
             if traffic_watch.receive() != 'ready':
@@ -638,7 +695,7 @@ def main():
             if not result['owned_service_force_terminated']:
                 raise RuntimeError('service_crash_not_observed')
             session.close()
-        else:
+        elif session:
             session.close('stop')
         session = None
         stage = 'observe_routes_dns_adapter_restore'
@@ -669,6 +726,8 @@ def main():
         reasons = {'wfp_probe_failed', 'fixture_system_command_failed', 'fixture_child_timeout',
                    'fixture_child_closed', 'lease_client_already_exited', 'lease_client_not_forced',
                    'service_crash_not_observed'}
+        reasons.update({'owned_probe_not_waiting', 'owned_probe_cancellation_not_qualified',
+                        'owned_socket_path_not_qualified', 'invalid_owned_probe_report'})
         reason = error.args[0] if error.args else None
         result['failure_reason'] = reason if isinstance(reason, str) and reason in reasons else 'unknown'
         if reason == 'wfp_probe_failed':

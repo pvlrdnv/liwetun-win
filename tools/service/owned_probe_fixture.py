@@ -11,7 +11,10 @@ assert len(REQUEST) == len(REPLY) == 16
 
 
 class OwnedProbeSink:
-    def __init__(self, port=38556):
+    def __init__(self, port=38556, mode='echo'):
+        if mode not in ['echo', 'cancel']:
+            raise ValueError('invalid_owned_probe_mode')
+        self.mode = mode
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind(('127.0.0.1', port))
         self.socket.listen(4)
@@ -20,7 +23,8 @@ class OwnedProbeSink:
         self.stop = threading.Event()
         self.lock = threading.Lock()
         self.counts = dict(accepted=0, request_bytes=0, valid_requests=0,
-                           replies_sent=0, reply_bytes=0, rejected_frames=0)
+                           replies_sent=0, reply_bytes=0, rejected_frames=0,
+                           waiting_for_owner_close=0, owner_closed=0)
         self.thread = threading.Thread(target=self.serve, daemon=True)
         self.thread.start()
 
@@ -62,6 +66,25 @@ class OwnedProbeSink:
                         self.count('rejected_frames')
                         continue
                     self.count('valid_requests')
+                    if self.mode == 'cancel':
+                        # Deliberately withhold every response. The controller
+                        # must Stop while the service is blocked in receive.
+                        self.count('waiting_for_owner_close')
+                        hold = time.monotonic() + 8
+                        try:
+                            while not self.stop.is_set() and time.monotonic() < hold:
+                                try:
+                                    extra = client.recv(1)
+                                except socket.timeout:
+                                    continue
+                                if not extra:
+                                    self.count('owner_closed')
+                                else:
+                                    self.count('rejected_frames')
+                                break
+                        finally:
+                            self.count('waiting_for_owner_close', -1)
+                        continue
                     response = REPLY + packet[16:]
                     client.sendall(response)
                     self.count('replies_sent')
@@ -120,4 +143,18 @@ def validate_report(value):
                                             'echo_verified', 'same_instance_epoch', 'disarmed'])
             and all(type(value[key]) is int and value[key] >= FRAME_BYTES for key in ['tx_bytes', 'rx_bytes'])):
         raise ValueError('invalid_owned_probe_report')
+    return value
+
+
+def validate_cancel_report(value, receiver):
+    validate_report(value)
+    if not (value['stage'] == 9 and value['connected'] and value['nonexclusive_rejected']
+            and value['arm_accepted'] and value['cancelled'] and not value['qualified']
+            and not value['echo_verified'] and not value['same_instance_epoch']
+            and value['snapshot_flags'] == 1 and value['tx_bytes'] is None and value['rx_bytes'] is None
+            and receiver['valid_requests'] == 1 and receiver['request_bytes'] == FRAME_BYTES
+            and receiver['replies_sent'] == 0 and receiver['reply_bytes'] == 0
+            and receiver['rejected_frames'] == 0 and receiver['owner_closed'] == 1
+            and receiver['waiting_for_owner_close'] == 0):
+        raise ValueError('owned_probe_cancellation_not_qualified')
     return value

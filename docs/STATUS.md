@@ -356,6 +356,17 @@ probe SDK is not packaged. Four pinned input receipt hashes are unchanged.
 [Package receipt](evidence/package-traffic-44113393613.json). Temporary CI signing
 only; no tunnel was started by the installer qualification.
 
+A separate `owned_probe_mode=cancel` fixture now withholds the response after
+receiving the exact owned request. Before Stop it requires an open waiting
+receiver, unknown service counters and no completed worker receipt. Stop ACK,
+worker cancellation receipt and remote EOF must complete within 1.5 s, with an
+overall observation shorter than the native 4 s deadline. Cancelled evidence must
+have no successful echo/epoch/path facts and null counters. Network/WFP baseline
+restoration and no watchdog action remain mandatory. No SDK or product native
+behavior changed. **29 local Python tests**, Python/YAML and diff checks PASS;
+actual Windows cancellation qualification is pending. Live bypass/migration
+negative controls and product health integration remain open.
+
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
 do not qualify those systems. New SDK artifacts retain for 14 days. Latest GUI
