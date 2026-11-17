@@ -329,7 +329,7 @@ service command or GUI health capability added. Socket address-entry lookup uses
 [the read-only Microsoft API](https://learn.microsoft.com/en-us/windows/win32/api/netioapi/nf-netioapi-getunicastipaddressentry).
 
 
-## CI-only service-owned synthetic request — live qualification pending
+## CI-only service-owned synthetic request — focused H2/H3 PASS
 
 A fourth default-OFF compile flag adds a cancellable worker with a fixed
 198.18.0.10:38556 destination, translated only inside the explicit WSL fixture
@@ -349,8 +349,14 @@ introduces no IPC method or shipped GUI capability; package guards require all
 four CI flags OFF. Normal service/package workflows still cannot select this
 SDK variant. The network report marks the CI observation mode explicitly.
 
-27 Python fixture/allowlist/oracle tests pass; actual H2/H3 and producer/cleanup
-qualification are pending. Cancel-during-I/O and bypass/migration live negative
-controls remain separate gates even after a positive nonce/path case. This raw
+27 Python fixture/allowlist/oracle tests pass. Actual H2/H3 producer and cleanup
+PASS on source 8056b95 (44113354047 / 44113385217): exact 24-byte endpoint counts
+in both directions, independent receiver request/reply, same epoch and disarm,
+nonexclusive socket refusal, ordinary HTTPS/DNS, concurrent Stop reads and final
+network/WFP restoration without watchdog action.
+[Closed evidence](evidence/owned-probe-live-44113354047.json).
+Four-flag package exclusion also PASS (44113393613), using the previous aggregate
+SDK, without probe candidate admission. Cancel-during-I/O and bypass/migration
+live negative controls remain separate gates. This raw
 TCP marker does not verify TLS, HTTPS, DNS or Internet. No production health
 endpoint is selected/contacted; Connected remains unavailable.

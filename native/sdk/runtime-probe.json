@@ -27,10 +27,10 @@
   "native_ipv6_egress_qualified": false,
   "service_admitted": false,
   "package_admitted": false,
-  "actual_interface_qualified": false,
-  "owned_socket_path_qualified": false,
+  "actual_interface_qualified": true,
+  "owned_socket_path_qualified": true,
   "https_health_qualified": false,
   "dns_health_qualified": false,
-  "qualification_scope": "sdk_build_contract_loopback_socket_and_null_abi_only",
-  "qualification_receipt": "docs/evidence/sdk-owned-probe-44092512284.json"
+  "qualification_scope": "disposable_ci_focused_service_owned_raw_tcp_ipv4_h2_h3_stop_only",
+  "qualification_receipt": "docs/evidence/owned-probe-live-44113354047.json"
 }

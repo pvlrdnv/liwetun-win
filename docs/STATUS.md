@@ -335,6 +335,27 @@ YAML/Python/diff checks PASS. Actual H2/H3 producer, cancellation behavior and
 four-flag package exclusion are pending on Windows. This is raw synthetic TCP
 path qualification, not an application HTTPS/DNS/Internet check or release.
 
+Focused service-owned raw TCP path **PASS** on disposable Server 2022 CI,
+source `8056b95`: [H2 44113354047](https://github.com/pvlrdnv/liwetun-win/actions/runs/44113354047)
+and [H3 44113385217](https://github.com/pvlrdnv/liwetun-win/actions/runs/44113385217).
+Each observed exactly 24 endpoint TX / 24 endpoint RX bytes, matching nonce,
+instance/epoch and disarm; the connected nonexclusive control was rejected.
+Receiver independently recorded one exact request/reply, no rejected frames.
+Ordinary HTTPS/DNS and concurrent Stop counter reads also passed; routes, DNS,
+adapter and WFP restored with no watchdog action.
+[Closed reports](evidence/owned-probe-live-44113354047.json).
+The separate probe runtime pin now records only this focused CI path scope;
+full network matrix, live bypass/migration negatives, cancellation during I/O,
+normal service/package admission, application HTTPS/DNS health and both desktop
+OS qualifications remain false/open. No Connected capability is added.
+
+Four-flag exclusion package **PASS** (44113393613): 14 installer groups, medium
+GUI/service query, rollback/uninstall/cleanup, all CI modes OFF. It still uses the
+previous qualified aggregate SDK (44038398682) and GUI 44073703263; the owned
+probe SDK is not packaged. Four pinned input receipt hashes are unchanged.
+[Package receipt](evidence/package-traffic-44113393613.json). Temporary CI signing
+only; no tunnel was started by the installer qualification.
+
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
 do not qualify those systems. New SDK artifacts retain for 14 days. Latest GUI
