@@ -1,4 +1,4 @@
-param([ValidateSet(30,60)][int]$DeadlineSeconds=30)
+param([ValidateSet(30,60,120)][int]$DeadlineSeconds=30)
 # Independent disposable-CI deadline; only this job's exact registered service.
 $ErrorActionPreference = 'Stop'
 if ($env:GITHUB_ACTIONS -ne 'true' -or $env:GITHUB_RUN_ID -notmatch '^[0-9]{1,20}$') { throw 'Disposable CI required' }

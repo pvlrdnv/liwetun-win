@@ -58,8 +58,15 @@ expiry; failures back off from 30 seconds to 15 minutes plus jitter. Replayed
 revisions never extend rights or the last-applied timestamp. Inner cache v2 adds
 the application time while retaining v1 decoding. Transport failures preserve
 accepted profiles and rights. **216 local Dart tests + analyze PASS**. Windows
-qualification of this integration is pending, including an additional actual
-HTTPS → UI → DPAPI → revoke case without starting a tunnel.
+qualification **PASS**: [44028234705](https://github.com/pvlrdnv/liwetun-win/actions/runs/44028234705),
+216 Dart + 6 Rust + 5 desktop tests, including actual HTTPS → UI → DPAPI → revoke
+without starting a tunnel. [Receipt](evidence/windows-subscription-refresh-183bc19.json).
+Installer qualification with this GUI is running; temporary CI signing only.
+
+Country chips and combined name/country search now filter derived profiles while
+keeping source refresh controls accessible. No-match text differs from an empty
+library, and a removed country cannot leave the refreshed list hidden. Local
+refresh/filter suite: **11 PASS**; analyze PASS. Windows qualification pending.
 [Transport policy and limits](SUBSCRIPTION_TRANSPORT.md).
 
 No production subscription fetch or LikeWeb API/server change. The v1 export
@@ -74,6 +81,15 @@ Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
 do not qualify those systems. New SDK artifacts retain for 14 days; GUI and
 repaired diagnostic endpoint artifacts expire 2026-11-30. Recheck availability
 and preserve all source-run/digest guards before reuse.
+
+A disposable-CI endpoint-restart recovery case is prepared (not yet qualified).
+Only the owned diagnostic server is stopped for two seconds; the authenticated
+client lease and SDK instance remain alive. Success requires fresh HTTPS and
+exact synthetic DNS replies from TUN sources over the selected H2/H3 transport,
+then Stop and baseline routes/DNS/adapter/WFP restoration. Three bounded attempts;
+a 120-second independent watchdog applies only to this case. No desktop
+sleep/Wi-Fi-switch claim and no application recovery changes. Four oracle guards
+cover false positives; all 15 Python fixture tests PASS. Windows execution pending.
 
 ## Latest checkpoint — six basic ordinary IPv4 CI cases PASS
 
@@ -678,8 +694,7 @@ The client is not release-ready. Unsigned workspace builds fail service admissio
 no service is installed on the owner's computer. Protected storage and actual
 GUI integration passed disposable Windows CI. The fresh installer prototype
 passed only disposable CI with temporary signing. No release-signed
-installer/updater, subscription fetch,
-recovery/tray/startup, real metrics, route-bound
+installer/updater, recovery/tray/startup, real metrics, route-bound
 health probes, kill switch or Hysteria2/Xray connection adapter.
 
 UNKNOWN until tested: clean Windows 10/11 installed GUI and ordinary-mode traffic,

@@ -164,3 +164,19 @@ route/sample observations cannot establish any of those. Existing H2/H3/DNS
 payload acceptance uses bounded, explicitly interface-bound sockets and is
 documented separately in TUN_NETWORK_ACCEPTANCE.md. No fabricated connectivity
 or release-ready state is derived from this negative lifecycle test.
+
+
+## Endpoint restart recovery case — prepared, Windows result pending
+
+Select `production_termination=endpoint-restart`, valid IPv4 profile and H2 or H3.
+After ordinary HTTPS/DNS passes, the fixture terminates only its retained Popen
+endpoint child, waits two seconds and launches the same pinned binary/config.
+The original authenticated client lease and SDK stay alive; no second Start RPC.
+Up to three attempts require TUN source addresses, HTTPS payload, exact synthetic
+DNS marker growth, at least 82 DNS bytes in the chosen protocol and no growth in
+another protocol. Stop must restore the baseline network and WFP sessions without
+watchdog action. The independent guard allows 120 seconds for this case only.
+This tests a diagnostic endpoint interruption, not desktop sleep or a physical
+interface change. There are no product/service recovery changes or production
+connections in this experiment. Four observation guards and all 15 Python fixture
+tests pass locally; actual Windows qualification remains pending.

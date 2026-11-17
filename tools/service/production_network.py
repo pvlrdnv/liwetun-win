@@ -101,6 +101,18 @@ def ordinary_ipv6_echo(addresses):
         return False, source_matches, observation
 
 
+def recovery_evidence_valid(protocol, state, https_ok, https_tun, dns_ok, dns_tun,
+                            growth, dns_growth, dns_transport_growth):
+    """A recovered process/ready flag or direct traffic cannot satisfy this oracle."""
+    return (state == 2 and https_ok and https_tun and dns_ok and dns_tun
+            and growth[protocol] > 0
+            and all(growth[key] == 0 for key in growth if key != protocol)
+            and all(value > 0 for value in dns_growth.values())
+            and dns_transport_growth[protocol] >= 82
+            and all(value == 0 for key, value in dns_transport_growth.items()
+                    if key != protocol))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--client', type=str, required=True)
@@ -120,7 +132,7 @@ def main():
     if protocol not in ['http2', 'http3']:
         raise RuntimeError('invalid_fixture_protocol')
     termination = os.environ.get('LIWETUN_PRODUCTION_TERMINATION', 'stop')
-    if termination not in ['stop', 'lease-death', 'service-crash']:
+    if termination not in ['stop', 'lease-death', 'service-crash', 'endpoint-restart']:
         raise RuntimeError('invalid_fixture_termination')
     profile = os.environ.get('LIWETUN_PRODUCTION_PROFILE', 'valid')
     if profile not in ['valid', 'wrong-auth', 'wrong-ca'] or (
@@ -129,6 +141,8 @@ def main():
     family = os.environ.get('LIWETUN_PRODUCTION_FAMILY', 'ipv4')
     if family not in ['ipv4', 'synthetic-ipv6'] or (family != 'ipv4' and profile != 'valid'):
         raise RuntimeError('invalid_fixture_family')
+    if termination == 'endpoint-restart' and (profile != 'valid' or family != 'ipv4'):
+        raise RuntimeError('invalid_recovery_case')
     synthetic_ipv6 = family == 'synthetic-ipv6'
     report = ROOT / 'build/service-evidence/production-network.json'
     report.parent.mkdir(exist_ok=True, parents=True)
@@ -217,7 +231,8 @@ def main():
             raise RuntimeError('endpoint_udp_preflight_failed')
         stage = 'armed_deadline'
         watchdog = Child(['pwsh', '-NoProfile', '-NonInteractive', '-File',
-                          str(ROOT / 'tools/service/general-watchdog.ps1'), '-DeadlineSeconds', '60'])
+                          str(ROOT / 'tools/service/general-watchdog.ps1'), '-DeadlineSeconds',
+                          '120' if termination == 'endpoint-restart' else '60'])
         if watchdog.receive() != 'ready':
             raise RuntimeError('watchdog_not_ready')
         before = totals()
@@ -359,6 +374,62 @@ def main():
                           adapter_absent_at_refusal=info is None,
                           endpoint_bytes_by_transport=refusal_delta,
                           endpoint_tcp_connections=refusal_stats['tcp_connected'])
+        if termination == 'endpoint-restart':
+            if not traffic_ok:
+                raise RuntimeError('pre_recovery_traffic_failed')
+            stage = 'owned_endpoint_restart'
+            restarted = endpoint.command('restart')
+            result['endpoint_restart'] = restarted
+            if restarted != {'restarted': True, 'outage_seconds': 2}:
+                raise RuntimeError('endpoint_restart_failed')
+            # Existing authenticated GUI lease and SDK instance remain alive.
+            # Re-read TUN addresses on every observation; no Start/reconnect RPC.
+            attempts = []
+            recovered = False
+            for _ in range(3):
+                stage = 'observe_endpoint_recovery'
+                current = tun()
+                if not current:
+                    attempts.append({'adapter_present': False})
+                    break
+                current_addresses = ps(f"@(Get-NetIPAddress -InterfaceIndex {int(current['index'])} -AddressFamily IPv4).IPAddress | ConvertTo-Json -Compress")
+                if isinstance(current_addresses, str):
+                    current_addresses = [current_addresses]
+                current_state = session.command('query')
+                counters_before = totals()
+                markers_before = endpoint.command('stats')['local_forwarder_counts']
+                https_ok, https_tun = ordinary_https(origin, current_addresses)
+                dns_before_recovery = totals()
+                dns_ok, dns_tun, _ = ordinary_dns(current['dns'][0], current_addresses)
+                counters_after = totals()
+                for _ in range(10):
+                    if counters_after[protocol] - dns_before_recovery[protocol] >= 82:
+                        break
+                    time.sleep(.1)
+                    counters_after = totals()
+                dns_transport_growth = {key: counters_after[key] - dns_before_recovery[key]
+                                        for key in counters_before}
+                markers_after = endpoint.command('stats')['local_forwarder_counts']
+                growth = {key: counters_after[key] - counters_before[key] for key in counters_before}
+                dns_growth = {key: markers_after[key] - markers_before[key]
+                              for key in ['synthetic_dns_requests', 'synthetic_dns_replies']}
+                # Require the selected transport and the exact synthetic DNS exchange.
+                # Endpoint uptime/process state alone can never qualify recovery.
+                recovered = recovery_evidence_valid(
+                    protocol, current_state['state'], https_ok, https_tun, dns_ok, dns_tun,
+                    growth, dns_growth, dns_transport_growth)
+                attempts.append({'adapter_present': True,
+                                 'state': current_state['state'], 'https_delivered': https_ok,
+                                 'https_source_is_tun': https_tun, 'dns_delivered': dns_ok,
+                                 'dns_source_is_tun': dns_tun, 'transport_bytes': growth,
+                                 'dns_marker_delta': dns_growth, 'dns_transport_bytes': dns_transport_growth,
+                                 'recovered': recovered})
+                if recovered:
+                    break
+                time.sleep(.5)
+            result.update(recovery_attempts=attempts, recovered_without_new_start=recovered,
+                          desktop_sleep_or_network_change_qualified=False)
+            traffic_ok = traffic_ok and recovered
         stage = 'terminate_and_restore'
         # No stdin EOF/graceful Stop in this fault case: Child.close without a
         # command kills exactly its owned process. The service must detect loss
@@ -427,7 +498,7 @@ def main():
                 try { [void]$event.Set() } finally { $event.Dispose() }
                 """)
             try:
-                watchdog.process.wait(timeout=85)
+                watchdog.process.wait(timeout=145 if termination == 'endpoint-restart' else 85)
                 guard = json.loads((report.parent / 'general-watchdog.json').read_text(encoding='utf-8-sig'))
                 result['deadline_triggered'] = guard['triggered']
                 result['passed'] = result['passed'] and not guard['triggered'] and guard['action_completed']

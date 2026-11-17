@@ -177,19 +177,36 @@ def main():
         echo_socket.bind((dns_host, SYNTHETIC_IPV6_UDP_PORT))
         echo_worker = threading.Thread(target=echo_server, args=(stop, counters, echo_socket), daemon=True)
         echo_worker.start()
-    endpoint = subprocess.Popen([str(args.binary.resolve()), 'vpn.toml', 'hosts.toml', '--jobs', '2'],
-                                cwd=directory, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    try:
-        for _ in range(100):
-            if endpoint.poll() is not None:
-                raise RuntimeError('endpoint_exited')
-            try:
-                with socket.create_connection(('127.0.0.1', 38444), timeout=.1):
-                    break
-            except OSError:
-                time.sleep(.1)
-        else:
+    def launch_endpoint():
+        child = subprocess.Popen([str(args.binary.resolve()), 'vpn.toml', 'hosts.toml', '--jobs', '2'],
+                                 cwd=directory, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            for _ in range(100):
+                if child.poll() is not None:
+                    raise RuntimeError('endpoint_exited')
+                try:
+                    with socket.create_connection(('127.0.0.1', 38444), timeout=.1):
+                        return child
+                except OSError:
+                    time.sleep(.1)
             raise RuntimeError('endpoint_not_ready')
+        except BaseException:
+            stop_endpoint(child)
+            raise
+
+    def stop_endpoint(child):
+        # Retain only the Popen child; no PID/name/system-wide termination.
+        if child.poll() is None:
+            child.terminate()
+        try:
+            child.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            child.kill()
+            child.wait(timeout=5)
+
+    endpoint = None
+    try:
+        endpoint = launch_endpoint()
         print('ready', flush=True)
         for command in sys.stdin:
             if command.strip() == 'stats':
@@ -198,16 +215,20 @@ def main():
                     observation['owned_endpoint_udp_queues'] = owned_udp_queues(endpoint)
                     observation['local_forwarder_counts'] = local_exit.stats()
                 print(json.dumps(observation), flush=True)
+            elif command.strip() == 'restart':
+                stop_endpoint(endpoint)
+                ended = endpoint.poll() is not None
+                # A real bounded outage of this owned diagnostic endpoint only.
+                time.sleep(2)
+                endpoint = launch_endpoint()
+                print(json.dumps({'restarted': ended and endpoint.poll() is None,
+                                  'outage_seconds': 2}), flush=True)
             else:
                 break
     finally:
         stop.set()
-        endpoint.terminate()
-        try:
-            endpoint.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            endpoint.kill()
-            endpoint.wait(timeout=5)
+        if endpoint is not None:
+            stop_endpoint(endpoint)
         worker.join(timeout=1)
         if echo_worker:
             echo_worker.join(timeout=1)

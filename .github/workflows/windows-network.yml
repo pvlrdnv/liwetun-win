@@ -35,7 +35,7 @@ on:
           - http2
           - http3
       production_termination:
-        description: End the production session by Stop, forced lease-client death or owned-service crash
+        description: Stop, lease death, service crash, or recover from an owned endpoint restart
         required: false
         default: stop
         type: choice
@@ -43,6 +43,7 @@ on:
           - stop
           - lease-death
           - service-crash
+          - endpoint-restart
       production_profile:
         description: Valid profile or isolated wrong-auth / wrong-CA startup refusal (H2 Stop only)
         required: false
