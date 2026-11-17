@@ -84,9 +84,13 @@ def cancel_owned_request(session, endpoint, report_path):
                 proves_https=False, proves_dns=False, release_ready=False)
 
 
-def expire_owned_request(session, endpoint, report_path, diagnostic):
-    """Never Stop before the worker's own bounded receive deadline completes."""
-    from owned_probe_fixture import validate_report, validate_deadline_report
+def observe_owned_negative(session, endpoint, report_path, diagnostic, mode):
+    """Require a completed rejected request and remote EOF before sending Stop."""
+    from owned_probe_fixture import validate_report, validate_deadline_report, validate_wrong_nonce_report
+    validators = {'deadline': validate_deadline_report, 'wrong-nonce': validate_wrong_nonce_report}
+    reasons = {'deadline': 'owned_probe_deadline_not_qualified',
+               'wrong-nonce': 'owned_probe_wrong_nonce_not_qualified'}
+    validate = validators[mode]
     started = time.monotonic()
     while time.monotonic() - started < 8:
         receiver = endpoint.command('stats')['owned_probe_sink']
@@ -99,19 +103,23 @@ def expire_owned_request(session, endpoint, report_path, diagnostic):
                 observation = validate_report(json.loads(raw))
                 diagnostic['worker'] = observation
                 if receiver['owner_closed'] == 1 and receiver['waiting_for_owner_close'] == 0:
-                    validate_deadline_report(observation, receiver)
+                    validate(observation, receiver)
                     break
         time.sleep(.025)
     else:
-        raise RuntimeError('owned_probe_deadline_not_qualified')
+        raise RuntimeError(reasons[mode])
     traffic = session.command('traffic')
     unknown = (not traffic.get('flags', 0) & 2 and traffic.get('tx') is None and traffic.get('rx') is None)
     if not unknown:
-        raise RuntimeError('owned_probe_deadline_not_qualified')
-    return dict(qualified=True, observation_total_ms=int((time.monotonic() - started) * 1000),
-                stop_sent_before_deadline=False, unknown_after_deadline=True,
+        raise RuntimeError(reasons[mode])
+    result = dict(qualified=True, observation_total_ms=int((time.monotonic() - started) * 1000),
                 owned_socket_path=observation, owned_socket_receiver=receiver,
                 proves_https=False, proves_dns=False, release_ready=False)
+    if mode == 'deadline':
+        result.update(stop_sent_before_deadline=False, unknown_after_deadline=True)
+    else:
+        result.update(stop_sent_before_rejection=False, unknown_after_rejection=True)
+    return result
 
 
 def ordinary_https(origin, addresses, family=socket.AF_INET):
@@ -299,10 +307,12 @@ def main():
     attachment_guard = os.environ.get('ATTACHED_TUN') == 'true'
     owned_probe = os.environ.get('OWNED_PROBE') == 'true'
     owned_probe_mode = os.environ.get('LIWETUN_OWNED_PROBE_MODE', 'echo')
-    if owned_probe_mode not in ['echo', 'cancel', 'deadline'] or (owned_probe_mode != 'echo' and not owned_probe):
+    if owned_probe_mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce'] or (owned_probe_mode != 'echo' and not owned_probe):
         raise RuntimeError('invalid_owned_probe_mode')
     cancel_probe = owned_probe and owned_probe_mode == 'cancel'
     negative_probe = owned_probe and owned_probe_mode != 'echo'
+    negative_key = {'cancel': 'owned_probe_cancellation', 'deadline': 'owned_probe_deadline',
+                    'wrong-nonce': 'owned_probe_wrong_nonce'}.get(owned_probe_mode)
     if owned_probe and not attachment_guard:
         raise RuntimeError('invalid_owned_probe_mode')
     if attachment_guard and not traffic_required:
@@ -449,11 +459,12 @@ def main():
             session.close()
             session = None
         elif negative_probe:
-            stage = 'owned_request_receive_deadline'
-            result['owned_probe_deadline_observation'] = {}
-            result['owned_probe_deadline'] = expire_owned_request(
+            stage = 'owned_request_receive_deadline' if owned_probe_mode == 'deadline' else 'owned_request_wrong_nonce'
+            diagnostic_key = negative_key + '_observation'
+            result[diagnostic_key] = {}
+            result[negative_key] = observe_owned_negative(
                 session, endpoint, client.parent / 'owned-probe-context.json',
-                result['owned_probe_deadline_observation'])
+                result[diagnostic_key], owned_probe_mode)
         if negative_probe:
             result['ordinary_https_probe_attempted'] = False
             result['application_dns_probe_attempted'] = False
@@ -472,7 +483,7 @@ def main():
             time.sleep(.1)
         result['ordinary_origin_route_is_tun'] = selected
         if negative_probe:
-            traffic_ok = result['owned_probe_cancellation' if cancel_probe else 'owned_probe_deadline']['qualified']
+            traffic_ok = result[negative_key]['qualified']
         elif profile == 'valid':
             if not info or not selected:
                 raise RuntimeError('production_route_not_selected')
@@ -768,7 +779,8 @@ def main():
                    'fixture_child_closed', 'lease_client_already_exited', 'lease_client_not_forced',
                    'service_crash_not_observed'}
         reasons.update({'owned_probe_not_waiting', 'owned_probe_cancellation_not_qualified',
-                        'owned_probe_deadline_not_qualified', 'owned_socket_path_not_qualified', 'invalid_owned_probe_report'})
+                        'owned_probe_deadline_not_qualified', 'owned_probe_wrong_nonce_not_qualified',
+                        'owned_socket_path_not_qualified', 'invalid_owned_probe_report'})
         reason = error.args[0] if error.args else None
         result['failure_reason'] = reason if isinstance(reason, str) and reason in reasons else 'unknown'
         if reason == 'wfp_probe_failed':

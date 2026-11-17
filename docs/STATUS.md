@@ -15,6 +15,16 @@ bypass/migration negatives, adapter ownership, trusted signing/distribution and
 separate Windows 10/11 desktop acceptance remain open. No production/LikeWeb or
 owner-device network/trust changes.
 
+Next negative prerequisite: `owned_probe_mode=wrong-nonce` now returns an exact
+24-byte reply with a zero nonce, which cannot match the worker's nonzero token.
+Its strict oracle requires 24 endpoint TX / 24 RX, same instance/epoch and
+disarm, but no verified echo/success, no cancellation/deadline, unknown service
+observations and remote EOF before Stop. The fixture records only closed totals
+including an invalid-reply count; no token/frame is logged. No native worker,
+SDK ABI/binary, service command or GUI capability changed. **35 local Python
+checks**, Python/YAML and diff checks PASS; actual Windows H2/H3 and shared
+negative-observer deadline regression are pending.
+
 ## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the

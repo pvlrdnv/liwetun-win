@@ -3,12 +3,53 @@ import struct
 import time
 import unittest
 from owned_probe_fixture import (OwnedProbeSink, REQUEST, REPLY, TARGET, validate_report,
-                                 validate_cancel_report, validate_deadline_report)
+                                 validate_cancel_report, validate_deadline_report, validate_wrong_nonce_report)
 from physical_forwarder import Forwarder
 from endpoint_forwarder import EndpointForwarder
 
 
 class OwnedProbeFixtureTests(unittest.TestCase):
+    def test_wrong_nonce_receiver_sends_exact_frame_without_reflecting_token(self):
+        receiver = OwnedProbeSink(port=0, mode='wrong-nonce')
+        try:
+            with socket.create_connection(receiver.address, timeout=1) as client:
+                client.sendall(REQUEST + (123).to_bytes(8, 'big'))
+                answer = b''
+                while len(answer) < 24:
+                    part = client.recv(24 - len(answer))
+                    self.assertTrue(part)
+                    answer += part
+                self.assertEqual(answer, REPLY + bytes(8))
+            deadline = time.monotonic() + 1
+            while receiver.stats()['owner_closed'] != 1 and time.monotonic() < deadline:
+                time.sleep(.01)
+            counts = receiver.stats()
+            self.assertEqual(counts['owner_closed'], 1)
+            self.assertEqual(counts['invalid_replies'], 1)
+            self.assertEqual(counts['valid_requests'], 1)
+            self.assertEqual(counts['reply_bytes'], 24)
+        finally:
+            receiver.close()
+
+    def test_wrong_nonce_oracle_requires_bidirectional_path_but_no_echo_or_success(self):
+        value = dict(schema_version=2, stage=9, connected=True, nonexclusive_rejected=True,
+                     arm_accepted=True, echo_verified=False, same_instance_epoch=True, disarmed=True,
+                     cancelled=False, receive_cancelled=False, receive_timed_out=False,
+                     snapshot_flags=15, tx_bytes=24, rx_bytes=24, qualified=False,
+                     proves_dns=False, proves_https=False, proves_internet=False,
+                     identifiers_exported=False, release_ready=False)
+        receiver = dict(valid_requests=1, request_bytes=24, replies_sent=1, reply_bytes=24,
+                        invalid_replies=1, rejected_frames=0, waiting_for_owner_close=0, owner_closed=1)
+        validate_wrong_nonce_report(value, receiver)
+        for field, replacement in [('qualified', True), ('echo_verified', True), ('disarmed', False),
+                                   ('same_instance_epoch', False), ('rx_bytes', 0), ('snapshot_flags', 7),
+                                   ('cancelled', True), ('receive_timed_out', True)]:
+            with self.assertRaises(ValueError):
+                validate_wrong_nonce_report(dict(value, **{field: replacement}), receiver)
+        for field, replacement in [('invalid_replies', 0), ('reply_bytes', 0), ('owner_closed', 0)]:
+            with self.assertRaises(ValueError):
+                validate_wrong_nonce_report(value, dict(receiver, **{field: replacement}))
+
     def test_withheld_response_records_tcp_reset_separately_from_eof(self):
         receiver = OwnedProbeSink(port=0, mode='deadline')
         try:

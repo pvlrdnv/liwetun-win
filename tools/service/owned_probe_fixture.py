@@ -12,7 +12,7 @@ assert len(REQUEST) == len(REPLY) == 16
 
 class OwnedProbeSink:
     def __init__(self, port=38556, mode='echo'):
-        if mode not in ['echo', 'cancel', 'deadline']:
+        if mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce']:
             raise ValueError('invalid_owned_probe_mode')
         self.mode = mode
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -24,7 +24,7 @@ class OwnedProbeSink:
         self.lock = threading.Lock()
         self.counts = dict(accepted=0, request_bytes=0, valid_requests=0,
                            replies_sent=0, reply_bytes=0, rejected_frames=0,
-                           waiting_for_owner_close=0, owner_closed=0, owner_reset=0)
+                           waiting_for_owner_close=0, owner_closed=0, owner_reset=0, invalid_replies=0)
         self.thread = threading.Thread(target=self.serve, daemon=True)
         self.thread.start()
 
@@ -66,7 +66,7 @@ class OwnedProbeSink:
                         self.count('rejected_frames')
                         continue
                     self.count('valid_requests')
-                    if self.mode != 'echo':
+                    if self.mode in ['cancel', 'deadline']:
                         # Deliberately withhold every response. The controller
                         # must Stop while the service is blocked in receive.
                         self.count('waiting_for_owner_close')
@@ -89,6 +89,10 @@ class OwnedProbeSink:
                             self.count('waiting_for_owner_close', -1)
                         continue
                     response = REPLY + packet[16:]
+                    if self.mode == 'wrong-nonce':
+                        # Requests require a nonzero token, so zero cannot match.
+                        response = REPLY + bytes(8)
+                        self.count('invalid_replies')
                     client.sendall(response)
                     self.count('replies_sent')
                     self.count('reply_bytes', len(response))
@@ -102,6 +106,8 @@ class OwnedProbeSink:
                             continue
                         if extra:
                             self.count('rejected_frames')
+                        else:
+                            self.count('owner_closed')
                         break
                 except OSError:
                     continue
@@ -177,4 +183,19 @@ def validate_deadline_report(value, receiver):
             and receiver['rejected_frames'] == 0 and receiver['owner_closed'] == 1
             and receiver['waiting_for_owner_close'] == 0):
         raise ValueError('owned_probe_deadline_not_qualified')
+    return value
+
+
+def validate_wrong_nonce_report(value, receiver):
+    validate_report(value)
+    if not (value['stage'] == 9 and value['connected'] and value['nonexclusive_rejected']
+            and value['arm_accepted'] and value['disarmed'] and value['same_instance_epoch']
+            and not value['receive_timed_out'] and not value['receive_cancelled'] and not value['cancelled']
+            and not value['qualified'] and not value['echo_verified'] and value['snapshot_flags'] == 15
+            and value['tx_bytes'] == FRAME_BYTES and value['rx_bytes'] == FRAME_BYTES
+            and receiver['valid_requests'] == 1 and receiver['request_bytes'] == FRAME_BYTES
+            and receiver['replies_sent'] == 1 and receiver['reply_bytes'] == FRAME_BYTES
+            and receiver['invalid_replies'] == 1 and receiver['rejected_frames'] == 0
+            and receiver['owner_closed'] == 1 and receiver['waiting_for_owner_close'] == 0):
+        raise ValueError('owned_probe_wrong_nonce_not_qualified')
     return value
