@@ -165,6 +165,26 @@ are pending; real TLS/HTTP/path and TLS 1.3/graceful shutdown qualification rema
 open. [Contract and primary references](HEALTH_HTTPS_V1.md). No UI/production
 health capability is enabled.
 
+Same-address local direct-bypass negative **PASS** on source `63f1fe2`: H2
+44165060299 and H3 44165060099 with the original diagnostic endpoint. Correct
+local echo and same epoch did not qualify the request: actual SDK flags 3,
+TX/RX zero, explicit disarm and unknown service observations. The endpoint
+receiver saw no payload; local receiver EOF preceded Stop. Route/DNS/adapter/WFP
+restoration passed without watchdog action. [Closed reports](evidence/owned-probe-local-bypass-44165060099.json).
+This qualifies local delivery outside the SDK, not SDK recovery bypass selection.
+
+Schannel MSVC compilation and no-network cancellation/deadline/name guards
+**PASS** (44165060837), retaining HTTP and socket/slot contracts.
+[Receipt](evidence/health-schannel-contract-44165060837.json). This is not a TLS
+handshake result. Added a separate disposable-CI loopback TLS 1.2 fixture with
+real automatic validation, nonce HTTP exchange/fragmentation, wrong nonce,
+redirect/header limits, wrong name, untrusted/expired certificates, missing
+revocation information, deadline and cancellation controls. Temporary fixture
+roots are CI-only and must be removed by exact certificate identity; private
+keys/certificates are never uploaded. Local synthetic certificate generation
+PASS without trust changes. Actual Windows handshake matrix pending. No SDK,
+service command, public IPC, GUI or release capability is enabled by this fixture.
+
 ## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the

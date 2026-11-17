@@ -1,0 +1,22 @@
+{
+  "source_run": 44165060837,
+  "source_commit": "63f1fe203e1b0e691da1e2304af330ef542b06b0",
+  "evidence": {
+    "schannel_compile_and_preflight_guards_passed": true,
+    "actual_loopback_socket_boundary_passed": true,
+    "release_ready": false,
+    "live_sdk_path_qualified": false,
+    "http_response_contract_passed": true,
+    "tunnel_started": false,
+    "slot_contract_passed": true,
+    "network_configuration_changed": false,
+    "synthetic_context_not_sdk_tun": true,
+    "https_transport_qualified": false,
+    "source_commit": "63f1fe203e1b0e691da1e2304af330ef542b06b0",
+    "schannel_handshake_tested": false
+  },
+  "real_tls_handshake_qualified": false,
+  "service_admitted": false,
+  "package_admitted": false,
+  "release_ready": false
+}
