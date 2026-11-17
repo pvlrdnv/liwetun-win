@@ -1,6 +1,21 @@
 # Development checkpoint — 2026-11-17
 
-## Active — native health prerequisites; aggregate SDK qualified
+## Latest checkpoint — owned request prerequisites, no application health release
+
+The SDK-owned raw TCP request now has focused H2/H3 CI evidence for exact
+endpoint byte correlation, same-epoch fencing, socket refusal and Stop during
+receive. Missing-response deadlines pass H2 with the original fixture and H2/H3
+with an explicitly modified diagnostic endpoint that wakes a parked H3 reader.
+The same-commit original H3 fixture still fails pre-Stop remote-close acceptance.
+[Full comparison](evidence/owned-probe-wakeup-44123761038.json).
+**33 local Python checks PASS**; actual Windows CI compiled and exercised the
+service. Normal package modes remain OFF; the separate SDK/endpoint candidates
+are not a shipped health capability. Product HTTPS/DNS health, live
+bypass/migration negatives, adapter ownership, trusted signing/distribution and
+separate Windows 10/11 desktop acceptance remain open. No production/LikeWeb or
+owner-device network/trust changes.
+
+## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the
 owner's corporate tunnel/network/trust configuration remain unchanged. No
@@ -477,6 +492,27 @@ binary/provenance hashes, wakeup manifest/output hashes and focused owned-probe
 mode; the original endpoint pin/default remains unchanged. No production server
 change. Live H2/H3 deadline and H3 echo/cancel differential qualification pending.
 Binary retention expires 2026-12-01 16:11 UTC; safe UDP evidence 2026-11-24.
+
+Explicit endpoint wakeup differential on source `520f9a5`: **all four Windows
+cases PASS** — H2 deadline 44123761280 (**4217 ms** total), H3 deadline 44123765703
+(**4359 ms**), H3 echo 44123761038 and H3 cancellation 44123761323 (**234 ms**
+Stop-to-worker/EOF). Both missing-response cases satisfied the unchanged oracle:
+24 endpoint TX / 0 RX, native receive timeout (not cancel), disarm, no success,
+unknown service observations, remote EOF before Stop. All restored routes/DNS/
+adapter/WFP without watchdog action. [Reports](evidence/owned-probe-wakeup-44123761038.json).
+The producer matches the pre-experiment 8e23ec5 file byte-for-byte, and the SDK
+binary is unchanged; only the explicit diagnostic endpoint candidate differs.
+Its separate runtime pin now records this narrow qualification. The original
+endpoint's H3 deadline remains unqualified; no production server readiness,
+application HTTPS/DNS health, normal package/service admission or desktop claim.
+Same-commit original-endpoint controls completed: H2 echo 44124581043 PASS;
+H3 deadline 44124576722 repeats the expected failure, with receiver still waiting
+and no EOF/reset at 7984 ms, then EOF after Stop. Both final route/DNS/adapter
+restorations passed without watchdog action. The failed case did not reach its
+post-Stop WFP observation; it is not claimed as a WFP-qualified case. The four
+candidate-fixture cases did measure and restore WFP. All six reports are in the
+same comparison receipt. This supports the missing-reader-wakeup explanation in
+the diagnostic endpoint; no extrapolation to a production server version.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests

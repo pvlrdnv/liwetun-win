@@ -5,7 +5,9 @@
   "endpoint_close_fix": true,
   "endpoint_close_manifest_sha256": "b28f5d58abfc0071cea3f33f5b29e1b7dcc88935cc531adbb0dc5a6ef9e376b8",
   "endpoint_close_source_sha256": "4f65a1e6a41649bbea876147fc743d77da6e2dccbef9729c2401706f314d52b2",
-  "qualification_scope": "linux_ci_build_and_two_udp_flows_only",
-  "h3_deadline_qualified": false,
-  "release_ready": false
+  "qualification_scope": "focused_disposable_ci_h2_h3_owned_deadline_h3_echo_cancel_with_reader_wakeup_only",
+  "h3_deadline_qualified": true,
+  "release_ready": false,
+  "qualification_receipt": "docs/evidence/owned-probe-wakeup-44123761038.json",
+  "production_admitted": false
 }

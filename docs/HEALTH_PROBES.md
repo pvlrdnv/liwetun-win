@@ -394,3 +394,48 @@ old preparation-bound failure and both original reports are
 [archived separately](evidence/owned-probe-cancel-disarm-44115760730.json).
 These remain disposable Server 2022 raw TCP experiments, with no native
 application HTTPS/DNS or Windows 10/11 desktop claim.
+
+
+## Missing-response cleanup and the separate endpoint wakeup experiment
+
+Schema-v2 worker receipts distinguish receive deadline from cancellation. The
+no-response fixture requires an exact request, no reply, endpoint TX 24 / RX 0,
+same epoch, explicit disarm, unknown service observations, and receiver EOF
+before Stop. H2 passed this original endpoint case. H3's worker also expired and
+disarmed correctly, but its receiver remained waiting about eight seconds until
+Stop. A separate reset counter found neither EOF nor reset before Stop.
+An abortive-close client experiment did not fix this; it was removed. The native
+producer again matches source 8e23ec5 byte-for-byte.
+
+Exact pinned endpoint source fab5b835 maps H3 Finished and Reset to Close. Its
+Close handler shuts down Read without notifying a StreamSource parked on the
+readable channel, while the response side retains that channel's sender. A
+separate guarded one-file candidate wakes the reader before the existing read
+shutdown. The original archive source and exact candidate output are hashed;
+no production server/repository or SDK binary was changed.
+
+The candidate build 44121575608 passed Linux release compilation and its two-flow
+UDP control. A separately pinned binary is selected only by explicit
+`endpoint_stream_close=true` in focused owned-probe CI, with all build/head,
+original source/patch, wakeup manifest/output and binary hashes checked.
+The original endpoint pin/default remains unchanged.
+
+On source 520f9a5, all four focused Windows cases PASS:
+H2 deadline 44123761280 (4217 ms total), H3 deadline 44123765703 (4359 ms),
+H3 echo 44123761038 and H3 cancellation 44123761323 (234 ms Stop-to-receipt/EOF).
+Both deadlines observed receiver EOF before Stop with the original strict oracle.
+Every case restored network and WFP without watchdog action.
+[Complete comparative reports](evidence/owned-probe-wakeup-44123761038.json).
+This resolves the observed close hang only in the explicitly modified diagnostic
+endpoint fixture. It does not qualify the original endpoint's H3 deadline,
+production server behavior, application HTTPS/DNS health, Windows 10/11 or release.
+The native health capability remains unavailable in the GUI.
+
+
+Same-commit original-endpoint controls: H2 echo 44124581043 PASS; H3 deadline
+44124576722 repeats the expected open-receiver failure at 7984 ms, with EOF only
+after Stop. Both restore route/DNS/adapter baseline without watchdog action.
+The failed H3 control did not reach a post-Stop WFP measurement; the four
+candidate cases did measure WFP restoration. Both controls are included in the
+comparison receipt above. This supports the parked-reader explanation in the
+pinned diagnostic endpoint while preserving the original endpoint limitation.
