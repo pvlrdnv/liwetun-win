@@ -1,5 +1,7 @@
 """Fixed synthetic HTTPS receiver and closed service-result validation for CI."""
 import json
+import ipaddress
+import os
 from pathlib import Path
 import socket
 import ssl
@@ -13,23 +15,30 @@ from health_tls import HEADERS
 from owned_probe_fixture import validate_report
 
 MODES = ('https', 'https-wrong-nonce', 'https-untrusted', 'https-deadline', 'https-cancel',
-         'https-migration', 'https-epoch-change')
+         'https-migration', 'https-epoch-change', 'https-bypass')
 REQUEST_HEADERS = (b'POST /liwetun/health/v1 HTTP/1.1\r\nHost: health.liwetun.invalid\r\n'
                    b'Content-Type: application/octet-stream\r\nContent-Length: 8\r\n'
                    b'Cache-Control: no-store\r\nConnection: close\r\n\r\n')
 
 
 class OwnedHttpsSink:
-    def __init__(self, directory, mode, port=38556):
+    def __init__(self, directory, mode, port=38556, owned_address=None):
         if mode not in MODES:
             raise ValueError('invalid_owned_https_mode')
+        if owned_address is not None:
+            if mode != 'https-bypass' or os.name != 'nt' or os.environ.get('GITHUB_ACTIONS') != 'true':
+                raise ValueError('owned_address_requires_disposable_windows')
+            address = ipaddress.IPv4Address(owned_address)
+            if address.is_global or address.is_loopback or address.is_unspecified or address.is_multicast or address.is_reserved:
+                raise ValueError('invalid_owned_receiver_address')
+        self.owned_address = owned_address
         self.mode = mode
         certificate = 'untrusted' if mode == 'https-untrusted' else 'crl-good'
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         self.context.minimum_version = self.context.maximum_version = ssl.TLSVersion.TLSv1_2
         self.context.load_cert_chain(directory / (certificate + '.pem'), directory / (certificate + '.key'))
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind(('127.0.0.1', port))
+        self.socket.bind((owned_address or '127.0.0.1', port))
         self.socket.listen(4)
         self.socket.settimeout(.2)
         self.port = self.socket.getsockname()[1]
@@ -53,11 +62,14 @@ class OwnedHttpsSink:
     def serve(self):
         while not self.stop.is_set():
             try:
-                raw, _ = self.socket.accept()
+                raw, peer = self.socket.accept()
             except socket.timeout:
                 continue
             except OSError:
                 return
+            if self.owned_address is not None and peer[0] != self.owned_address:
+                raw.close()
+                continue
             self.count('accepted')
             with raw:
                 raw.settimeout(2)

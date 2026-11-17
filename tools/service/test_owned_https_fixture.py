@@ -6,7 +6,7 @@ import tempfile
 import time
 import unittest
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from owned_https_fixture import OwnedHttpsSink, REQUEST_HEADERS, HEADERS, validate_https_report
 from health_tls import generate
@@ -27,12 +27,42 @@ def reports():
 
 
 class OwnedHttpsReportTests(unittest.TestCase):
+    def test_owned_tls_listener_requires_explicit_disposable_windows(self):
+        with patch.dict('os.environ', {'GITHUB_ACTIONS': 'false'}):
+            with self.assertRaises(ValueError):
+                OwnedHttpsSink(Path('/unused'), 'https-bypass', port=0, owned_address='198.18.0.1')
+
+    def test_correct_local_https_cannot_supply_endpoint_bytes(self):
+        import json
+        path, tls = reports()
+        path.update(qualified=False, snapshot_flags=3, tx_bytes=0, rx_bytes=0)
+        tls.update(qualified=False)
+        receiver = dict(empty_controls=1, client_certificate_seen=False, rejected_frames=0, owner_reset=0,
+                        handshake_complete=1, handshake_failed=0, valid_requests=1,
+                        request_bytes=len(REQUEST_HEADERS) + 8, replies_sent=1, reply_bytes=len(HEADERS) + 8,
+                        invalid_replies=0, owner_closed=1, waiting_for_owner_close=0)
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / 'owned-probe-context.json').write_text(json.dumps(path) + '\n')
+            (directory / 'owned-https-context.json').write_text(json.dumps(tls) + '\n')
+            session = SimpleNamespace(command=lambda _: dict(flags=1, tx=None, rx=None))
+            endpoint = SimpleNamespace(command=Mock(side_effect=AssertionError('Use the local receiver')))
+            local = SimpleNamespace(stats=lambda: receiver)
+            result = observe_owned_https(session, endpoint, directory, 'https-bypass', {}, local)
+            self.assertTrue(result['qualified'])
+            self.assertFalse(result['owned_https_qualified'])
+            self.assertTrue(result['tls']['response_verified'])
+            path.update(snapshot_flags=15, tx_bytes=1000, rx_bytes=3000)
+            (directory / 'owned-probe-context.json').write_text(json.dumps(path) + '\n')
+            with self.assertRaises(RuntimeError):
+                observe_owned_https(session, endpoint, directory, 'https-bypass', {}, local)
+
     def test_valid_https_reply_after_actual_migration_stays_unqualified(self):
         import json
         path, tls = reports()
         path.update(qualified=False, snapshot_flags=33, tx_bytes=None, rx_bytes=None)
         tls.update(qualified=False)
-        receiver = dict(empty_controls=1, client_certificate_seen=False, rejected_frames=0, owner_reset=0,
+        receiver = dict(empty_controls=0, client_certificate_seen=False, rejected_frames=0, owner_reset=0,
                         handshake_complete=1, handshake_failed=0, valid_requests=1,
                         request_bytes=len(REQUEST_HEADERS) + 8, replies_sent=1, reply_bytes=len(HEADERS) + 8,
                         invalid_replies=0, owner_closed=1, waiting_for_owner_close=0)

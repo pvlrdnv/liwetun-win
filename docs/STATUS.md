@@ -1,4 +1,4 @@
-# Development checkpoint — 2026-11-17
+# Development checkpoint — 2026-11-18
 
 ## Latest checkpoint — owned request prerequisites, no application health release
 
@@ -356,6 +356,42 @@ No state/diagnostic flags are injected. **49 local Python checks PASS**, includi
 valid HTTPS after migration remaining unqualified and timeout not substituting
 for changed epoch. Python/YAML/diff PASS; actual Windows controls pending.
 All seven test flags remain excluded from ordinary packaging; no UI admission.
+
+Corrected HTTPS certificate/cancellation controls **PASS** on `e65f009`:
+H2 untrusted 44174701000 (**593 ms**) / H3 44174715707 (**718 ms**), with exact
+ChainRejected and zero HTTP; H2 cancellation 44174707965 (**250 ms**) / H3
+44174721432 (**108 ms**) for Stop through worker receipt/remote EOF. Native
+Cancelled/disarm and unknown-before-Stop observations passed. Network/WFP,
+exact fixture-root removal and no-watchdog checks passed in every case.
+[All reports](evidence/owned-https-cert-cancel-44174701000.json).
+
+HTTPS actual epoch invalidation **PASS** on `59b9d9d`: H2 44175156195 and H3
+44175176414. Each had a verified TLS handshake and HTTP request in flight, then
+only its owned endpoint was gracefully restarted. Native code observed changed
+SDK epoch, flags 129/null proof counters, no verified response/success and
+explicit disarm; EOF before Stop, unknown observations, network/WFP and fixture
+trust restoration passed without watchdog action. The reported 15 ms is the
+observer interval after the two-second restart command, not total restart time.
+[Evidence](evidence/owned-https-epoch-44175156195.json).
+
+First HTTPS migration controls 44175147739 / 44175166900 had the desired actual
+SDK Migrated flag 33 / null counters, correct verified HTTPS, unchanged global
+epoch, disarm and no qualified success. The harness incorrectly required an
+empty TCP control at the endpoint, although early-ack kept that no-payload socket
+entirely on the temporary upstream. The migration oracle now requires exactly
+zero empty endpoint controls; other modes still require one. Native refusal
+criteria are unchanged. These failed cases restored network/trust but did not
+reach final WFP measurement. [Original reports](evidence/owned-https-migration-observer-44175147739.json).
+
+Added `https-bypass` using the existing default-OFF local-bypass flag. Only CI
+binds TLS on the actual task attachment's preferred address and accepts peers
+with that same address; native arm/TLS/HTTP use that same source/local peer.
+A valid HTTPS reply must still be rejected as path evidence: actual SDK flags 3,
+zero endpoint bytes, unchanged epoch/disarm and unknown service observations.
+The endpoint receiver must see zero payload. This tests local delivery outside
+SDK, not SDK recovery bypass upstream selection. **51 local Python checks PASS**;
+Windows migration reruns and TLS local-bypass controls pending. All seven flags
+remain excluded from the ordinary package. No production/UI capability enabled.
 
 ## Development evidence and history
 

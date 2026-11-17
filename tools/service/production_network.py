@@ -21,7 +21,7 @@ from physical_forwarder import SYNTHETIC_IPV6, SYNTHETIC_IPV6_PAYLOAD, SYNTHETIC
 from owned_https_fixture import MODES as HTTPS_MODES
 
 
-def observe_owned_https(session, endpoint, report_path, mode, diagnostic):
+def observe_owned_https(session, endpoint, report_path, mode, diagnostic, local_receiver=None):
     from owned_https_fixture import read_receipt, validate_https_report, REQUEST_HEADERS, HEADERS
     from owned_probe_fixture import validate_report
     path_file = report_path / 'owned-probe-context.json'
@@ -46,7 +46,7 @@ def observe_owned_https(session, endpoint, report_path, mode, diagnostic):
         if stop.get('code') != 0:
             raise RuntimeError('owned_https_not_qualified')
     while time.monotonic() - started < (1.5 if stopping else 8):
-        receiver = endpoint.command('stats')['owned_probe_sink']
+        receiver = local_receiver.stats() if local_receiver else endpoint.command('stats')['owned_probe_sink']
         diagnostic['receiver'] = receiver
         if path_file.exists() and tls_file.exists():
             path = read_receipt(path_file)
@@ -66,7 +66,8 @@ def observe_owned_https(session, endpoint, report_path, mode, diagnostic):
     elapsed = int((time.monotonic() - started) * 1000)
     common = (path['stage'] == 9 and path['connected'] and path['nonexclusive_rejected']
               and path['arm_accepted'] and path['disarmed']
-              and receiver['empty_controls'] == 1 and not receiver['client_certificate_seen']
+              and receiver['empty_controls'] == (0 if mode == 'https-migration' else 1)
+              and not receiver['client_certificate_seen']
               and receiver['rejected_frames'] == receiver['owner_reset'] == 0)
     if stopping:
         common = (common and not path['state_epoch_changed'] and path['cancelled'] and path['receive_cancelled']
@@ -79,6 +80,10 @@ def observe_owned_https(session, endpoint, report_path, mode, diagnostic):
         common = (common and not path['state_epoch_changed'] and path['same_instance_epoch'] and not path['cancelled']
                   and not path['receive_cancelled'] and not path['receive_timed_out'] and path['snapshot_flags'] == 33
                   and path['tx_bytes'] is None and path['rx_bytes'] is None)
+    elif mode == 'https-bypass':
+        common = (common and not path['state_epoch_changed'] and path['same_instance_epoch'] and not path['cancelled']
+                  and not path['receive_cancelled'] and not path['receive_timed_out'] and path['snapshot_flags'] == 3
+                  and path['tx_bytes'] == path['rx_bytes'] == 0)
     else:
         common = (common and not path['state_epoch_changed'] and path['same_instance_epoch'] and not path['cancelled'] and not path['receive_cancelled']
                   and path['snapshot_flags'] == 15 and path['tx_bytes'] >= tls['wire_tx'] > 0
@@ -91,7 +96,7 @@ def observe_owned_https(session, endpoint, report_path, mode, diagnostic):
         accepted = (tls['handshake_verified'] and tls['request_sent'] and receiver['handshake_complete'] == 1
                     and receiver['handshake_failed'] == 0 and receiver['valid_requests'] == 1
                     and receiver['request_bytes'] == len(REQUEST_HEADERS) + 8)
-        if mode in ['https', 'https-wrong-nonce', 'https-migration']:
+        if mode in ['https', 'https-wrong-nonce', 'https-migration', 'https-bypass']:
             accepted = (accepted and tls['tls_result'] == 0 and tls['http_result'] == (2 if mode == 'https-wrong-nonce' else 1)
                         and receiver['replies_sent'] == 1 and receiver['reply_bytes'] == len(HEADERS) + 8
                         and receiver['invalid_replies'] == int(mode == 'https-wrong-nonce'))
@@ -103,7 +108,7 @@ def observe_owned_https(session, endpoint, report_path, mode, diagnostic):
                         and receiver['replies_sent'] == receiver['reply_bytes'] == 0
                         and path['receive_timed_out'] == (not stopping))
     good = mode == 'https'
-    verified_response = mode in ['https', 'https-migration']
+    verified_response = mode in ['https', 'https-migration', 'https-bypass']
     if not stopping:
         traffic = session.command('traffic')
     unknown = not traffic.get('flags', 0) & 2 and traffic.get('tx') is None and traffic.get('rx') is None
@@ -243,7 +248,7 @@ def restart_during_owned_request(endpoint, report_path):
     return restarted
 
 
-def owned_bypass_receiver():
+def owned_bypass_receiver(tls_directory=None):
     """Bind only the task TUN's one preferred IPv4; never serialize its address."""
     from owned_probe_fixture import OwnedProbeSink
     deadline = time.monotonic() + 4
@@ -254,6 +259,9 @@ def owned_bypass_receiver():
             if isinstance(addresses, str):
                 addresses = [addresses]
             if isinstance(addresses, list) and len(addresses) == 1:
+                if tls_directory is not None:
+                    from owned_https_fixture import OwnedHttpsSink
+                    return OwnedHttpsSink(tls_directory, 'https-bypass', port=38557, owned_address=addresses[0])
                 return OwnedProbeSink(port=38557, owned_address=addresses[0])
         time.sleep(.025)
     raise RuntimeError('owned_bypass_receiver_not_ready')
@@ -499,7 +507,7 @@ def main():
               'sdk_held_attachment_ci_guard_enabled': attachment_guard,
               'service_owned_socket_ci_probe_enabled': owned_probe,
               'owned_migration_ci_enabled': owned_probe and owned_probe_mode in ['migration', 'https-migration'],
-              'owned_bypass_ci_enabled': owned_probe and owned_probe_mode == 'bypass',
+              'owned_bypass_ci_enabled': owned_probe and owned_probe_mode in ['bypass', 'https-bypass'],
               'owned_https_ci_enabled': owned_probe and owned_probe_mode in HTTPS_MODES,
               'owned_probe_mode': owned_probe_mode,
               'attachment_context_proves_endpoint_traversal': False,
@@ -602,9 +610,9 @@ def main():
         session = Child([str(client), '--network-session', str(directory / (profile_file + '.uri'))])
         if json.loads(session.receive())['code'] not in [0, 6]:
             raise RuntimeError('service_start_rejected')
-        if owned_probe_mode == 'bypass':
+        if owned_probe_mode in ['bypass', 'https-bypass']:
             stage = 'owned_bypass_receiver_ready'
-            local_receiver = owned_bypass_receiver()
+            local_receiver = owned_bypass_receiver(directory / 'owned-https' if owned_probe_mode == 'https-bypass' else None)
         if cancel_probe:
             stage = 'cancel_owned_request_during_receive'
             result['owned_probe_cancellation'] = cancel_owned_request(
@@ -618,7 +626,13 @@ def main():
                     endpoint, client.parent / 'owned-probe-context.json')
             result['owned_https_observation'] = {}
             result['owned_https'] = observe_owned_https(session, endpoint, client.parent, owned_probe_mode,
-                                                        result['owned_https_observation'])
+                                                        result['owned_https_observation'], local_receiver)
+            if owned_probe_mode == 'https-bypass':
+                endpoint_receiver = endpoint.command('stats')['owned_probe_sink']
+                result['owned_bypass_endpoint_receiver'] = endpoint_receiver
+                if any(endpoint_receiver[k] != 0 for k in ['valid_requests', 'request_bytes', 'replies_sent', 'reply_bytes']):
+                    raise RuntimeError('owned_https_not_qualified')
+                local_receiver.close()
             if owned_probe_mode == 'https-cancel':
                 session.close()
                 session = None
