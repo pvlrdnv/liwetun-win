@@ -32,5 +32,8 @@
   "https_health_qualified": false,
   "dns_health_qualified": false,
   "qualification_scope": "disposable_ci_focused_service_owned_raw_tcp_ipv4_h2_h3_echo_and_receive_cancellation_only",
-  "qualification_receipt": "docs/evidence/owned-probe-outcomes-44116424941.json"
+  "qualification_receipt": "docs/evidence/owned-probe-outcomes-44116424941.json",
+  "focused_owned_https_ci_qualified": true,
+  "owned_https_qualification_scope": "disposable_server_2022_focused_service_owned_tls12_http_ipv4_h2_h3_eight_modes",
+  "owned_https_qualification_receipt": "docs/evidence/owned-https-requalification.json"
 }

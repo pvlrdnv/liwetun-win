@@ -3,8 +3,10 @@
 Status: HTTP/socket contracts and Schannel preflight PASS (44165060837).
 Real loopback TLS 1.2 matrix **16 cases PASS** (44169309801), with explicit
 per-certificate revocation verification. [Closed evidence](evidence/health-tls-44169309801.json).
-Service-owned synthetic HTTPS positive H2/H3 CI passed (44173333723 / 44173344152);
-negative matrix qualification is pending. No public application health capability
+Service-owned synthetic HTTPS **16 focused CI cases PASS**, eight modes on each
+of H2/H3. [Aggregate evidence](evidence/owned-https-requalification.json) includes
+positive, wrong nonce, certificate refusal, deadline/cancel, actual migration,
+actual epoch change and local bypass. No public application health capability
 is enabled.
 
 ## Reserved fixture target and wire contract
@@ -116,3 +118,15 @@ receipt carries no name, address, token, socket or interface identifier.
 This remains one startup request in disposable CI. It has no periodic freshness
 controller, public service IPC, production endpoint or GUI admission. DNS and
 Internet-wide health remain unproved.
+
+The completed service matrix additionally confirms that verified HTTPS after
+actual migration (flag 33, null proof counts) or local delivery outside the SDK
+(flag 3, zero endpoint bytes) remains unqualified. Actual epoch change discards
+prior proof. Every case requires disarm, independent receiver observations,
+network/WFP restoration and exact fixture trust cleanup. H3 explicitly uses the
+diagnostic reader-wakeup fixture; SDK recovery bypass selection remains unproved.
+
+[Adapter ownership](ADAPTER_OWNERSHIP.md), production endpoint/revocation policy,
+independent DNS correlation, periodic freshness, public IPC/UI admission, trusted
+distribution and separate desktop acceptance remain open. The focused SDK
+manifest records CI qualification only and remains excluded from normal packages.

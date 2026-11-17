@@ -1,24 +1,30 @@
 # Development checkpoint — 2026-11-18
 
-## Latest checkpoint — owned request prerequisites, no application health release
+## Latest checkpoint — service-owned HTTPS CI complete, release gates open
 
-The SDK-owned raw TCP request now has focused H2/H3 CI evidence for exact
-endpoint byte correlation, same-epoch fencing, socket refusal and Stop during
-receive. Missing-response deadlines pass H2 with the original fixture and H2/H3
-with an explicitly modified diagnostic endpoint that wakes a parked H3 reader.
-The same-commit original H3 fixture still fails pre-Stop remote-close acceptance.
-[Full comparison](evidence/owned-probe-wakeup-44123761038.json).
-Live wrong-nonce, actual flow migration, actual epoch change and same-address
-local bypass rejection now pass focused H2/H3 CI; the latter does not establish
-SDK recovery bypass selection. **44 local Python checks PASS**; actual Windows
-CI compiled and exercised the service. Seven normal-package test flags remain OFF.
-The separate SDK/endpoint candidates are not a shipped health capability.
-Schannel compilation/preflight and the expanded 16-case real loopback HTTPS
-matrix passed after explicit per-certificate revocation verification was added.
-Service-owned HTTPS now has positive H2/H3 exact-socket proof; its negative
-matrix is running. Product HTTPS/DNS health, adapter ownership, trusted signing /
-distribution and separate Windows 10/11 desktop acceptance remain open. No
-production/LikeWeb or owner-device network/trust changes.
+Focused service-owned TLS 1.2/HTTP qualification now passes **16 disposable
+Server 2022 cases**: positive, wrong nonce, untrusted certificate, deadline,
+receive cancellation, actual migration, actual epoch change and local bypass,
+each over H2 and H3. [Aggregate receipt](evidence/owned-https-requalification.json)
+links every immutable source/run/report with its SHA256. The separate 16-case
+loopback TLS matrix also passed. **51 local Python checks PASS**.
+
+All live HTTPS cases use the same pinned owned-probe SDK binary. Valid replies
+after migration/local delivery remain unqualified; changed epochs discard old
+proof. H3 uses the explicitly modified diagnostic reader-wakeup endpoint, not
+an inferred production server fix. The original endpoint's failed H3 no-reply
+close controls remain [recorded](evidence/owned-probe-wakeup-44123761038.json).
+Ordinary packaging still selects the prior aggregate SDK/GUI and requires all
+**seven** test flags OFF; its 14 installer groups passed with temporary CI signing.
+
+No public HTTPS/DNS capability, production endpoint, periodic health freshness,
+owned-adapter admission or release package is enabled. Independent DNS correlation,
+[adapter ownership](ADAPTER_OWNERSHIP.md), certificate/revocation bootstrap policy,
+trusted signing/distribution and separate Windows 10/11 desktop acceptance remain
+open. LikeWeb, production and the owner's corporate tunnel/network/trust remain
+unchanged. No owner installation or testing action is needed for this CI stage.
+
+## Health development record
 
 Next negative prerequisite: `owned_probe_mode=wrong-nonce` now returns an exact
 24-byte reply with a zero nonce, which cannot match the worker's nonzero token.
@@ -392,6 +398,29 @@ The endpoint receiver must see zero payload. This tests local delivery outside
 SDK, not SDK recovery bypass upstream selection. **51 local Python checks PASS**;
 Windows migration reruns and TLS local-bypass controls pending. All seven flags
 remain excluded from the ordinary package. No production/UI capability enabled.
+
+HTTPS migration and local-bypass controls **PASS** on `1c19fe4`: H2 migration
+44175923679 / H3 44175937890 had verified HTTPS and unchanged epoch, but actual
+SDK Migrated flag 33/null counters and no qualification. H2 local bypass
+44175931357 / H3 44175945743 had verified local HTTPS, unchanged epoch and actual
+flags 3/zero endpoint TX/RX, with no qualified success and zero endpoint payload.
+All disarmed before close; receiver EOF preceded Stop. Network/WFP and exact
+fixture-root cleanup passed without watchdog action.
+[Full reports](evidence/owned-https-dynamic-44175923679.json).
+
+The [aggregate HTTPS receipt](evidence/owned-https-requalification.json) verifies
+all 16 mode/transport pairs, their individual source commits, full receipt hashes,
+identical SDK DLL digests, positive-only qualification and cleanup. The private
+SDK manifest now records only this focused CI fact; its binary/source pins,
+full-network/release/DNS/desktop booleans and normal service/package exclusion
+are unchanged. This one-startup-request fixture does not establish production
+health/freshness or SDK recovery bypass selection. No new public IPC/UI behavior.
+
+A [source-grounded adapter ownership gate](ADAPTER_OWNERSHIP.md) records why the
+current open-by-name/fixed-GUID SDK path cannot prove fresh ownership, and the
+required separate guarded profile and disposable foreign-adapter/race checks.
+It is not an implemented fix or an owner-device reproduction. This gate remains
+open independently of successful endpoint TLS/path correlation.
 
 ## Development evidence and history
 
