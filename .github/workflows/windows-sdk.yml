@@ -10,6 +10,10 @@ on:
         description: Isolated aggregate-traffic SDK candidate (requires source_pins)
         type: boolean
         default: false
+      attached_tun:
+        description: Isolated read-only SDK-held TUN identity candidate (requires traffic_metrics/source_pins)
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -20,6 +24,7 @@ jobs:
       RUSTUP_TOOLCHAIN: 1.95.0
       SOURCE_PINNED: ${{ inputs.source_pins }}
       TRAFFIC_METRICS: ${{ inputs.traffic_metrics }}
+      ATTACHED_TUN: ${{ inputs.attached_tun }}
     defaults:
       run:
         shell: pwsh
@@ -71,6 +76,17 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Rust installation failed' }
           choco install nasm strawberryperl --yes --no-progress
           if ($LASTEXITCODE -ne 0) { throw 'Assembly tool installation failed' }
+      - name: Verify attached TUN snapshot contract without network
+        if: inputs.attached_tun
+        run: |
+          if ($env:SOURCE_PINNED -ne 'true' -or $env:TRAFFIC_METRICS -ne 'true') { throw 'Attached TUN candidate requires aggregate immutable-source profile' }
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /Inative/traffic native/health/test_attached_tun.cpp /Fobuild/attached-tun.obj /Febuild/attached-tun.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Attached TUN contract build failed' }
+          & ./build/attached-tun.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Attached TUN contract tests failed' }
+          python -m unittest discover -s tools/sdk -p 'test_attached_tun_profile.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Attached TUN source guards failed' }
+          @{passed=$true; tunnel_started=$false; actual_interface_qualified=$false; release_ready=$false} | ConvertTo-Json | Set-Content build/sdk-evidence/attached-tun-contract.json
       - name: Verify and export immutable-source candidate recipes
         if: inputs.source_pins
         run: |
@@ -95,6 +111,11 @@ jobs:
         run: |
           python tools/sdk/traffic_profile.py --source build/vendor/sdk --output build/sdk-evidence
           if ($LASTEXITCODE -ne 0) { throw 'Aggregate traffic source verification failed' }
+      - name: Prepare isolated attached TUN identity profile
+        if: inputs.attached_tun
+        run: |
+          python tools/sdk/attached_tun_profile.py --source build/vendor/sdk --output build/sdk-evidence
+          if ($LASTEXITCODE -ne 0) { throw 'Attached TUN source verification failed' }
       - name: Export pinned local dependency recipes
         run: |
           conan export build/vendor/common --user adguard --channel oss --version 8.2.0
@@ -107,7 +128,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'DNS recipe export failed' }
       - name: Configure and build actual SDK DLL
         run: |
-          $sdkVersion = if ($env:TRAFFIC_METRICS -eq 'true') { '1.1.12-liwetun.traffic1' } else { '1.1.12-liwetun.1' }
+          $sdkVersion = if ($env:ATTACHED_TUN -eq 'true') { '1.1.12-liwetun.attached1' } elseif ($env:TRAFFIC_METRICS -eq 'true') { '1.1.12-liwetun.traffic1' } else { '1.1.12-liwetun.1' }
           cmake -S build/vendor/sdk/platform/windows -B build/sdk-build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe "-DTT_CLIENT_VERSION=$sdkVersion"
           if ($LASTEXITCODE -ne 0) { throw 'SDK configure failed' }
           $profileArgs = @()
@@ -147,6 +168,11 @@ jobs:
         run: |
           python tools/sdk/check_traffic_abi.py --runtime build/sdk-runtime --output build/sdk-evidence/traffic-abi-check.json
           if ($LASTEXITCODE -ne 0) { throw 'Aggregate traffic export contract failed' }
+      - name: Verify candidate attached TUN export without tunnel startup
+        if: inputs.attached_tun
+        run: |
+          python tools/sdk/check_attached_tun_abi.py --runtime build/sdk-runtime --output build/sdk-evidence/attached-tun-abi-check.json
+          if ($LASTEXITCODE -ne 0) { throw 'Attached TUN ABI contract failed' }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

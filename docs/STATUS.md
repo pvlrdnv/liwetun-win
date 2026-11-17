@@ -189,7 +189,14 @@ WFP without watchdog. [H2 receipt](evidence/tx-only-44066611999.json),
 [H3 receipt](evidence/tx-only-44066619081.json). Cause remains unestablished;
 no SDK change or relaxed idle oracle. The fixture now records closed window deltas
 for forwarded/denied TCP and UDP payload totals, without destinations or payloads,
-to distinguish other runner activity. **23 Python tests PASS**; new CI pending.
+to distinguish other runner activity. **23 Python tests PASS**. Diagnostic H2
+run 44068421270 still failed the strict idle oracle: each observation interval
+independently recorded one rejected UDP payload of 48 bytes. The sending window
+had 672 owned TCP bytes + 48 aggregate TX bytes; idle had zero forwarded TCP bytes
+and +48 aggregate TX. This is consistent with non-fixture activity contributing
+to the aggregate, not a quiet system; it does not identify the sender or prove a
+counter defect. No arbitrary payloads/destinations were retained. Cleanup/WFP
+restored without watchdog. [Receipt](evidence/tx-only-44068421270.json).
 The independent deadline is 120 seconds only for this longer fixture.
 
 Optional-tail parsing is factored for Windows contract tests: an old 32-byte
@@ -199,7 +206,22 @@ also requires admitted runtime state. Clock-error samples no longer expose an
 unobserved monotonic instant. Counter/wire contract, Windows GUI build, 227 Dart + 6 Rust + 6 desktop tests
 **PASS** (44064479119). [Receipt](evidence/windows-traffic-4b71e69.json).
 This still does not exercise live signed GUI traffic display. Installer with this
-GUI and the aggregate SDK is running (44068126242), ephemeral CI signing only.
+GUI and the aggregate SDK **PASS** (44068126242): 14 groups, signed medium GUI /
+service query, rollback/uninstall/cleanup. All four preserved SDK input-receipt
+hashes match the previous qualified package. [Receipt](evidence/package-traffic-44068126242.json).
+Ephemeral CI signing only; no tunnel start, owner package or desktop acceptance.
+
+Next native prerequisite is implemented as another opt-in SDK preparation:
+`attached_tun=true` requires source pins and the aggregate profile. Six exact
+post-traffic/pristine source digests and two added-header hashes guard a fixed
+40-byte read-only export. It derives index/LUID from the SDK-held Wintun handle,
+checks the OS index against the SDK's index and fences ready-state epoch/time
+before/after reading. Caller must exclude concurrent start/stop/destruction.
+Internal interface identifiers never enter GUI/journal/report. Neither adapter
+ownership nor probe/endpoint traversal is established; no health state, probe,
+routing or existing runtime pin changes. Local real-source transformation and
+five atomic guard tests PASS. C++ contract / full SDK / null-export Windows checks
+pending; candidate is not admitted by service/package workflows.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests

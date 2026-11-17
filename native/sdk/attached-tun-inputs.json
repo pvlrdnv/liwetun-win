@@ -1,0 +1,20 @@
+{
+  "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+  "requires_profile": "aggregate_traffic_candidate",
+  "baseline_files": {
+    "net/include/net/os_tunnel.h": "992e3ed10bfa395e5684b88724b84eef0585bf091f78dd4c1767a738ecaf4ef3",
+    "net/src/os_tunnel_win.h": "2b9a922bea7f60c3641277f6e35c6d1abbd15af87b3b323d9723430885aff0db",
+    "net/src/os_tunnel_win.cpp": "a6b529fc3159e816eb5e253bc3dc323eebec2ec0afa33d445b07c1f5252a8c04",
+    "trusttunnel/include/vpn/trusttunnel/client.h": "11e17c9db5b92a4a1354c743868a61db2b86de0f562f4c3db2c5651c9aa0e132",
+    "trusttunnel/src/client.cpp": "915107f78da20a0dfeb2093946308f77e9907744eed2f2119112940c4dbbeec4",
+    "platform/windows/src/trusttunnel.cpp": "69bbb956491431bed4bb9d2e7238d89a408c4d112935cdeb9db6d637931eb5cd"
+  },
+  "added_files": {
+    "native/health/attached_tun_abi.h": "platform/windows/src/attached_tun_abi.h",
+    "native/health/attached_tun_snapshot.h": "platform/windows/src/attached_tun_snapshot.h"
+  },
+  "added_input_sha256": {
+    "native/health/attached_tun_abi.h": "3fa6c56f552e42538b8be25f92fadf3507dffeddfa51dad2d20242d0875a43b4",
+    "native/health/attached_tun_snapshot.h": "4fb4e7551a595ce5eb94f3de4433de6e20e953b2bfa0a07ceaa8cc9990eaa59f"
+  }
+}

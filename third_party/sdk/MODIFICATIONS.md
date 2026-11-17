@@ -61,3 +61,17 @@ separately recorded `runtime-traffic.json` candidate only:
   canonical input, added-header and output digests are recorded separately in
   `traffic-inputs.json` / `traffic-profile.json`. This profile is opt-in and does
   not replace either previous qualified runtime receipt.
+
+Optional SDK-held TUN interface profile (`tools/sdk/attached_tun_profile.py`),
+after the aggregate profile, separate from all currently pinned runtime inputs:
+
+- Adds Windows-only read methods to the OS tunnel and TrustTunnel wrapper plus
+  the fixed 40-byte `liwetun_attached_tun_v1` export. It reads the held Wintun
+  adapter/session, checks index consistency and fences ready-state epoch/time.
+- Interface identifiers are internal selection inputs, never diagnostic journal
+  output. The caller must serialize with SDK start/stop/destruction. This export
+  does not establish adapter ownership, probe traversal or Internet/DNS health.
+- No logger, routing, TLS, DNS, adapter creation or recovery policy change.
+  All changed files carry an explicit modification header; six baseline digests,
+  added-header hashes and output hashes are recorded in `attached-tun-inputs.json`
+  and `attached-tun-profile.json`. Default SDK/profile selections are unchanged.

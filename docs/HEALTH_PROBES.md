@@ -1,9 +1,11 @@
 # Tunnel health: implementation boundary and next native slice
 
-Status: application health probes and native counters are **unavailable**. The UI
-continues to distinguish TunnelReady from verified Internet; report metrics stay
-unknown. Disposable CI endpoint counters are external test evidence, not a metric
-available to the installed GUI. Do not wire a generic HTTPS success into Connected.
+Status: application DNS/HTTPS health probes remain **unavailable**. Optional native
+aggregate counters are implemented and qualified in a separate SDK candidate;
+the service, GUI and summary v3 preserve unsupported/stale observations as
+unknown. These counters do not prove Internet/DNS or selected-probe traversal.
+The UI continues to distinguish TunnelReady from verified Internet. Do not wire
+a generic HTTPS success into Connected.
 
 ## Findings from the pinned source and real interruption cases
 
@@ -82,7 +84,7 @@ separate installed Windows 10 and Windows 11 desktop acceptance. No experiment
 runs against the owner's corporate tunnel or production nodes.
 
 
-## Aggregate instrumentation candidate — implementation pending Windows checks
+## Aggregate instrumentation candidate — Windows CI qualified
 
 The opt-in SDK workflow `traffic_metrics=true` requires `source_pins=true` and
 builds version `1.1.12-liwetun.traffic1`. It applies the unchanged privacy profile,
@@ -163,3 +165,32 @@ closed per-window forwarded/denied TCP/UDP totals. No destination/body logs and
 no SDK/oracle change. Original post-close failures and follow-up results remain
 archived in docs/evidence/tx-only-*.json. This is disposable Server 2022 CI, not
 Windows 10/11 desktop acceptance.
+
+
+## SDK-held TUN attachment prerequisite — Windows checks pending
+
+A separate `attached_tun=true` SDK build (requires both `source_pins=true` and
+`traffic_metrics=true`) prepares version `1.1.12-liwetun.attached1`. Its source
+and header guards are in `native/sdk/attached-tun-inputs.json`; no runtime pin is
+promoted. The 40-byte `liwetun_attached_tun_v1` export reads index/LUID through the
+actual held Wintun adapter/session, verifies the OS index agrees with the SDK,
+and fences the aggregate ready-state epoch and monotonic time before/after.
+Missing/unstable observations clear identifiers rather than retaining an old
+attachment. The caller must wait for SDK start to return and serialize against
+stop/destruction, as for the existing traffic getter. A future service integration
+must use its existing short borrowed-core lock, never hold it over SDK stop/join.
+
+Index/LUID are internal socket-selection inputs, excluded from GUI/journal/support
+reports. They do not prove that the SDK created an adapter, that routes remain
+selected, or that a probe traversed the endpoint. Source inspection shows the
+upstream adapter factory can reopen an existing alias and assign addresses before
+starting a session. A held handle therefore must not be called exclusive ownership;
+a foreign-adapter collision control remains required on disposable CI before
+release. Nothing is installed/tested on the owner's corporate device.
+
+Actual pinned-source preparation and five pre-write guard tests pass locally.
+The portable contract covers missing attachment, empty identifiers, unsupported
+ABI/layout, epoch/state changes, invalid metrics, time/counter regression and
+unknown clearing. Local compilation is unavailable; Windows compilation/full SDK
+and null-export checks are pending. There is no service command, actual attached
+interface qualification, DNS/HTTPS probe or verified-Internet state in this slice.
