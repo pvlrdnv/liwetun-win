@@ -290,7 +290,7 @@ unimplemented. No dedicated application health endpoint is selected/contacted.
 DNS correlation needs its own design; an owned TCP proof cannot establish it.
 
 
-## Owned-socket reducer candidate — implementation, SDK qualification pending
+## Owned-socket reducer candidate — SDK build / ABI PASS
 
 `owned_probe=true` requires all preceding SDK profiles and prepares version
 `1.1.12-liwetun.probe1`. Seven exact post-attachment source digests and six added
@@ -320,8 +320,37 @@ or acquires the core stop guard. Existing routing/recovery decisions are unchang
 
 Standalone MSVC concurrency and real loopback socket boundary PASS (44090062715),
 using a synthetic interface context, not an SDK TUN. Five new source mutation
-guards and pinned-source preparation PASS locally. Updated race/family tests,
-full SDK and null-export ABI checks are pending on Windows. No live SDK-owned
+guards and pinned-source preparation PASS locally. Updated race/family/socket tests,
+full SDK and all three null-export ABI checks PASS (44092512284). Thirteen emitted
+source/header digests and both downloaded DLL hashes were verified; the separate
+`runtime-probe.json` records build-only qualification, no consumer promotion. No live SDK-owned
 request/path, application DNS/HTTPS, desktop or release qualification yet; no
 service command or GUI health capability added. Socket address-entry lookup uses
 [the read-only Microsoft API](https://learn.microsoft.com/en-us/windows/win32/api/netioapi/nf-netioapi-getunicastipaddressentry).
+
+
+## CI-only service-owned synthetic request — live qualification pending
+
+A fourth default-OFF compile flag adds a cancellable worker with a fixed
+198.18.0.10:38556 destination, translated only inside the explicit WSL fixture
+mode to its owned loopback receiver. The physical exit never admits it. A fresh
+exclusive TCP socket selects the SDK-held interface, arms before application I/O,
+sends a fixed prefix plus random nonce and verifies the exact reply. A connected
+nonexclusive control must be rejected by the SDK before the real attempt.
+Qualification requires matching SDK instance/epoch, both endpoint byte directions,
+exact nonce echo and disarm. The descriptor remains held through proof reading.
+The receiver keeps the connection open for the owner's evidence read/close.
+
+The worker holds no SDK lifetime lock over socket I/O, checks cancellation every
+50 ms while waiting and joins outside that lock before SDK stop/unload. It writes
+one fixed-shape CI JSON receipt in the protected task directory, without tuple,
+socket/interface/flow IDs or nonce. Invalid/inactive counters stay null. This
+introduces no IPC method or shipped GUI capability; package guards require all
+four CI flags OFF. Normal service/package workflows still cannot select this
+SDK variant. The network report marks the CI observation mode explicitly.
+
+27 Python fixture/allowlist/oracle tests pass; actual H2/H3 and producer/cleanup
+qualification are pending. Cancel-during-I/O and bypass/migration live negative
+controls remain separate gates even after a positive nonce/path case. This raw
+TCP marker does not verify TLS, HTTPS, DNS or Internet. No production health
+endpoint is selected/contacted; Connected remains unavailable.

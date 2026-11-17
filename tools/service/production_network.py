@@ -225,6 +225,9 @@ def main():
         raise RuntimeError('disposable_windows_required')
     traffic_required = os.environ.get('TRAFFIC_METRICS') == 'true'
     attachment_guard = os.environ.get('ATTACHED_TUN') == 'true'
+    owned_probe = os.environ.get('OWNED_PROBE') == 'true'
+    if owned_probe and not attachment_guard:
+        raise RuntimeError('invalid_owned_probe_mode')
     if attachment_guard and not traffic_required:
         raise RuntimeError('invalid_attachment_guard_mode')
     traffic_pattern = os.environ.get('LIWETUN_TRAFFIC_PATTERN', 'normal')
@@ -255,6 +258,8 @@ def main():
     if traffic_pattern not in ['normal', 'tx-only'] or (traffic_pattern == 'tx-only' and
             (not traffic_required or profile != 'valid' or family != 'ipv4' or termination != 'stop')):
         raise RuntimeError('invalid_traffic_pattern')
+    if owned_probe and (profile != 'valid' or family != 'ipv4' or termination != 'stop' or traffic_pattern != 'normal'):
+        raise RuntimeError('invalid_owned_probe_mode')
     synthetic_ipv6 = family == 'synthetic-ipv6'
     report = ROOT / 'build/service-evidence/production-network.json'
     report.parent.mkdir(exist_ok=True, parents=True)
@@ -265,6 +270,7 @@ def main():
               'network_test_modes_enabled': attachment_guard, 'routing_test_modes_enabled': False,
               'client_host_routes_added': False,
               'sdk_held_attachment_ci_guard_enabled': attachment_guard,
+              'service_owned_socket_ci_probe_enabled': owned_probe,
               'attachment_context_proves_endpoint_traversal': False,
               'server_https_egress_bound_physical': True,
               'endpoint_udp_relay': 'wsl_local',
@@ -297,7 +303,7 @@ def main():
         (directory / 'dns-host.txt').write_text(str(dns_host))
         (directory / 'forwarder-inputs.json').write_text(json.dumps({
             'origin': origin, 'dns_host': str(dns_host), 'physical_index': physical['index'],
-            'synthetic_ipv6': synthetic_ipv6, 'tx_only': traffic_pattern == 'tx-only'}))
+            'synthetic_ipv6': synthetic_ipv6, 'tx_only': traffic_pattern == 'tx-only', 'owned_probe': owned_probe}))
         wsl = ['wsl.exe', '-d', distro, '--']
         def linux(path):
             return subprocess.check_output(wsl + ['wslpath', '-u', path.as_posix()],
@@ -392,13 +398,28 @@ def main():
                     raise RuntimeError('ipv6_tun_address_missing')
             if traffic_required:
                 stage = 'aggregate_traffic_baseline'
-                for _ in range(10):
+                for _ in range(80 if owned_probe else 10):
                     traffic_before = session.command('traffic')
                     if traffic_before.get('flags') == 3:
                         break
                     time.sleep(.1)
                 else:
                     raise RuntimeError('aggregate_traffic_unavailable')
+            if owned_probe:
+                stage = 'owned_socket_path_evidence'
+                from owned_probe_fixture import validate_report, FRAME_BYTES
+                with (client.parent / 'owned-probe-context.json').open('rb') as source_file:
+                    raw = source_file.read(4097)
+                if len(raw) > 4096:
+                    raise RuntimeError('invalid_owned_probe_report')
+                observation = validate_report(json.loads(raw))
+                receiver = endpoint.command('stats')['owned_probe_sink']
+                if not observation['qualified'] or (receiver['valid_requests'] != 1 or receiver['replies_sent'] != 1
+                        or receiver['request_bytes'] != FRAME_BYTES or receiver['reply_bytes'] != FRAME_BYTES
+                        or receiver['rejected_frames'] != 0):
+                    raise RuntimeError('owned_socket_path_not_qualified')
+                result.update(owned_socket_path=observation, owned_socket_receiver=receiver,
+                              owned_socket_path_qualified=True)
             stage = 'ordinary_https'
             delivered, source = ordinary_https(SYNTHETIC_IPV6 if synthetic_ipv6 else origin,
                                                https_addresses,

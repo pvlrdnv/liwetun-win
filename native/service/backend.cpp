@@ -22,12 +22,18 @@ std::string Hex(const Digest& digest) {
 }
 Backend::Backend(const Image& service) : done_(CreateEventW(nullptr, TRUE, FALSE, nullptr)) {
   if (!done_) throw std::runtime_error("service_initialization_failed");
+#ifdef LIWETUN_TEST_OWNED_PROBE
+  owned_report_ = Directory(service.path) + L"\\owned-probe-context.json";
+#endif
   ready_ = Load(service);
   worker_ = std::thread([this] { Run(); });
 }
 Backend::~Backend() {
   Shutdown();
   if (worker_.joinable()) worker_.join();
+#ifdef LIWETUN_TEST_OWNED_PROBE
+  JoinOwnedProbe();
+#endif
   if (module_) FreeLibrary(module_);
 }
 bool Backend::Load(const Image& service) {
@@ -50,6 +56,12 @@ bool Backend::Load(const Image& service) {
   attachment_read_ = reinterpret_cast<AttachmentRead>(GetProcAddress(module_, "liwetun_attached_tun_v1"));
   if (!attachment_read_) return false;
 #endif
+#ifdef LIWETUN_TEST_OWNED_PROBE
+  owned_arm_ = reinterpret_cast<OwnedArm>(GetProcAddress(module_, "liwetun_probe_arm_socket_v1"));
+  owned_read_ = reinterpret_cast<OwnedRead>(GetProcAddress(module_, "liwetun_probe_snapshot_socket_v1"));
+  owned_disarm_ = reinterpret_cast<OwnedDisarm>(GetProcAddress(module_, "liwetun_probe_disarm_v1"));
+  if (!owned_arm_ || !owned_read_ || !owned_disarm_) return false;
+#endif
   return start_ && stop_fn_ && decode_ && free_;
 }
 Code Backend::Start(std::string uri) {
@@ -69,6 +81,9 @@ Code Backend::Start(std::string uri) {
   return Code::Ok;
 }
 void Backend::Stop() {
+#ifdef LIWETUN_TEST_OWNED_PROBE
+  CancelOwnedProbe();
+#endif
   std::lock_guard lock(mutex_);
   intent_ = false;
   stop_ = true;
@@ -107,6 +122,13 @@ void Backend::SnapshotTraffic(TrafficReply& reply) const {
           candidate.flags &= ~traffic::kValid;
           candidate.flags |= traffic::kObservationGap;
         }
+      }
+#endif
+#ifdef LIWETUN_TEST_OWNED_PROBE
+      if ((candidate.flags & traffic::kValid) && (!owned_qualified_.load() ||
+          owned_epoch_.load() != candidate.epoch || owned_instance_.load() != instance_)) {
+        candidate.flags &= ~traffic::kValid;
+        candidate.flags |= traffic::kObservationGap;
       }
 #endif
       reply.sample = candidate;
@@ -160,6 +182,9 @@ void Backend::Run() {
         observed_core_ = nullptr;
         instance_ = 0;
       }
+#ifdef LIWETUN_TEST_OWNED_PROBE
+      JoinOwnedProbe(); // Cancel/join outside the borrowed-core lock, before SDK stop/unload.
+#endif
       if (core) { stop_fn_(core); core = nullptr; }
       busy_ = false;
       state_ = failed ? State::Error : State::Disconnected;
@@ -209,6 +234,9 @@ void Backend::Run() {
       observed_core_ = core;
       instance_ = token;
     }
+#ifdef LIWETUN_TEST_OWNED_PROBE
+    if (core) StartOwnedProbe();
+#endif
     if (!core) { intent_ = false; busy_ = false; state_ = State::Error; }
   }
   if (done_) SetEvent(done_.get());

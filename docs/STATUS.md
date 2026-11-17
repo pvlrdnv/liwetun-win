@@ -314,9 +314,26 @@ exclude SDK start/stop/destruction and never hold the lifetime lock over I/O.
 Three fixed ABI socket-arm/read/disarm exports are implemented; global state/epoch
 fences surround SDK access. A callback-failure-vs-read race is explicitly tested.
 Local full-source guarded transformation, five new atomic guard tests, **14 SDK
-profile tests**, Python/YAML and diff checks PASS. Full SDK/updated C++/null-ABI
-Windows checks are pending. No existing runtime pin, service protocol or GUI
+profile tests**, Python/YAML and diff checks PASS. Full SDK, updated C++ race/family/socket contracts and all three null-export ABI
+checks **PASS** (44092512284), source 7e35231. All 13 emitted file digests match
+local preparation; both downloaded DLL hashes match CI. Separate build-only
+`runtime-probe.json` preserves network/service/package/desktop/health gates false.
+[Receipt](evidence/sdk-owned-probe-44092512284.json). No existing runtime pin, service protocol or GUI
 capability is promoted; no actual owned-request path/HTTPS/DNS health is qualified.
+
+A default-OFF fourth CI flag, `LIWETUN_TEST_OWNED_PROBE`, now creates a fresh
+service-owned TCP socket to a single fixed synthetic receiver, rejects a connected
+nonexclusive control socket, arms before application I/O, verifies a random nonce
+echo, reads current SDK instance/epoch/path evidence and disarms before closing.
+Its cancellable worker holds the borrowed-core lock only for brief SDK calls,
+never network I/O, and joins before SDK stop/unload. A one-shot closed JSON receipt
+contains booleans/enums/nullable counters, no socket/interface/flow IDs or tuples.
+No service command or GUI capability is added. Only this CI mode gates ready
+counter observations on successful owned-path evidence; the normal product path
+is unchanged. The local server/allowlist/schema guards **27 Python tests PASS**;
+YAML/Python/diff checks PASS. Actual H2/H3 producer, cancellation behavior and
+four-flag package exclusion are pending on Windows. This is raw synthetic TCP
+path qualification, not an application HTTPS/DNS/Internet check or release.
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests

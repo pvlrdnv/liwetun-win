@@ -10,6 +10,7 @@ import ipaddress
 
 from physical_forwarder import Forwarder, exact
 from tx_only_fixture import TARGET
+from owned_probe_fixture import TARGET as OWNED_PROBE_TARGET
 
 
 def local_socket(kind, _index):
@@ -17,18 +18,22 @@ def local_socket(kind, _index):
 
 
 class EndpointForwarder(Forwarder):
-    def __init__(self, *args, physical_exit=('127.0.0.1', 38445), tx_only=False, **kwargs):
+    def __init__(self, *args, physical_exit=('127.0.0.1', 38445), tx_only=False, owned_probe=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.physical_exit = physical_exit
         self.tx_only = tx_only
+        self.owned_probe = owned_probe
 
     def tcp_allowed(self, destination):
-        return super().tcp_allowed(destination) or (self.tx_only and destination == TARGET)
+        return (super().tcp_allowed(destination) or (self.tx_only and destination == TARGET)
+                or (self.owned_probe and destination == OWNED_PROBE_TARGET))
 
     def tcp_lifetime(self, destination):
         return 75 if self.tx_only and destination == TARGET else super().tcp_lifetime(destination)
 
     def connect_tcp(self, destination):
+        if self.owned_probe and destination == OWNED_PROBE_TARGET:
+            return socket.create_connection(('127.0.0.1', OWNED_PROBE_TARGET[1]), timeout=5)
         if self.tx_only and destination == TARGET:
             return socket.create_connection(('127.0.0.1', TARGET[1]), timeout=5)
         upstream = socket.create_connection(self.physical_exit, timeout=8)

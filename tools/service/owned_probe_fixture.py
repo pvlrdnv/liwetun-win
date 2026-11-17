@@ -1,0 +1,123 @@
+"""Synthetic owned-socket receiver; fixed frames, loopback only, closed totals."""
+import socket
+import threading
+import time
+
+TARGET = ('198.18.0.10', 38556)
+REQUEST = b'liwetun-path-v1:'
+REPLY = b'liwetun-path-ok:'
+FRAME_BYTES = 24
+assert len(REQUEST) == len(REPLY) == 16
+
+
+class OwnedProbeSink:
+    def __init__(self, port=38556):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.bind(('127.0.0.1', port))
+        self.socket.listen(4)
+        self.socket.settimeout(.2)
+        self.address = self.socket.getsockname()
+        self.stop = threading.Event()
+        self.lock = threading.Lock()
+        self.counts = dict(accepted=0, request_bytes=0, valid_requests=0,
+                           replies_sent=0, reply_bytes=0, rejected_frames=0)
+        self.thread = threading.Thread(target=self.serve, daemon=True)
+        self.thread.start()
+
+    def count(self, key, value=1):
+        with self.lock:
+            self.counts[key] += value
+
+    def stats(self):
+        with self.lock:
+            return dict(self.counts)
+
+    def serve(self):
+        while not self.stop.is_set():
+            try:
+                client, _ = self.socket.accept()
+            except socket.timeout:
+                continue
+            except OSError:
+                return
+            self.count('accepted')
+            with client:
+                client.settimeout(.2)
+                packet = b''
+                deadline = time.monotonic() + 2
+                try:
+                    while len(packet) < FRAME_BYTES and not self.stop.is_set() and time.monotonic() < deadline:
+                        try:
+                            part = client.recv(FRAME_BYTES - len(packet))
+                        except socket.timeout:
+                            continue
+                        if not part:
+                            break
+                        packet += part
+                        self.count('request_bytes', len(part))
+                    if not packet:
+                        continue # Connected exclusive-port negative control sends nothing.
+                    if (len(packet) != FRAME_BYTES or not packet.startswith(REQUEST)
+                            or int.from_bytes(packet[16:], 'big') == 0):
+                        self.count('rejected_frames')
+                        continue
+                    self.count('valid_requests')
+                    response = REPLY + packet[16:]
+                    client.sendall(response)
+                    self.count('replies_sent')
+                    self.count('reply_bytes', len(response))
+                    # Keep the socket connected until the owner reads the SDK
+                    # evidence and closes it. No unsolicited payload is sent.
+                    hold = time.monotonic() + 2
+                    while not self.stop.is_set() and time.monotonic() < hold:
+                        try:
+                            extra = client.recv(1)
+                        except socket.timeout:
+                            continue
+                        if extra:
+                            self.count('rejected_frames')
+                        break
+                except OSError:
+                    continue
+
+    def close(self):
+        self.stop.set()
+        self.socket.close()
+        self.thread.join(timeout=1)
+
+
+def validate_report(value):
+    boolean_fields = {'connected', 'nonexclusive_rejected', 'arm_accepted', 'echo_verified',
+                      'same_instance_epoch', 'disarmed', 'cancelled', 'qualified', 'proves_dns',
+                      'proves_https', 'proves_internet', 'identifiers_exported', 'release_ready'}
+    expected = boolean_fields | {'schema_version', 'stage', 'snapshot_flags', 'tx_bytes', 'rx_bytes'}
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError('invalid_owned_probe_report')
+    if any(type(value[key]) is not bool for key in boolean_fields):
+        raise ValueError('invalid_owned_probe_report')
+    if (type(value['schema_version']) is not int or value['schema_version'] != 1
+            or type(value['stage']) is not int or not 1 <= value['stage'] <= 9
+            or type(value['snapshot_flags']) is not int or not 1 <= value['snapshot_flags'] <= 1023):
+        raise ValueError('invalid_owned_probe_report')
+    for key in ['tx_bytes', 'rx_bytes']:
+        n = value[key]
+        if n is not None and (type(n) is not int or not 0 <= n <= 2**63 - 1):
+            raise ValueError('invalid_owned_probe_report')
+    flags = value['snapshot_flags']
+    if not flags & 1:
+        raise ValueError('invalid_owned_probe_report')
+    if flags & 2:
+        if (flags & ~15 or any(type(value[k]) is not int for k in ['tx_bytes', 'rx_bytes'])
+                or (value['tx_bytes'] > 0) != bool(flags & 4) or (value['rx_bytes'] > 0) != bool(flags & 8)):
+            raise ValueError('invalid_owned_probe_report')
+    elif value['tx_bytes'] is not None or value['rx_bytes'] is not None:
+        raise ValueError('invalid_owned_probe_report')
+    if any(value[key] for key in ['proves_dns', 'proves_https', 'proves_internet', 'identifiers_exported', 'release_ready']):
+        raise ValueError('invalid_owned_probe_report')
+    if value['qualified'] and not (
+            value['stage'] == 9 and not value['cancelled'] and value['snapshot_flags'] == 15
+            and all(value[key] for key in ['connected', 'nonexclusive_rejected', 'arm_accepted',
+                                            'echo_verified', 'same_instance_epoch', 'disarmed'])
+            and all(type(value[key]) is int and value[key] >= FRAME_BYTES for key in ['tx_bytes', 'rx_bytes'])):
+        raise ValueError('invalid_owned_probe_report')
+    return value
