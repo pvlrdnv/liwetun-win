@@ -84,18 +84,23 @@ def cancel_owned_request(session, endpoint, report_path):
                 proves_https=False, proves_dns=False, release_ready=False)
 
 
-def expire_owned_request(session, endpoint, report_path):
+def expire_owned_request(session, endpoint, report_path, diagnostic):
     """Never Stop before the worker's own bounded receive deadline completes."""
-    from owned_probe_fixture import validate_deadline_report
+    from owned_probe_fixture import validate_report, validate_deadline_report
     started = time.monotonic()
     while time.monotonic() - started < 8:
         receiver = endpoint.command('stats')['owned_probe_sink']
-        if report_path.exists() and receiver['owner_closed'] == 1 and receiver['waiting_for_owner_close'] == 0:
+        diagnostic['receiver'] = receiver
+        diagnostic['elapsed_ms'] = int((time.monotonic() - started) * 1000)
+        if report_path.exists():
             with report_path.open('rb') as source:
                 raw = source.read(4097)
             if len(raw) <= 4096 and raw.endswith(b'\n'):
-                observation = validate_deadline_report(json.loads(raw), receiver)
-                break
+                observation = validate_report(json.loads(raw))
+                diagnostic['worker'] = observation
+                if receiver['owner_closed'] == 1 and receiver['waiting_for_owner_close'] == 0:
+                    validate_deadline_report(observation, receiver)
+                    break
         time.sleep(.025)
     else:
         raise RuntimeError('owned_probe_deadline_not_qualified')
@@ -444,8 +449,10 @@ def main():
             session = None
         elif negative_probe:
             stage = 'owned_request_receive_deadline'
+            result['owned_probe_deadline_observation'] = {}
             result['owned_probe_deadline'] = expire_owned_request(
-                session, endpoint, client.parent / 'owned-probe-context.json')
+                session, endpoint, client.parent / 'owned-probe-context.json',
+                result['owned_probe_deadline_observation'])
         if negative_probe:
             result['ordinary_https_probe_attempted'] = False
             result['application_dns_probe_attempted'] = False
@@ -787,6 +794,11 @@ def main():
             watchdog.close()
         if traffic_watch:
             traffic_watch.close()
+        if endpoint and negative_probe:
+            try:
+                result['owned_probe_receiver_before_fixture_shutdown'] = endpoint.command('stats')['owned_probe_sink']
+            except Exception:
+                result['owned_probe_receiver_observation_unavailable'] = True
         if endpoint:
             endpoint.close('quit')
         if forwarder:

@@ -415,6 +415,21 @@ positive/cancel oracles refuse the new timeout fact. **30 local Python tests**,
 Python/YAML/diff checks PASS; live deadline and schema-v2 regression are pending.
 No SDK binary/profile/ABI or normal product probe capability changed.
 
+Schema-v2 H2 echo **PASS** (44118196073), H3 cancellation **PASS**
+(44118195424, 217 ms Stop-to-worker/EOF), and H2 receive deadline **PASS**
+(44118196493, 4750 ms total including preparation). Deadline receipt has 24 TX /
+0 RX, same epoch, explicit disarm, `receive_timed_out=true`, no cancellation or
+echo, unknown service observations and receiver EOF before Stop; final
+network/WFP restoration passed without watchdog action. H3 deadline **FAIL**
+(44118196741): the native receipt had the expected timeout/disarm/24 TX / 0 RX
+facts, but the full deadline observer did not qualify. Its first observer did
+not retain last receiver facts, so the exact missing observation is unknown.
+[All four original reports](evidence/owned-probe-deadline-44118196493.json).
+The observer now retains only closed receiver totals, validated worker fields
+and elapsed time, plus receiver totals after Stop and before fixture shutdown.
+No oracle/timeout/routing/SDK behavior changed; focused H3 diagnostic pending.
+H3 deadline remains unqualified until the full criterion passes.
+
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
 do not qualify those systems. New SDK artifacts retain for 14 days. Latest GUI
