@@ -8,6 +8,11 @@
 #include <cstdio>
 #include <string>
 #include <utility>
+#ifdef LIWETUN_TEST_OWNED_BYPASS
+#include <iphlpapi.h>
+#include <netioapi.h>
+#include <vector>
+#endif
 
 namespace liwetun {
 namespace {
@@ -52,21 +57,54 @@ IoResult Wait(SOCKET socket, bool writing, ULONGLONG deadline, const std::atomic
     if (status > 0 && FD_ISSET(socket, &ready)) return IoResult::Complete;
   }
 }
-Socket Connect(uint32_t index, bool exclusive, ULONGLONG deadline, const std::atomic<bool>& cancel) {
+#ifdef LIWETUN_TEST_OWNED_BYPASS
+DWORD OwnedIpv4(const health::AttachedTun& attachment) {
+  DWORD size = 0;
+  if (GetIpAddrTable(nullptr, &size, FALSE) != ERROR_INSUFFICIENT_BUFFER ||
+      size < sizeof(MIB_IPADDRTABLE) || size > 65536) return 0;
+  std::vector<unsigned char> buffer(size);
+  auto* table = reinterpret_cast<MIB_IPADDRTABLE*>(buffer.data());
+  if (GetIpAddrTable(table, &size, FALSE) != NO_ERROR ||
+      table->dwNumEntries > (buffer.size() - offsetof(MIB_IPADDRTABLE, table)) / sizeof(MIB_IPADDRROW)) return 0;
+  DWORD selected = 0;
+  for (DWORD i = 0; i < table->dwNumEntries; ++i) {
+    const auto& entry = table->table[i];
+    if (entry.dwIndex != attachment.index || !entry.dwAddr || (ntohl(entry.dwAddr) >> 24) >= 224) continue;
+    MIB_UNICASTIPADDRESS_ROW row;
+    InitializeUnicastIpAddressEntry(&row);
+    row.InterfaceIndex = attachment.index; row.InterfaceLuid.Value = attachment.luid;
+    row.Address.Ipv4.sin_family = AF_INET; row.Address.Ipv4.sin_addr.s_addr = entry.dwAddr;
+    if (GetUnicastIpAddressEntry(&row) != NO_ERROR || row.DadState != IpDadStatePreferred ||
+        row.InterfaceIndex != attachment.index || row.InterfaceLuid.Value != attachment.luid) continue;
+    if (selected && selected != entry.dwAddr) return 0;
+    selected = entry.dwAddr;
+  }
+  return selected;
+}
+#endif
+Socket Connect(const health::AttachedTun& attachment, bool exclusive, ULONGLONG deadline, const std::atomic<bool>& cancel) {
   Socket socket(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP));
   if (socket.value == INVALID_SOCKET) return Socket{};
   const int enabled = exclusive ? 1 : 0;
-  const DWORD interface_index = htonl(index);
   u_long nonblocking = 1;
   if (setsockopt(socket.value, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
           reinterpret_cast<const char*>(&enabled), sizeof(enabled)) != 0 ||
-      setsockopt(socket.value, IPPROTO_IP, IP_UNICAST_IF,
-          reinterpret_cast<const char*>(&interface_index), sizeof(interface_index)) != 0 ||
       ioctlsocket(socket.value, FIONBIO, &nonblocking) != 0) return Socket{};
   sockaddr_in target{};
   target.sin_family = AF_INET;
+#ifdef LIWETUN_TEST_OWNED_BYPASS
+  sockaddr_in source{};
+  source.sin_family = AF_INET; source.sin_addr.s_addr = OwnedIpv4(attachment);
+  if (!source.sin_addr.s_addr || bind(socket.value, reinterpret_cast<sockaddr*>(&source), sizeof(source)) != 0) return Socket{};
+  // Exact local control, with the actual TUN source but no forced outgoing IF.
+  target.sin_addr.s_addr = htonl(INADDR_LOOPBACK); target.sin_port = htons(38557);
+#else
+  const DWORD interface_index = htonl(attachment.index);
+  if (setsockopt(socket.value, IPPROTO_IP, IP_UNICAST_IF,
+          reinterpret_cast<const char*>(&interface_index), sizeof(interface_index)) != 0) return Socket{};
   target.sin_addr.s_addr = htonl(0xc612000a); // Fixed CI receiver: 198.18.0.10:38556.
   target.sin_port = htons(38556);
+#endif
   if (connect(socket.value, reinterpret_cast<sockaddr*>(&target), sizeof(target)) != 0) {
     if (WSAGetLastError() != WSAEWOULDBLOCK || Wait(socket.value, true, deadline, cancel) != IoResult::Complete) return Socket{};
     int error = 0, size = sizeof(error);
@@ -166,7 +204,7 @@ void Backend::RunOwnedProbe() noexcept {
     const auto deadline = GetTickCount64() + 4000;
     result.stage = 2;
     {
-      auto ordinary = Connect(attachment.index, false, deadline, owned_cancel_);
+      auto ordinary = Connect(attachment, false, deadline, owned_cancel_);
       if (ordinary.value == INVALID_SOCKET) throw 1;
       result.stage = 3;
       std::lock_guard lock(core_mutex_);
@@ -176,7 +214,7 @@ void Backend::RunOwnedProbe() noexcept {
       if (!result.nonexclusive_rejected) { owned_disarm_(observed_core_, request.token); throw 1; }
     }
     result.stage = 4;
-    auto socket = Connect(attachment.index, true, deadline, owned_cancel_);
+    auto socket = Connect(attachment, true, deadline, owned_cancel_);
     result.connected = socket.value != INVALID_SOCKET;
     if (!result.connected) throw 1;
     Cleanup cleanup{[this, instance, token = request.token, &result] {

@@ -12,7 +12,7 @@ assert len(REQUEST) == len(REPLY) == 16
 
 class OwnedProbeSink:
     def __init__(self, port=38556, mode='echo'):
-        if mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce', 'migration', 'epoch-change']:
+        if mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce', 'migration', 'epoch-change', 'bypass']:
             raise ValueError('invalid_owned_probe_mode')
         self.mode = mode
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -231,4 +231,19 @@ def validate_epoch_change_report(value, receiver):
             and receiver['invalid_replies'] == 0 and receiver['rejected_frames'] == 0
             and receiver['owner_closed'] == 1 and receiver['waiting_for_owner_close'] == 0):
         raise ValueError('owned_probe_epoch_change_not_qualified')
+    return value
+
+
+def validate_bypass_report(value, receiver):
+    validate_report(value)
+    if not (value['stage'] == 9 and value['connected'] and value['nonexclusive_rejected']
+            and value['arm_accepted'] and value['disarmed'] and value['same_instance_epoch']
+            and value['echo_verified'] and not value['qualified'] and not value['state_epoch_changed']
+            and not value['cancelled'] and not value['receive_cancelled'] and not value['receive_timed_out']
+            and value['snapshot_flags'] == 3 and value['tx_bytes'] == 0 and value['rx_bytes'] == 0
+            and receiver['valid_requests'] == 1 and receiver['request_bytes'] == FRAME_BYTES
+            and receiver['replies_sent'] == 1 and receiver['reply_bytes'] == FRAME_BYTES
+            and receiver['invalid_replies'] == 0 and receiver['rejected_frames'] == 0
+            and receiver['owner_closed'] == 1 and receiver['waiting_for_owner_close'] == 0):
+        raise ValueError('owned_probe_bypass_not_qualified')
     return value

@@ -4,12 +4,30 @@ import time
 import unittest
 from owned_probe_fixture import (OwnedProbeSink, REQUEST, REPLY, TARGET, validate_report,
                                  validate_cancel_report, validate_deadline_report, validate_wrong_nonce_report,
-                                 validate_migration_report, validate_epoch_change_report)
+                                 validate_migration_report, validate_epoch_change_report, validate_bypass_report)
 from physical_forwarder import Forwarder
 from endpoint_forwarder import EndpointForwarder
 
 
 class OwnedProbeFixtureTests(unittest.TestCase):
+    def test_local_bypass_success_cannot_supply_endpoint_path_evidence(self):
+        value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
+                     arm_accepted=True, echo_verified=True, same_instance_epoch=True, state_epoch_changed=False,
+                     disarmed=True, cancelled=False, receive_cancelled=False, receive_timed_out=False,
+                     snapshot_flags=3, tx_bytes=0, rx_bytes=0, qualified=False,
+                     proves_dns=False, proves_https=False, proves_internet=False,
+                     identifiers_exported=False, release_ready=False)
+        receiver = dict(valid_requests=1, request_bytes=24, replies_sent=1, reply_bytes=24,
+                        invalid_replies=0, rejected_frames=0, waiting_for_owner_close=0, owner_closed=1)
+        validate_bypass_report(value, receiver)
+        for field, replacement in [('qualified', True), ('echo_verified', False), ('same_instance_epoch', False),
+                                   ('disarmed', False), ('snapshot_flags', 15), ('tx_bytes', 24),
+                                   ('rx_bytes', None), ('state_epoch_changed', True)]:
+            with self.assertRaises(ValueError):
+                validate_bypass_report(dict(value, **{field: replacement}), receiver)
+        with self.assertRaises(ValueError):
+            validate_bypass_report(value, dict(receiver, owner_closed=0))
+
     def test_epoch_change_requires_real_changed_epoch_and_discarded_observations(self):
         value = dict(schema_version=3, stage=9, connected=True, nonexclusive_rejected=True,
                      arm_accepted=True, echo_verified=False, same_instance_epoch=False, state_epoch_changed=True,

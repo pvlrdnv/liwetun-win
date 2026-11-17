@@ -91,6 +91,29 @@ zero exit without forced kill, and a fresh child after the same two-second gap.
 The ordinary abrupt recovery fixture is unchanged. Native producer, deadlines
 and acceptance oracle are unchanged; focused H2/H3 graceful epoch controls pending.
 
+Actual graceful endpoint shutdown epoch controls **PASS** on source `646bb1b`:
+H2 44139888726 and H3 44139888789. Both native reports observed changed SDK epoch,
+flags 129 / no armed facts or counts, no verified reply/success, explicit disarm,
+unknown service observations, receiver EOF before Stop, and final network/WFP
+restoration without watchdog. [Reports](evidence/owned-probe-epoch-graceful-44139888789.json).
+This does not change the failed abrupt-H3 loss observation or its timing limits.
+
+Prepared an explicit local direct-bypass control with a sixth default-OFF flag
+`LIWETUN_TEST_OWNED_BYPASS`, incompatible with migration and requiring owned mode.
+Only disposable CI binds a fresh exclusive TCP socket to an address verified
+against the actual SDK-held interface, then connects to fixed loopback port
+38557 without forcing the outgoing interface. No route/DNS/firewall/trust change
+is added. The internal bounded IPv4 table read retains only that attachment's
+unambiguous preferred address and exports no address/interface identifiers.
+A Windows loopback-only receiver provides the exact nonce echo; the diagnostic
+endpoint receiver must record no request/reply. The strict oracle requires armed
+SDK flags 3 / no endpoint TX or RX, current epoch, valid reply but no successful
+request, unknown service observations and remote EOF before Stop. This tests
+outside-SDK local delivery, not a claim that the SDK recovery bypass upstream
+was selected. All six CI flags must be OFF for packaging. **38 local Python
+checks**, syntax/YAML and diff checks PASS; actual H2/H3 bypass, ordinary-echo
+regression and six-flag package exclusion pending.
+
 ## Development evidence and history
 
 Work continues in this independent repository. LikeWeb, production and the
