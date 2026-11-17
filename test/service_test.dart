@@ -206,7 +206,7 @@ void main() {
       await tester.pumpWidget(LiWeTunApp(controller: controller));
       expect(find.text('ТУННЕЛЬ ЗАПУЩЕН'), findsOneWidget);
       expect(
-        find.text('Передача данных через туннель ещё не подтверждена.'),
+        find.text('Работа интернета через туннель ещё не проверена.'),
         findsOneWidget,
       );
       expect(find.text('ПОДКЛЮЧЕНО'), findsNothing);
