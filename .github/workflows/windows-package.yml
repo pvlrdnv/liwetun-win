@@ -77,7 +77,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Production service configure failed' }
           cmake --build build/package-service --config Release --parallel 2
           if ($LASTEXITCODE -ne 0) { throw 'Production service build failed' }
-          foreach ($flag in @('LIWETUN_TEST_NO_GLOBAL_ROUTES', 'LIWETUN_TEST_TUN_NETWORK')) {
+          foreach ($flag in @('LIWETUN_TEST_NO_GLOBAL_ROUTES', 'LIWETUN_TEST_TUN_NETWORK', 'LIWETUN_TEST_ATTACHED_TUN')) {
             if ((Get-Content build/package-service/CMakeCache.txt) -notcontains ($flag + ':BOOL=OFF')) { throw 'Production service contains a test network mode' }
           }
           $noticeArgs = @()

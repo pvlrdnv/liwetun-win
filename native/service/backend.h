@@ -5,6 +5,9 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#ifdef LIWETUN_TEST_ATTACHED_TUN
+#include "../health/attached_tun_abi.h"
+#endif
 
 struct trusttunnel_s;
 namespace liwetun {
@@ -42,6 +45,10 @@ class Backend {
   CoreStart start_ = nullptr;
   CoreStop stop_fn_ = nullptr;
   TrafficRead traffic_read_ = nullptr;
+#ifdef LIWETUN_TEST_ATTACHED_TUN
+  using AttachmentRead = uint32_t (*)(trusttunnel_s*, uint32_t, health::AttachedTun*);
+  AttachmentRead attachment_read_ = nullptr;
+#endif
   mutable std::mutex core_mutex_;
   trusttunnel_s* observed_core_ = nullptr;
   uint64_t instance_ = 0;

@@ -3,6 +3,9 @@
 #include <cstring>
 #include <bcrypt.h>
 #include <stdexcept>
+#ifdef LIWETUN_TEST_ATTACHED_TUN
+#include "../health/attached_tun_validate.h"
+#endif
 
 namespace liwetun {
 namespace {
@@ -43,6 +46,10 @@ bool Backend::Load(const Image& service) {
   decode_ = reinterpret_cast<Decode>(GetProcAddress(module_, "trusttunnel_decode_deeplink"));
   free_ = reinterpret_cast<Free>(GetProcAddress(module_, "trusttunnel_free_deeplink_string"));
   traffic_read_ = reinterpret_cast<TrafficRead>(GetProcAddress(module_, "liwetun_traffic_snapshot_v1"));
+#ifdef LIWETUN_TEST_ATTACHED_TUN
+  attachment_read_ = reinterpret_cast<AttachmentRead>(GetProcAddress(module_, "liwetun_attached_tun_v1"));
+  if (!attachment_read_) return false;
+#endif
   return start_ && stop_fn_ && decode_ && free_;
 }
 Code Backend::Start(std::string uri) {
@@ -90,6 +97,18 @@ void Backend::SnapshotTraffic(TrafficReply& reply) const {
     reply.instance = instance_;
     traffic::Snapshot candidate;
     if (traffic_read_(observed_core_, sizeof(candidate), &candidate) == 1 && traffic::Valid(candidate)) {
+#ifdef LIWETUN_TEST_ATTACHED_TUN
+      // Read through the same borrowed-core lock, including concurrent Stop.
+      // Identifiers stay inside this stack frame and never cross IPC/logging.
+      if (candidate.flags & traffic::kValid) {
+        health::AttachedTun attachment;
+        if (!attachment_read_ || attachment_read_(observed_core_, sizeof(attachment), &attachment) != 1 ||
+            !health::MatchesReadyCounter(attachment, candidate)) {
+          candidate.flags &= ~traffic::kValid;
+          candidate.flags |= traffic::kObservationGap;
+        }
+      }
+#endif
       reply.sample = candidate;
     } else {
       reply.sample.flags |= traffic::kObservationGap;

@@ -251,6 +251,19 @@ unchanged; candidate is not admitted by service/package workflows. Source audit 
 self-image WFP permits and Wintun duplicate-alias rename behavior as constraints
 on future probe/ownership work; no inferred bypass or foreign-adapter reproduction.
 
+Next CI-only network observer is implemented, Windows execution pending. The
+explicit `attached_tun=true` network input selects the separate reviewed build and
+requires aggregate/source pins. `LIWETUN_TEST_ATTACHED_TUN` (default OFF) requires
+its export and fences every otherwise-valid counter read against the actual
+SDK-held context under the existing short borrowed-core lock. Mismatched ABI,
+identifiers, epoch or bounded monotonic time invalidate the observation. Interface
+identifiers remain on the service stack, never cross IPC or enter reports. No
+new IPC command/GUI capability/probe or routing policy change. The report marks
+this CI observer ON and both routing-test modes OFF. Package assembly explicitly
+rejects this third test flag as well as the previous routing flags. **23 Python
+fixture tests, syntax/YAML and diff checks PASS**. New C++ fence tests, real H2/H3
+context/read-vs-Stop and package-exclusion checks are pending on Windows CI.
+
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
 do not qualify those systems. New SDK artifacts retain for 14 days; GUI and

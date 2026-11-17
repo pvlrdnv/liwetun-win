@@ -230,3 +230,26 @@ Additional source constraints for the next consumer (no behavior change here):
   established coexistence fix. A future ownership change needs controlled
   preexisting-adapter/race acceptance and exact preservation of foreign state.
   No Wintun source is copied, driver altered or owner-machine experiment run.
+
+
+## CI-only live attachment fence — Windows execution pending
+
+The network workflow's explicit `attached_tun=true` selects only the separately
+pinned build; source/aggregate profile guards and exact source-run/DLL hashes
+remain mandatory. A default-OFF `LIWETUN_TEST_ATTACHED_TUN` service build requires
+the export and reads it inside the existing borrowed-core mutex during a valid
+traffic observation. It requires ABI/layout, nonempty index/LUID, matching ready
+epoch and a monotonic time no earlier than the counter and at most five seconds
+later. Failure removes valid and sets observation-gap; it cannot create a valid
+zero sample. Only existing traffic fields cross IPC. Identifiers remain on the
+service stack; no new service command or shipped GUI health capability is added.
+
+The CI report explicitly marks its observation test mode ON while both routing
+test modes remain OFF. H2/H3 HTTPS/DNS and concurrent Stop keep their existing
+independent path and baseline/WFP restoration requirements. This qualifies an
+attachment-read prerequisite only, not an application-owned health probe or
+adapter ownership. The package workflow/assembler explicitly require this flag
+OFF; normal service/package workflows cannot select the attached SDK candidate.
+Local fixture tests and source checks pass; new C++ fence and actual live Windows
+observations are pending. Existing build receipt remains historical build-only
+proof; no network/desktop/release qualification is inferred from it.

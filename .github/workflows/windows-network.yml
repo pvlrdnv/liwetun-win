@@ -10,6 +10,10 @@ on:
         description: Qualify the separate aggregate-traffic SDK candidate (requires source_pins)
         type: boolean
         default: false
+      attached_tun:
+        description: CI-only SDK-held attachment fence (requires traffic_metrics/source_pins)
+        type: boolean
+        default: false
       traffic_pattern:
         description: Normal traffic or a tiny TX-only native counter observation window
         type: choice
@@ -90,6 +94,7 @@ jobs:
     env:
       SOURCE_PINNED: ${{ inputs.source_pins }}
       TRAFFIC_METRICS: ${{ inputs.traffic_metrics }}
+      ATTACHED_TUN: ${{ inputs.attached_tun }}
       LIWETUN_TRAFFIC_PATTERN: ${{ inputs.traffic_pattern }}
       SDK_RUN_ID: ${{ inputs.sdk_run_id }}
       GH_TOKEN: ${{ github.token }}
@@ -118,14 +123,25 @@ jobs:
       - name: Build real service with explicit disposable network fixture mode
         run: |
           if ($env:TRAFFIC_METRICS -eq 'true' -and $env:LIWETUN_PRODUCTION_PROBE -ne 'true') { throw 'Aggregate traffic qualification requires ordinary traffic mode' }
+          if ($env:ATTACHED_TUN -eq 'true' -and ($env:SOURCE_PINNED -ne 'true' -or $env:TRAFFIC_METRICS -ne 'true')) { throw 'Attachment fence requires aggregate immutable-source profile' }
           if ($env:LIWETUN_PRODUCTION_PROBE -ne 'true' -and $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4') { throw 'Synthetic IPv6 requires production probe mode' }
           rustup toolchain install 1.95.0 --profile minimal
           if ($LASTEXITCODE -ne 0) { throw 'Rust install failed' }
           $bounded = if ($env:LIWETUN_PRODUCTION_PROBE -eq 'true') { 'OFF' } else { 'ON' }
-          cmake -S native/service -B build/service -A x64 -DLIWETUN_TEST_NO_GLOBAL_ROUTES=OFF "-DLIWETUN_TEST_TUN_NETWORK=$bounded"
+          $attachmentGuard = if ($env:ATTACHED_TUN -eq 'true') { 'ON' } else { 'OFF' }
+          cmake -S native/service -B build/service -A x64 -DLIWETUN_TEST_NO_GLOBAL_ROUTES=OFF "-DLIWETUN_TEST_TUN_NETWORK=$bounded" "-DLIWETUN_TEST_ATTACHED_TUN=$attachmentGuard"
           if ($LASTEXITCODE -ne 0) { throw 'Service configure failed' }
           cmake --build build/service --config Release --parallel 2
           if ($LASTEXITCODE -ne 0) { throw 'Service build failed' }
+          if ($env:ATTACHED_TUN -eq 'true') {
+            if (!(Select-String -Path build/service/CMakeCache.txt -Pattern '^LIWETUN_TEST_ATTACHED_TUN:BOOL=ON$' -Quiet)) { throw 'Attachment fence build mode missing' }
+            cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /Inative/traffic native/health/test_attached_tun.cpp /Fobuild/attachment-context.obj /Febuild/attachment-context.exe
+            if ($LASTEXITCODE -ne 0) { throw 'Attachment context contract build failed' }
+            & ./build/attachment-context.exe
+            if ($LASTEXITCODE -ne 0) { throw 'Attachment context contract failed' }
+            New-Item -ItemType Directory -Force build/service-evidence | Out-Null
+            @{ci_only_guard_enabled=$true; contract_passed=$true; routing_policy_changed=$false; interface_identifiers_exported=$false; release_ready=$false} | ConvertTo-Json | Set-Content build/service-evidence/attachment-context-guard.json
+          }
           cargo run --manifest-path native/trusttunnel_bridge/Cargo.toml --locked --release --example synthetic_fixture -- build/native-fixture.json
           if ($LASTEXITCODE -ne 0) { throw 'Fixture generation failed' }
           $fixtures = Get-Content build/native-fixture.json -Raw | ConvertFrom-Json
@@ -134,13 +150,17 @@ jobs:
         run: |
           if ($env:SDK_RUN_ID -notmatch '^[0-9]{1,20}$') { throw 'Invalid SDK run ID' }
           if ($env:TRAFFIC_METRICS -eq 'true' -and $env:SOURCE_PINNED -ne 'true') { throw 'Traffic SDK requires immutable source pins' }
-          $pinFile = if ($env:TRAFFIC_METRICS -eq 'true') { 'native/sdk/runtime-traffic.json' } elseif ($env:SOURCE_PINNED -eq 'true') { 'native/sdk/runtime-sources.json' } else { 'native/sdk/runtime.json' }
+          $pinFile = if ($env:ATTACHED_TUN -eq 'true') { 'native/sdk/runtime-attached.json' } elseif ($env:TRAFFIC_METRICS -eq 'true') { 'native/sdk/runtime-traffic.json' } elseif ($env:SOURCE_PINNED -eq 'true') { 'native/sdk/runtime-sources.json' } else { 'native/sdk/runtime.json' }
           $pin = Get-Content $pinFile -Raw | ConvertFrom-Json
           if ($env:SOURCE_PINNED -eq 'true') {
             if ($pin.source_pin_manifest_sha256 -ne (Get-FileHash native/sdk/source-pins.json -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.conan_input_lock_sha256 -ne (Get-FileHash native/sdk/conan-sources.lock -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.source_pinned_candidate -ne $true -or $pin.release_qualified -ne $false) { throw 'Candidate SDK source receipt mismatch' }
           }
           if ($env:TRAFFIC_METRICS -eq 'true') {
-            if ($pin.traffic_profile_manifest_sha256 -ne (Get-FileHash native/sdk/traffic-inputs.json -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.traffic_abi_header_sha256 -ne (Get-FileHash native/traffic/traffic_abi.h -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.traffic_abi -ne 1 -or $pin.sdk_variant -ne 'aggregate_traffic_candidate') { throw 'Traffic SDK receipt mismatch' }
+            $variant = if ($env:ATTACHED_TUN -eq 'true') { 'attached_tun_candidate' } else { 'aggregate_traffic_candidate' }
+            if ($pin.traffic_profile_manifest_sha256 -ne (Get-FileHash native/sdk/traffic-inputs.json -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.traffic_abi_header_sha256 -ne (Get-FileHash native/traffic/traffic_abi.h -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.traffic_abi -ne 1 -or $pin.sdk_variant -ne $variant) { throw 'Traffic SDK receipt mismatch' }
+          }
+          if ($env:ATTACHED_TUN -eq 'true') {
+            if ($pin.attached_tun_profile_manifest_sha256 -ne (Get-FileHash native/sdk/attached-tun-inputs.json -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.attached_tun_abi_header_sha256 -ne (Get-FileHash native/health/attached_tun_abi.h -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.attached_tun_abi -ne 1) { throw 'Attached TUN SDK receipt mismatch' }
           }
           if ($env:SDK_RUN_ID -ne [string]$pin.source_run) { throw 'SDK run does not match reviewed runtime manifest' }
           $run = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:SDK_RUN_ID" | ConvertFrom-Json

@@ -224,6 +224,9 @@ def main():
     if os.name != 'nt' or os.environ.get('GITHUB_ACTIONS') != 'true':
         raise RuntimeError('disposable_windows_required')
     traffic_required = os.environ.get('TRAFFIC_METRICS') == 'true'
+    attachment_guard = os.environ.get('ATTACHED_TUN') == 'true'
+    if attachment_guard and not traffic_required:
+        raise RuntimeError('invalid_attachment_guard_mode')
     traffic_pattern = os.environ.get('LIWETUN_TRAFFIC_PATTERN', 'normal')
     run_id = os.environ['GITHUB_RUN_ID']
     distro = os.environ['LIWETUN_CI_DISTRO']
@@ -259,7 +262,10 @@ def main():
               'termination': termination, 'traffic_pattern': traffic_pattern,
               'profile': profile,
               'client_family': family,
-              'network_test_modes_enabled': False, 'client_host_routes_added': False,
+              'network_test_modes_enabled': attachment_guard, 'routing_test_modes_enabled': False,
+              'client_host_routes_added': False,
+              'sdk_held_attachment_ci_guard_enabled': attachment_guard,
+              'attachment_context_proves_endpoint_traversal': False,
               'server_https_egress_bound_physical': True,
               'endpoint_udp_relay': 'wsl_local',
               'endpoint_diagnostic_source_fix': bool(os.environ.get('LIWETUN_ENDPOINT_FIXTURE_RUN')),
@@ -499,6 +505,11 @@ def main():
             if profile == 'valid':
                 progress = aggregate_progress(traffic_before, traffic_after)
                 result.update(aggregate_traffic_before=traffic_before, aggregate_traffic_progress=progress)
+                if attachment_guard:
+                    # The CI-only backend invalidates every ready counter sample
+                    # unless the actual SDK-held context matches under its core lock.
+                    # No interface identifiers cross IPC or enter this report.
+                    result['sdk_held_attachment_live_context_qualified'] = progress['passed']
                 traffic_ok = traffic_ok and progress['passed']
             else:
                 unavailable = (not traffic_after.get('flags', 0) & 2

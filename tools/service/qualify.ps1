@@ -9,6 +9,9 @@ $cache = Get-Content (Join-Path (Split-Path $Build -Parent) 'CMakeCache.txt')
 $expectedNoGlobal = if (!$Network -and !$ProductionLifecycle) { 'ON' } else { 'OFF' }
 $expectedTun = if ($Network -and !$ProductionTraffic) { 'ON' } else { 'OFF' }
 if ($cache -notcontains ('LIWETUN_TEST_NO_GLOBAL_ROUTES:BOOL=' + $expectedNoGlobal) -or $cache -notcontains ('LIWETUN_TEST_TUN_NETWORK:BOOL=' + $expectedTun)) { throw 'Service compilation mode mismatch' }
+$expectedAttachment = if ($env:ATTACHED_TUN -eq 'true') { 'ON' } else { 'OFF' }
+if ($expectedAttachment -eq 'ON' -and (!$Network -or !$ProductionTraffic -or !$Sdk -or $env:TRAFFIC_METRICS -ne 'true')) { throw 'Attachment fence requires its explicit network candidate mode' }
+if ($cache -notcontains ('LIWETUN_TEST_ATTACHED_TUN:BOOL=' + $expectedAttachment)) { throw 'Attachment context compilation mode mismatch' }
 $root = Join-Path $env:ProgramFiles ('LiWeTun-CI-' + $env:GITHUB_RUN_ID)
 if (Test-Path $root) { throw 'Fresh isolated installation directory required' }
 $service = Join-Path $root 'liwetun_service.exe'
@@ -194,7 +197,7 @@ try {
     $checks.Add('service_uninstalled')
     if ((DnsSnapshot) -ne $dnsBefore -or (DefaultRoutes) -ne $routesBefore) { throw 'DNS or default routes were not restored after CI fixture' }
     $checks.Add('dns_and_default_routes_unchanged')
-    $result = @{checks=@($checks); core_runtime_ready=$runtimeReady; signed_service_ipc='verified'; driver_cycle=$driver; sdk_lifecycle=$lifecycle; test_mode_no_global_routes=(!$Network -and !$ProductionLifecycle); test_mode_tun_network=($Network -and !$ProductionTraffic); production_refused_endpoint_lifecycle=[bool]$ProductionLifecycle; production_single_traffic_fixture=[bool]$ProductionTraffic; dns_and_default_routes_unchanged=$true; release_ready=$false}
+    $result = @{checks=@($checks); core_runtime_ready=$runtimeReady; signed_service_ipc='verified'; driver_cycle=$driver; sdk_lifecycle=$lifecycle; test_mode_no_global_routes=(!$Network -and !$ProductionLifecycle); test_mode_tun_network=($Network -and !$ProductionTraffic); test_mode_attached_tun=($expectedAttachment -eq 'ON'); production_refused_endpoint_lifecycle=[bool]$ProductionLifecycle; production_single_traffic_fixture=[bool]$ProductionTraffic; dns_and_default_routes_unchanged=$true; release_ready=$false}
     New-Item -ItemType Directory -Force build/service-evidence | Out-Null
     $result | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 build/service-evidence/qualification.json
 } finally {
