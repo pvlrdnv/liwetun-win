@@ -96,5 +96,7 @@ actual Windows cache/revoke/replay verification passed (run 43929885246). Native
 precede committing an update, and active-session expiry/revoke/URI replacement
 queues Stop without automatic reconnect or unknown-outcome retries. HTTPS refresh and its manual/startup/periodic controls are implemented; Windows
 qualification of the combined path passed (run 44028234705). No LikeWeb route is implemented.
+The outer profile envelope v3 optionally stores the local tray preference; this
+does not affect subscription rights or the server schema.
 The inner cache v2 records a successful application timestamp; legacy v1 remains
 readable with an unknown timestamp. The public server snapshot schema stays v1.

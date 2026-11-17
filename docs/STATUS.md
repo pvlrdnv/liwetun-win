@@ -1,6 +1,6 @@
 # Development checkpoint — 2026-11-17
 
-## Active — tray qualification and H3 recovery observation
+## Checkpoint — subscription, tray and endpoint recovery CI PASS
 
 Work continues in this independent repository. LikeWeb, production and the
 owner's corporate tunnel/network/trust configuration remain unchanged. No
@@ -87,8 +87,22 @@ the service lease; hiding retains it. No startup/autoconnect. **220 local Dart
 tests + analyze PASS**, including preference/cache failure and restoration.
 Native Windows build and sixth capability-gated real tray/DPAPI test **PASS**
 (44030695768): 220 Dart + 6 Rust + 6 desktop tests. This initial report did not
-record which conditional tray branch ran; follow-up adds explicit availability,
-hide/restore/DPAPI versus unavailable fallback evidence. Desktop acceptance open. [Behavior and limits](DESKTOP_TRAY.md).
+record which conditional tray branch ran. Follow-up **PASS** (44031775552)
+explicitly reports tray available, real hide/restore and DPAPI preference tested.
+The unavailable branch was not executed on that runner. Desktop/menu/DPI and
+Explorer-restart acceptance remain open. Installer qualification with this GUI
+**PASS** (44032587048): 14 groups, medium GUI/service query, rollback/uninstall
+and cleanup; ephemeral signing only.
+[Actual tray receipt](evidence/windows-tray-observed-c27c1f8.json),
+[installer receipt](evidence/package-tray-44032587048.json). [Behavior and limits](DESKTOP_TRAY.md).
+
+Pinned-source health audit confirms that the Windows SDK wrapper does not expose
+aggregate counters and discards its underlying statistics events. The existing
+privacy patch also disables per-destination events; do not undo it for a GUI
+metric. Recovery can allow bypass with kill switch off, so even a TUN-sourced
+HTTPS success cannot prove endpoint traversal. Application health remains
+unavailable/unknown until a closed native bridge and probe-specific proof are
+qualified. [Findings and required next slice](HEALTH_PROBES.md).
 
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests

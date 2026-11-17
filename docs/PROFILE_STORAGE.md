@@ -33,7 +33,10 @@ LocalSystem tunnel service does not own this cache.
 
 The legacy v1 JSON schema retains direct/source links and selected profile ID.
 Schema v2 adds source-bound subscription stores within the same encrypted native
-container and 1 MiB bound; direct/source links plus derived profiles total at most
+container and 1 MiB bound. Schema v3 adds the explicit close-to-tray preference,
+while retaining v1/v2 decoding with the default false. False emits the existing
+v1/v2 form. All preferences remain within the same private DPAPI slot; see
+[tray lifecycle](DESKTOP_TRAY.md). Direct/source links plus derived profiles total at most
 100. Selection for derived profiles is scoped to the source and remote profile
 ID, so equal IDs from different feeds do not alias. The accepted revision floor,
 access denial and original per-profile expiry times survive restoration. Links are reparsed, duplicates and invalid selection rejected; no
@@ -79,9 +82,9 @@ replay/revoke persistence, partial deadline retention, expiry and active-session
 Stop. A revoke or changed active URI queues Stop even if Start was still pending.
 An uncertain Stop is not automatically resent. The UI displays derived names /
 stale eligibility; a stale selection cannot start. These client checks do not
-replace server-side entitlement/revocation. HTTPS refresh and its UI action are
-not enabled yet. A fourth actual Windows desktop-channel case is prepared for
-v2 DPAPI save/restore/revoke/replay/cleanup; Windows execution remains pending.
+replace server-side entitlement/revocation. Manual/startup/periodic HTTPS refresh
+is now enabled; protected loading itself performs no network requests. The
+following Windows results qualify the cache and the combined path separately.
 
 The updated actual Windows app qualification subsequently **PASS** on `b3ffc07`:
 [43929885246](https://github.com/pvlrdnv/liwetun-win/actions/runs/43929885246),
@@ -91,3 +94,11 @@ case uses real user DPAPI and the official TT parser to restore a source-bound
 subscription selection without connecting, persist revoke/revision, reopen,
 reject replay and remove the synthetic cache. No HTTP fetch or tunnel start.
 This remains Server 2022 CI, not Windows 10/11 installed acceptance.
+
+
+Combined HTTPS → UI → DPAPI → revoke passed as a fifth actual Windows case in
+44028234705. The sixth case in 44031775552 explicitly confirmed a real available
+tray, hide/restore and protected preference persistence (220 Dart + 6 Rust +
+6 desktop tests). It did not exercise an unavailable tray. Desktop/menu/DPI and
+Explorer-restart acceptance remain open. Server JSON stays subscription schema v1;
+the local private-envelope versions do not change the server contract.

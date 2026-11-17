@@ -1,8 +1,9 @@
 # Desktop tray lifecycle
 
 Status: implemented; local analyze and 220 Dart tests PASS. Windows compilation + 6 actual desktop channel tests passed (44030695768).
-The first report does not identify which conditional branch ran; a follow-up
-adds explicit availability and per-branch evidence. Windows 10/11 desktop acceptance is
+The first report does not identify which conditional branch ran. Follow-up
+44031775552 passed with explicit available=true, actual hide/restore and DPAPI
+preference checked; unavailable fallback was not exercised on that runner. Windows 10/11 desktop acceptance is
 separate, including taskbar menu keyboard interaction, DPI and Explorer restart.
 
 The native runner owns one notification icon using the existing LiWeTun resource.
@@ -36,3 +37,9 @@ A conditional runner test is not desktop acceptance of the tray menu.
 
 Deferred: user startup/autoconnect, automatic server selection, a tray connection
 status/menu action, and a signed update mechanism. No fabricated Internet state.
+
+
+The corresponding installer payload passed 14 qualification groups in run
+44032587048, with medium-integrity installed GUI/service query, rollback,
+visible-window uninstall guard and complete uninstall cleanup. No tunnel start;
+only ephemeral CI signing. This is not an owner-installable release package.
