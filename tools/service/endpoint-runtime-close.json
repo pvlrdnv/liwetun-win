@@ -1,0 +1,11 @@
+{
+  "source_run": "44121575608",
+  "workflow_commit": "1303d202a1cad660c3f685662878bb684bc17315",
+  "binary_sha256": "39483ee6a3e8afd95483c8cec6465dec8d54e8e6447610384978b79f5e7138ad",
+  "endpoint_close_fix": true,
+  "endpoint_close_manifest_sha256": "b28f5d58abfc0071cea3f33f5b29e1b7dcc88935cc531adbb0dc5a6ef9e376b8",
+  "endpoint_close_source_sha256": "4f65a1e6a41649bbea876147fc743d77da6e2dccbef9729c2401706f314d52b2",
+  "qualification_scope": "linux_ci_build_and_two_udp_flows_only",
+  "h3_deadline_qualified": false,
+  "release_ready": false
+}

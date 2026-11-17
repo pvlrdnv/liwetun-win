@@ -467,6 +467,17 @@ source preparation, new no-mutation/reapply guards, **33 Python tests** and YAML
 checks PASS. Candidate build/live differential qualification is pending; it
 cannot silently replace the existing diagnostic endpoint pin.
 
+Endpoint reader-wakeup candidate build **PASS** (44121575608), source `1303d20`:
+full Linux release endpoint and two authenticated UDP flows, without SDK/TUN.
+Downloaded binary SHA256, original archive/SOCKS5 patch provenance, wakeup input
+manifest and output-source digests all verified. [Build receipt](evidence/endpoint-wakeup-build-44121575608.json).
+Separate `endpoint-runtime-close.json` pins it as build/UDP-only. Windows selection
+requires explicit `endpoint_stream_close=true`, the exact successful build/head,
+binary/provenance hashes, wakeup manifest/output hashes and focused owned-probe
+mode; the original endpoint pin/default remains unchanged. No production server
+change. Live H2/H3 deadline and H3 echo/cancel differential qualification pending.
+Binary retention expires 2026-12-01 16:11 UTC; safe UDP evidence 2026-11-24.
+
 Trusted common-leaf release signing, final distribution audit and separate
 Windows 10/11 installed desktop acceptance remain open. Server 2022 / WSL tests
 do not qualify those systems. New SDK artifacts retain for 14 days. Latest GUI

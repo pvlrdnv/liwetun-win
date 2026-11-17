@@ -43,6 +43,11 @@ on:
         required: false
         default: ''
         type: string
+      endpoint_stream_close:
+        description: Explicit focused experiment with the separately pinned H3 reader-wakeup endpoint
+        required: false
+        default: false
+        type: boolean
       diagnostic_only:
         description: H2 diagnostic only (never a complete qualification)
         required: false
@@ -116,6 +121,7 @@ jobs:
       LIWETUN_NETWORK_DIAGNOSTIC: ${{ inputs.diagnostic_only }}
       LIWETUN_ENDPOINT_VERSION: ${{ inputs.endpoint_version }}
       LIWETUN_ENDPOINT_FIXTURE_RUN: ${{ inputs.endpoint_fixture_run }}
+      LIWETUN_ENDPOINT_STREAM_CLOSE: ${{ inputs.endpoint_stream_close }}
       LIWETUN_PRODUCTION_PROBE: ${{ inputs.production_probe }}
       LIWETUN_PRODUCTION_TRANSPORT: ${{ inputs.production_transport }}
       LIWETUN_PRODUCTION_TERMINATION: ${{ inputs.production_termination }}
@@ -140,6 +146,7 @@ jobs:
           if ($env:ATTACHED_TUN -eq 'true' -and ($env:SOURCE_PINNED -ne 'true' -or $env:TRAFFIC_METRICS -ne 'true')) { throw 'Attachment fence requires aggregate immutable-source profile' }
           if ($env:OWNED_PROBE -eq 'true' -and ($env:ATTACHED_TUN -ne 'true' -or $env:LIWETUN_PRODUCTION_PROFILE -ne 'valid' -or $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4' -or $env:LIWETUN_PRODUCTION_TERMINATION -ne 'stop' -or $env:LIWETUN_TRAFFIC_PATTERN -ne 'normal')) { throw 'Owned probe requires its focused IPv4 Stop/normal fixture' }
           if ($env:LIWETUN_OWNED_PROBE_MODE -notin @('echo','cancel','deadline') -or ($env:LIWETUN_OWNED_PROBE_MODE -ne 'echo' -and $env:OWNED_PROBE -ne 'true')) { throw 'Negative fixture requires owned probe mode' }
+          if ($env:LIWETUN_ENDPOINT_STREAM_CLOSE -eq 'true' -and (!$env:LIWETUN_ENDPOINT_FIXTURE_RUN -or $env:OWNED_PROBE -ne 'true')) { throw 'Endpoint wakeup candidate requires explicit focused owned probe fixture' }
           if ($env:LIWETUN_PRODUCTION_PROBE -ne 'true' -and $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4') { throw 'Synthetic IPv6 requires production probe mode' }
           rustup toolchain install 1.95.0 --profile minimal
           if ($LASTEXITCODE -ne 0) { throw 'Rust install failed' }
@@ -204,7 +211,8 @@ jobs:
           } else { throw 'Unpinned endpoint version' }
           if ($env:LIWETUN_ENDPOINT_FIXTURE_RUN) {
             if ($env:LIWETUN_ENDPOINT_FIXTURE_RUN -notmatch '^[0-9]{1,20}$' -or $env:LIWETUN_ENDPOINT_VERSION -ne 'v1.1.0' -or $env:LIWETUN_PRODUCTION_PROBE -ne 'true') { throw 'Invalid diagnostic endpoint request' }
-            $receipt = Get-Content tools/service/endpoint-runtime.json -Raw | ConvertFrom-Json
+            $receiptPath = if ($env:LIWETUN_ENDPOINT_STREAM_CLOSE -eq 'true') { 'tools/service/endpoint-runtime-close.json' } else { 'tools/service/endpoint-runtime.json' }
+            $receipt = Get-Content $receiptPath -Raw | ConvertFrom-Json
             $sourcePin = Get-Content tools/service/endpoint-source.json -Raw | ConvertFrom-Json
             if ($env:LIWETUN_ENDPOINT_FIXTURE_RUN -ne [string]$receipt.source_run) { throw 'Unreviewed diagnostic endpoint run' }
             $run = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:LIWETUN_ENDPOINT_FIXTURE_RUN" | ConvertFrom-Json
@@ -216,6 +224,11 @@ jobs:
             $provenance = Get-Content build/endpoint/fixture-provenance.json -Raw | ConvertFrom-Json
             $actual = (Get-FileHash build/endpoint/trusttunnel_endpoint -Algorithm SHA256).Hash.ToLowerInvariant()
             if ($receipt.binary_sha256 -notmatch '^[0-9a-f]{64}$' -or $actual -ne $receipt.binary_sha256 -or $actual -ne $provenance.binary_sha256 -or $provenance.source_commit -ne $sourcePin.source_commit -or $provenance.patch_sha256 -ne $sourcePin.patch_sha256 -or $provenance.source_archive_sha256 -ne $sourcePin.source_archive_sha256 -or $provenance.diagnostic_source_fix -ne $true -or $provenance.release_ready -ne $false) { throw 'Diagnostic endpoint provenance mismatch' }
+            if ($env:LIWETUN_ENDPOINT_STREAM_CLOSE -eq 'true') {
+              $closePin = Get-Content tools/service/endpoint-close-inputs.json -Raw | ConvertFrom-Json
+              $closeDigest = (Get-FileHash tools/service/endpoint-close-inputs.json -Algorithm SHA256).Hash.ToLowerInvariant()
+              if ($receipt.endpoint_close_manifest_sha256 -ne $closeDigest -or $provenance.endpoint_close_manifest_sha256 -ne $closeDigest -or $receipt.endpoint_close_source_sha256 -ne $closePin.output_sha256 -or $provenance.endpoint_close_source_sha256 -ne $closePin.output_sha256 -or $receipt.endpoint_close_fix -ne $true -or $provenance.endpoint_close_fix -ne $true -or $receipt.release_ready -ne $false) { throw 'Endpoint wakeup provenance mismatch' }
+            } elseif ($provenance.endpoint_close_fix -eq $true) { throw 'Endpoint wakeup candidate requires explicit opt-in' }
           } else {
             Invoke-WebRequest "https://github.com/TrustTunnel/TrustTunnel/releases/download/${env:LIWETUN_ENDPOINT_VERSION}/trusttunnel-${env:LIWETUN_ENDPOINT_VERSION}-linux-x86_64.tar.gz" -OutFile build/endpoint.tar.gz
             if ((Get-FileHash build/endpoint.tar.gz -Algorithm SHA256).Hash.ToLowerInvariant() -ne $endpointDigest) { throw 'Endpoint digest mismatch' }

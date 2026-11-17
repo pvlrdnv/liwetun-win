@@ -353,6 +353,7 @@ def main():
               'server_https_egress_bound_physical': True,
               'endpoint_udp_relay': 'wsl_local',
               'endpoint_diagnostic_source_fix': bool(os.environ.get('LIWETUN_ENDPOINT_FIXTURE_RUN')),
+              'endpoint_reader_wakeup_candidate': os.environ.get('LIWETUN_ENDPOINT_STREAM_CLOSE') == 'true',
               'full_matrix_qualified': False, 'release_ready': False}
     if synthetic_ipv6:
         result.update(mode='single_production_synthetic_ipv6_nat64',
