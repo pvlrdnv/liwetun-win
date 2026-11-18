@@ -145,3 +145,30 @@ Next SDK work must provide fresh creation authority through configuration and
 teardown, including internal recovery. The interval between these read-only
 checks and SDK creation remains non-atomic. No complete ownership, creation-race,
 desktop or release qualification is claimed.
+
+## Isolated create-only candidate
+
+The default-OFF `fresh_adapter` SDK profile now removes `WintunOpenAdapter` and
+the name-derived GUID entirely. `CreateFresh` accepts no configured logical name;
+the Windows binding supplies 32 bytes from the system-preferred
+[BCryptGenRandom](https://learn.microsoft.com/en-us/windows/win32/api/bcrypt/nf-bcrypt-bcryptgenrandom)
+provider, split between a requested private GUID and a 128-bit opaque physical
+alias. A bounded read-only interface-table scan refuses observed collisions or
+unknown observations. The original signed Wintun DLL is unchanged.
+
+Only the exact handle returned by Create is observed. Actual OS GUID, alias,
+LUID and index must match before the SDK assigns addresses or starts a session.
+On mismatch only that returned handle is closed. The retained per-instance
+creation observation gates the existing private attached-interface getter;
+teardown withdraws it before closing the handle. No new public IPC/GUI capability
+or identifier diagnostics are added. A separate export identifies the build
+policy only and cannot qualify an instance, epoch or network path.
+
+This candidate is not admitted to the service or normal package. Full pinned
+preparation and Python guards passed locally; Windows compilation, actual create
+behavior and network controls are pending. Synthetic operation tests do not
+establish real Wintun concurrency or cleanup. In particular the preflight is
+non-atomic: original Wintun may rename a duplicate visible alias during Create.
+An equal-privilege actor racing the exact random physical alias is not excluded
+by a later handle-identity check. This limitation remains an open ownership gate;
+do not reclassify random naming or a build marker as complete race protection.

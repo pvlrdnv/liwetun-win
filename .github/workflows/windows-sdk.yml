@@ -18,6 +18,10 @@ on:
         description: Isolated owned TCP socket correlation (requires all previous profiles)
         type: boolean
         default: false
+      fresh_adapter:
+        description: Isolated create-only adapter candidate (requires all previous profiles)
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -30,6 +34,7 @@ jobs:
       TRAFFIC_METRICS: ${{ inputs.traffic_metrics }}
       ATTACHED_TUN: ${{ inputs.attached_tun }}
       OWNED_PROBE: ${{ inputs.owned_probe }}
+      FRESH_ADAPTER: ${{ inputs.fresh_adapter }}
     defaults:
       run:
         shell: pwsh
@@ -88,6 +93,21 @@ jobs:
           python -m unittest discover -s tools/sdk -p 'test_owned_probe_profile.py'
           if ($LASTEXITCODE -ne 0) { throw 'Owned probe source guards failed' }
           @{slot_contract_passed=$true; actual_loopback_socket_boundary_passed=$true; synthetic_context_not_sdk_tun=$true; tunnel_started=$false; network_configuration_changed=$false; live_sdk_path_qualified=$false; release_ready=$false} | ConvertTo-Json | Set-Content build/sdk-evidence/owned-probe-contract.json
+      - name: Verify fresh adapter policy without adapter creation
+        if: inputs.fresh_adapter
+        run: |
+          if ($env:SOURCE_PINNED -ne 'true' -or $env:TRAFFIC_METRICS -ne 'true' -or $env:ATTACHED_TUN -ne 'true' -or $env:OWNED_PROBE -ne 'true') { throw 'Fresh adapter requires all preceding SDK profiles' }
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX native/health/test_fresh_adapter.cpp /Fobuild/fresh-adapter.obj /Febuild/fresh-adapter.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Fresh adapter policy build failed' }
+          & ./build/fresh-adapter.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Fresh adapter policy contract failed' }
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_WIN32_WINNT=0x0A00 native/health/test_windows_fresh_adapter.cpp /Fobuild/windows-fresh-adapter.obj /Febuild/windows-fresh-adapter.exe /link bcrypt.lib iphlpapi.lib ws2_32.lib
+          if ($LASTEXITCODE -ne 0) { throw 'Read-only fresh adapter Windows binding build failed' }
+          & ./build/windows-fresh-adapter.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Read-only fresh adapter Windows binding contract failed' }
+          python -m unittest discover -s tools/sdk -p 'test_fresh_adapter_profile.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Fresh adapter source guards failed' }
+          @{policy_contract_passed=$true; windows_read_only_binding_passed=$true; source_guards_passed=$true; tunnel_started=$false; network_configuration_changed=$false; adapter_ownership_qualified=$false; release_ready=$false} | ConvertTo-Json | Set-Content build/sdk-evidence/fresh-adapter-contract.json
       - name: Install build tools on disposable runner
         run: |
           python -m pip install conan==2.12.2
@@ -141,6 +161,11 @@ jobs:
         run: |
           python tools/sdk/owned_probe_profile.py --source build/vendor/sdk --output build/sdk-evidence
           if ($LASTEXITCODE -ne 0) { throw 'Owned probe source verification failed' }
+      - name: Prepare isolated fresh adapter creation profile
+        if: inputs.fresh_adapter
+        run: |
+          python tools/sdk/fresh_adapter_profile.py --source build/vendor/sdk --output build/sdk-evidence
+          if ($LASTEXITCODE -ne 0) { throw 'Fresh adapter source verification failed' }
       - name: Export pinned local dependency recipes
         run: |
           conan export build/vendor/common --user adguard --channel oss --version 8.2.0
@@ -153,7 +178,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'DNS recipe export failed' }
       - name: Configure and build actual SDK DLL
         run: |
-          $sdkVersion = if ($env:OWNED_PROBE -eq 'true') { '1.1.12-liwetun.probe1' } elseif ($env:ATTACHED_TUN -eq 'true') { '1.1.12-liwetun.attached1' } elseif ($env:TRAFFIC_METRICS -eq 'true') { '1.1.12-liwetun.traffic1' } else { '1.1.12-liwetun.1' }
+          $sdkVersion = if ($env:FRESH_ADAPTER -eq 'true') { '1.1.12-liwetun.fresh1' } elseif ($env:OWNED_PROBE -eq 'true') { '1.1.12-liwetun.probe1' } elseif ($env:ATTACHED_TUN -eq 'true') { '1.1.12-liwetun.attached1' } elseif ($env:TRAFFIC_METRICS -eq 'true') { '1.1.12-liwetun.traffic1' } else { '1.1.12-liwetun.1' }
           cmake -S build/vendor/sdk/platform/windows -B build/sdk-build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe "-DTT_CLIENT_VERSION=$sdkVersion"
           if ($LASTEXITCODE -ne 0) { throw 'SDK configure failed' }
           $profileArgs = @()
@@ -203,6 +228,11 @@ jobs:
         run: |
           python tools/sdk/check_owned_probe_abi.py --runtime build/sdk-runtime --output build/sdk-evidence/owned-probe-abi-check.json
           if ($LASTEXITCODE -ne 0) { throw 'Owned probe ABI contract failed' }
+      - name: Verify creation policy build marker without SDK startup
+        if: inputs.fresh_adapter
+        run: |
+          python tools/sdk/check_fresh_adapter_abi.py --runtime build/sdk-runtime --output build/sdk-evidence/fresh-adapter-abi-check.json
+          if ($LASTEXITCODE -ne 0) { throw 'Fresh adapter policy marker check failed' }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

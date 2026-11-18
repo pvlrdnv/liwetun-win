@@ -1,0 +1,17 @@
+{
+  "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+  "requires_profile": "owned_probe_candidate",
+  "baseline_files": {
+    "net/src/os_tunnel_win.cpp": "b25498670ff0483a07f767b1841cd55f152032fbb5eba415515804f1805e880e",
+    "net/src/os_tunnel_win.h": "d071b694e5a39456a2e4c841b5c99cf43d9a67a333a6772b2c0c62c4eb175a89",
+    "platform/windows/src/trusttunnel.cpp": "014b1b11c332f8375d63db3b14791d552cdc715bfe75f32e93c35d10554c9ed9"
+  },
+  "added_files": {
+    "native/health/fresh_adapter.h": "net/src/fresh_adapter.h",
+    "native/health/windows_fresh_adapter.h": "net/src/windows_fresh_adapter.h"
+  },
+  "added_input_sha256": {
+    "native/health/fresh_adapter.h": "147358ba0b956ad0e76fd49e0887ddb38d473506ee08c7764e07ee1a4665fe84",
+    "native/health/windows_fresh_adapter.h": "9ad884d66fadf206a25757b20c92ae5030889ac639f2ae4bbc630c6d327c9ef0"
+  }
+}

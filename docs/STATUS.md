@@ -1,5 +1,34 @@
 # Development checkpoint — 2026-11-18
 
+## Fresh adapter SDK candidate — preparation, Windows checks pending
+
+Added a separate default-OFF `fresh_adapter` SDK profile, after the privacy,
+aggregate, attached-interface and owned-probe profiles. It removes the SDK's
+open-by-name path and deterministic GUID. Each create attempt uses independent
+system CSPRNG material for its private GUID and opaque physical alias, refuses
+an observed alias/GUID collision, and verifies the exact returned creation
+handle's OS GUID/alias/LUID/index before address/session configuration. Its
+private creation observation gates the attached-interface getter and is cleared
+before teardown. Failure releases only that attempt's returned creation handle.
+Original signed Wintun, normal SDK/runtime pins, service preflight and packaging
+admission are unchanged. The new export is a build-policy marker, not a runtime
+ownership or health receipt; no identifiers are added to diagnostics.
+
+Full pristine-source preparation through all five profiles **PASS locally**;
+**21 Python profile guard checks PASS**, including seven new atomic-failure /
+report checks. Native tests cover RNG/collision/create/observe refusal, identity
+mismatch, exact failure cleanup, stale authority and isolated concurrent attempts.
+A separate read-only Windows binding test calls the actual RNG/interface APIs,
+without calling adapter Create. Native compilation and full SDK build are pending
+disposable Windows CI; no native test result is inferred from WSL preparation.
+
+The vacancy check is not an atomic reservation. Original Wintun's duplicate-alias
+rename behavior means an equal-privilege race on the exact random physical alias
+still requires explicit qualification/design; random identity alone is not a
+complete race-safety claim. Foreign-adapter controls, recovery/failure/Stop cases,
+full network regressions, ownership admission and Windows 10/11 acceptance remain
+open. No owner-device, production or LikeWeb changes.
+
 ## Latest checkpoint — pre-existing-name refusal qualified, full ownership open
 
 Focused service-owned TLS 1.2/HTTP qualification now passes **16 disposable
