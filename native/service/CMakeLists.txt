@@ -32,7 +32,7 @@ add_compile_definitions(UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WIN
 include("${CMAKE_CURRENT_SOURCE_DIR}/control.cmake")
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../windows" "${CMAKE_CURRENT_BINARY_DIR}/rust")
 add_executable(liwetun_service main.cpp backend.cpp adapter_admission.cpp)
-target_link_libraries(liwetun_service PRIVATE liwetun_control liwetun_native wtsapi32 user32 iphlpapi)
+target_link_libraries(liwetun_service PRIVATE liwetun_control liwetun_native wtsapi32 user32 iphlpapi setupapi)
 if(LIWETUN_TEST_OWNED_PROBE)
   target_compile_definitions(liwetun_service PRIVATE LIWETUN_TEST_OWNED_PROBE=1)
   target_sources(liwetun_service PRIVATE owned_probe_ci.cpp)

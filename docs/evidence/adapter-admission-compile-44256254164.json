@@ -1,0 +1,14 @@
+{
+  "source_commit": "8fdddb67e2b988ef24b8341c812a8924313be4a5",
+  "source_runs": [
+    44256254164,
+    44256260395,
+    44256266011,
+    44256271476
+  ],
+  "stage": "service_compile",
+  "passed": false,
+  "reason": "missing_netio_declarations_in_new_translation_unit",
+  "driver_fixture_started": false,
+  "release_ready": false
+}

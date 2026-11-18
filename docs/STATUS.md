@@ -54,6 +54,17 @@ remain SDK/factory work, with separate guards/binary/network qualification
 required. Production HTTPS/DNS capability and ownership/release admission remain
 false. LikeWeb and the owner's device/network/trust were not modified.
 
+First service-barrier attempts on `8fdddb6` (44256254164 / 44256260395 /
+44256266011 / 44256271476) stopped at compilation: the new translation unit
+lacked explicit Winsock IP/NetIO declarations. [Closed receipt](evidence/adapter-admission-compile-44256254164.json).
+No driver fixture/tunnel started in those attempts. Explicit headers are added,
+and a fast standalone clean-host OS-binding check is added before further full
+network/package runs. The refusal barrier is also extended read-only to the
+internal Wintun device-name property, since renaming the visible alias alone
+must not hide a pre-existing SDK open-by-name target. SetupAPI queries are
+bounded and errors refuse Start; no adapter is opened, renamed or configured by
+the production guard. API compilation/clean-host qualification is pending.
+
 ## Health development record
 
 Next negative prerequisite: `owned_probe_mode=wrong-nonce` now returns an exact
