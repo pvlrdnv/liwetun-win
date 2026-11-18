@@ -17,7 +17,18 @@ typedef struct {
 // Never returns profile data, decoded config or arbitrary errors.
 int32_t liwetun_tt_inspect(const uint8_t* input, size_t length, LiwetunTtInfo* output);
 
+// UI-only private metadata, never diagnostic/report data. NUL-terminated UTF-8.
+typedef struct {
+  uint32_t abi_version;
+  uint8_t name[1024];
+  uint8_t hostname[2048];
+  uint8_t addresses[8192];
+} LiwetunTtPresentation;
+int32_t liwetun_tt_presentation(const uint8_t* input, size_t length,
+                               LiwetunTtPresentation* output);
+
 #ifdef __cplusplus
 }
+static_assert(sizeof(LiwetunTtPresentation) == 11268, "Unexpected presentation ABI layout");
 static_assert(sizeof(LiwetunTtInfo) == 16, "Unexpected native ABI layout");
 #endif

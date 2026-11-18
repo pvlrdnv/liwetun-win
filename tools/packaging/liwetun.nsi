@@ -20,10 +20,10 @@ ShowInstDetails nevershow
 ShowUninstDetails nevershow
 Icon "${ICON_FILE}"
 UninstallIcon "${ICON_FILE}"
-VIProductVersion "0.1.0.1"
+VIProductVersion "0.1.1.2"
 VIAddVersionKey /LANG=1049 "ProductName" "LiWeTun"
 VIAddVersionKey /LANG=1049 "FileDescription" "LiWeTun — предварительная сборка"
-VIAddVersionKey /LANG=1049 "FileVersion" "0.1.0.1"
+VIAddVersionKey /LANG=1049 "FileVersion" "0.1.1.2"
 VIAddVersionKey /LANG=1049 "LegalCopyright" "LiWeTun contributors"
 !uninstfinalize 'signtool sign /q /fd SHA256 /sm /s My /sha1 ${SIGN_THUMBPRINT} "%1"' = 0
 
@@ -198,7 +198,7 @@ Section "LiWeTun"
   ${EndIf}
   ClearErrors
   WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayName" "LiWeTun"
-  WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayVersion" "0.1.0-preview"
+  WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayVersion" "0.1.1-preview"
   WriteRegStr HKLM "${UNINSTALL_KEY}" "UninstallString" '"$INSTDIR\Uninstall.exe"'
   WriteRegStr HKLM "${UNINSTALL_KEY}" "QuietUninstallString" '"$INSTDIR\Uninstall.exe" /S'
   WriteRegStr HKLM "${UNINSTALL_KEY}" "InstallLocation" "$INSTDIR"

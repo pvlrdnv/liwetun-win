@@ -74,6 +74,9 @@ void main() {
       );
       expect(inspection.status, NativeImportStatus.accepted);
       expect(inspection.transport, transport);
+      expect(inspection.name, 'Тестовый сервер');
+      expect(inspection.hostname, 'node.example.invalid');
+      expect(inspection.addresses, '192.0.2.1:443');
       await controller.importValidated(uri);
     }
     const insecure = String.fromEnvironment('SYNTHETIC_TT_INSECURE');

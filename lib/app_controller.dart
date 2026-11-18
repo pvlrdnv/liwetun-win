@@ -103,6 +103,7 @@ final class LocalConnection {
         );
   String get title =>
       cachedProfile?.profile.name ??
+      (inspection?.name?.isNotEmpty == true ? inspection!.name : null) ??
       (link.kind == ImportKind.subscription
           ? 'Подписка $number'
           : 'Подключение $number');
@@ -1079,6 +1080,7 @@ final class AppController extends ChangeNotifier {
     ServiceCode.profileRejected ||
     ServiceCode.malformed => ReasonCode.malformed,
     ServiceCode.coreFailure => ReasonCode.coreFailure,
+    ServiceCode.adapterPreflightRejected => ReasonCode.adapterPreflightRejected,
     _ => ReasonCode.serviceUnavailable,
   };
 
@@ -1095,6 +1097,8 @@ final class AppController extends ChangeNotifier {
       'Подключение занято или ещё останавливается. Повторите после завершения.',
     ServiceCode.profileRejected ||
     ServiceCode.malformed => 'Служба отклонила параметры подключения.',
+    ServiceCode.adapterPreflightRejected =>
+      'Запуск отклонён проверкой сетевых адаптеров. Ядро не запускалось. Экспортируйте отчёт для диагностики.',
     ServiceCode.coreFailure =>
       'Ядро не смогло подключиться. Состояние уточняется.',
     ServiceCode.timeout =>

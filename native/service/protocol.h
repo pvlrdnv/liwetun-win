@@ -11,7 +11,7 @@ constexpr uint32_t kMaxPayload = 8192;
 enum class Command : uint32_t { Ping = 1, Query = 2, Start = 3, Stop = 4, Traffic = 5 };
 enum class Code : uint32_t {
   Ok, Malformed, Denied, Busy, RuntimeUnavailable, ProfileRejected, CoreFailure,
-  ServiceUnavailable, Timeout, UntrustedInstallation
+  ServiceUnavailable, Timeout, UntrustedInstallation, AdapterPreflightRejected
 };
 enum class State : uint32_t { Disconnected, Connecting, TunnelReady, Recovering, Error };
 // TunnelReady is NOT verified working internet; no Connected state is inferred.

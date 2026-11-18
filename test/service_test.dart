@@ -140,6 +140,29 @@ void main() {
     },
   );
 
+  test(
+    'adapter preflight refusal stays idle with a distinct closed report code',
+    () async {
+      final gateway = Gateway()
+        ..starting = const ServiceStatus(
+          code: ServiceCode.adapterPreflightRejected,
+          runtimeReady: true,
+        );
+      final controller = AppController(service: gateway)..import(tt);
+      addTearDown(controller.dispose);
+      final message = await controller.toggleConnection();
+      expect(message, contains('Ядро не запускалось'));
+      expect(controller.stopPossible, false);
+      expect(controller.serviceStatus.state, ServiceState.disconnected);
+      expect(
+        controller.journal.events.last.reason,
+        ReasonCode.adapterPreflightRejected,
+      );
+      expect(gateway.starts, 1);
+      expect(gateway.stops, 0);
+    },
+  );
+
   testWidgets('duplicate concurrent click does not repeat start', (
     tester,
   ) async {

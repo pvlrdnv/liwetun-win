@@ -1,5 +1,6 @@
 //! A narrow, non-networking boundary around the official TrustTunnel decoder.
-//! Never return credentials, decoded config, remote names or upstream errors.
+//! Never return credentials, decoded config or upstream errors.
+//! Presentation metadata is private UI data and must never enter diagnostics.
 
 use std::{panic, slice, str, sync::Once};
 use trusttunnel_deeplink::{decode, Protocol};
@@ -19,6 +20,77 @@ pub struct LiwetunTtInfo {
     pub transport: u32,
     pub custom_certificate: u32,
     pub has_ipv6: u32,
+}
+
+// Separate ABI: service consumers retain the original 16-byte inspection ABI.
+#[repr(C)]
+pub struct LiwetunTtPresentation {
+    pub abi_version: u32,
+    pub name: [u8; 1024],
+    pub hostname: [u8; 2048],
+    pub addresses: [u8; 8192],
+}
+
+fn display_text<const N: usize>(value: &str) -> [u8; N] {
+    let mut output = [0; N];
+    let mut length = 0;
+    for ch in value.chars() {
+        // Prevent line/control/bidi spoofing while retaining ordinary Unicode.
+        let ch = if ch.is_control()
+            || matches!(ch, '\u{061c}' | '\u{200e}' | '\u{200f}' | '\u{2028}'..='\u{202e}' | '\u{2066}'..='\u{2069}')
+        {
+            ' '
+        } else {
+            ch
+        };
+        let mut encoded = [0; 4];
+        let bytes = ch.encode_utf8(&mut encoded).as_bytes();
+        if length + bytes.len() >= N {
+            break;
+        }
+        output[length..length + bytes.len()].copy_from_slice(bytes);
+        length += bytes.len();
+    }
+    output
+}
+
+/// Private presentation only. Never serialize this output into a support report.
+///
+/// # Safety
+/// Same input rules as liwetun_tt_inspect; output must be writable and aligned.
+#[no_mangle]
+pub unsafe extern "C" fn liwetun_tt_presentation(
+    input: *const u8,
+    length: usize,
+    output: *mut LiwetunTtPresentation,
+) -> i32 {
+    if output.is_null() {
+        return MALFORMED;
+    }
+    output.write_bytes(0, 1);
+    let mut info = LiwetunTtInfo::default();
+    let status = liwetun_tt_inspect(input, length, &mut info);
+    if status != OK {
+        return status;
+    }
+    let outcome = panic::catch_unwind(|| {
+        let uri = str::from_utf8(slice::from_raw_parts(input, length)).map_err(|_| MALFORMED)?;
+        let config = decode(uri).map_err(|_| MALFORMED)?;
+        Ok::<_, i32>(LiwetunTtPresentation {
+            abi_version: 1,
+            name: display_text(config.name.as_deref().unwrap_or("")),
+            hostname: display_text(config.hostname.as_deref().unwrap_or("")),
+            addresses: display_text(&config.addresses.join(", ")),
+        })
+    });
+    match outcome {
+        Ok(Ok(presentation)) => {
+            output.write(presentation);
+            OK
+        }
+        Ok(Err(reason)) => reason,
+        Err(_) => INTERNAL,
+    }
 }
 
 fn inspect(uri: &str) -> Result<LiwetunTtInfo, i32> {
@@ -123,6 +195,51 @@ mod tests {
             assert_eq!(info.transport, expected);
             assert_eq!(info.custom_certificate, 0);
         }
+    }
+
+    #[test]
+    fn private_presentation_roundtrip_and_error_zeroing() {
+        let mut config = synthetic(Protocol::Http2);
+        config.name = Some("Тестовый сервер 🌍".into());
+        config.addresses.push("[2001:db8::1]:8443".into());
+        let uri = encode(&config).expect("synthetic encoding");
+        let mut output = std::mem::MaybeUninit::<LiwetunTtPresentation>::uninit();
+        let status =
+            unsafe { liwetun_tt_presentation(uri.as_ptr(), uri.len(), output.as_mut_ptr()) };
+        assert_eq!(status, OK);
+        let mut output = unsafe { output.assume_init() };
+        let text = |bytes: &[u8]| {
+            String::from_utf8(bytes.iter().copied().take_while(|b| *b != 0).collect()).unwrap()
+        };
+        assert_eq!(output.abi_version, 1);
+        assert_eq!(text(&output.name), "Тестовый сервер 🌍");
+        assert_eq!(text(&output.hostname), "node.example.invalid");
+        assert_eq!(text(&output.addresses), "192.0.2.1:443, [2001:db8::1]:8443");
+        for bytes in [
+            &output.name[..],
+            &output.hostname[..],
+            &output.addresses[..],
+        ] {
+            assert!(!text(bytes).contains("CANARY"));
+        }
+        let status = unsafe { liwetun_tt_presentation(std::ptr::null(), 0, &mut output) };
+        assert_eq!(status, MALFORMED);
+        assert_eq!(output.abi_version, 0);
+        assert!(output
+            .name
+            .iter()
+            .chain(&output.hostname)
+            .chain(&output.addresses)
+            .all(|b| *b == 0));
+        assert_eq!(std::mem::size_of::<LiwetunTtInfo>(), 16);
+        assert_eq!(std::mem::size_of::<LiwetunTtPresentation>(), 11268);
+    }
+
+    #[test]
+    fn presentation_is_bounded_utf8_without_control_or_bidi_spoofing() {
+        assert_eq!(&display_text::<9>("🌍🌍🌍"), "🌍🌍\0".as_bytes());
+        let output = display_text::<32>("a\n\r\u{202e}b\u{2069}");
+        assert_eq!(&output[..7], b"a   b \0");
     }
 
     #[test]

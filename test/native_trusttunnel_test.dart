@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:archive/archive.dart';
+import 'package:liwetun/app.dart';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,6 +46,85 @@ void main() {
     expect(result.transport, 3);
     expect(result.customCertificate, true);
     expect(result.hasIpv6, false);
+  });
+
+  testWidgets('private embedded title and endpoint reach UI but never report', (
+    tester,
+  ) async {
+    const name = 'Тестовый сервер PRIVATE_TITLE';
+    const hostname = 'private-host.example.invalid';
+    const addresses = '192.0.2.27:443, [2001:db8::27]:8443';
+    messenger.setMockMethodCallHandler(
+      WindowsTrustTunnel.channel,
+      (_) async => {
+        'status': 'accepted',
+        'transport': 2,
+        'customCertificate': false,
+        'hasIpv6': true,
+        'name': name,
+        'hostname': hostname,
+        'addresses': addresses,
+      },
+    );
+    final controller = AppController(inspector: const WindowsTrustTunnel());
+    addTearDown(controller.dispose);
+    await controller.importValidated(tt);
+    expect(controller.connections.single.title, name);
+    await tester.pumpWidget(LiWeTunApp(controller: controller));
+    await tester.tap(find.text('Серверы'));
+    await tester.pumpAndSettle();
+    expect(find.text(name), findsWidgets);
+    await tester.ensureVisible(find.text('Технические детали'));
+    await tester.tap(find.text('Технические детали'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Сервер: $hostname'), findsOneWidget);
+    expect(find.textContaining('Адреса: $addresses'), findsOneWidget);
+    // Metadata remains in memory; the diagnostic ZIP contains only closed fields.
+    final archive = ZipDecoder().decodeBytes(controller.journal.exportZip());
+    for (final entry in archive) {
+      final body = utf8.decode(entry.content as List<int>);
+      for (final private in [name, hostname, addresses, tt]) {
+        expect(body, isNot(contains(private)));
+      }
+    }
+  });
+
+  test(
+    'untrusted presentation controls are rejected without echoing them',
+    () async {
+      for (final value in ['fake\nserver', 'fake\u202eserver', 123]) {
+        messenger.setMockMethodCallHandler(
+          WindowsTrustTunnel.channel,
+          (_) async => {
+            'status': 'accepted',
+            'transport': 2,
+            'customCertificate': false,
+            'hasIpv6': false,
+            'name': value,
+          },
+        );
+        final result = await const WindowsTrustTunnel().inspect(
+          const SecretLink(tt),
+        );
+        expect(result.status, NativeImportStatus.unavailable);
+        expect(result.name, isNull);
+      }
+    },
+  );
+
+  test('empty embedded name keeps numbered fallback', () {
+    final link = parseLink(tt);
+    expect(
+      LocalConnection(
+        1,
+        link,
+        inspection: const NativeInspection(
+          NativeImportStatus.accepted,
+          name: '',
+        ),
+      ).title,
+      'Подключение 1',
+    );
   });
 
   test(

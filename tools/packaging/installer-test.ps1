@@ -62,7 +62,7 @@ try {
     $lines.Add('!macroend')
     $include = Join-Path $output 'payload-files.nsh'
     $lines | Set-Content -Encoding utf8 $include
-    $filename = if ($OwnerTest) { 'LiWeTun-0.1.0-owner-test.exe' } else { 'LiWeTun-0.1.0-preview-ci-only.exe' }
+    $filename = if ($OwnerTest) { 'LiWeTun-0.1.1-owner-test.exe' } else { 'LiWeTun-0.1.1-preview-ci-only.exe' }
     $installer = Join-Path $output $filename
     $compiler = Join-Path $env:LIWETUN_NSIS_ROOT 'makensis.exe'
     $icon = (Resolve-Path windows/runner/resources/app_icon.ico).Path

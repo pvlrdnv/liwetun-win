@@ -49,7 +49,7 @@ Reply ServiceRequest(Command command, const std::string& profile, bool start_ser
     reply = Reply{}; reply.code = Code::Timeout; reply.core_state = UINT32_MAX; return reply;
   }
   if (reply.magic != kMagic || reply.version != kVersion || reply.nonce != request.nonce ||
-      static_cast<uint32_t>(reply.code) > static_cast<uint32_t>(Code::UntrustedInstallation) ||
+      static_cast<uint32_t>(reply.code) > static_cast<uint32_t>(Code::AdapterPreflightRejected) ||
       static_cast<uint32_t>(reply.state) > static_cast<uint32_t>(State::Error) || reply.runtime_ready > 1 ||
       (reply.core_state != UINT32_MAX && reply.core_state > 5)) {
     reply = Reply{}; reply.code = Code::Malformed; reply.core_state = UINT32_MAX;

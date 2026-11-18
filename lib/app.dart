@@ -499,7 +499,9 @@ class _HomeState extends State<_Home> {
                   connection.inspection == null
                       ? connection.link.protocol?.name ?? 'HTTPS-подписка'
                       : 'TrustTunnel · HTTP/${connection.inspection!.transport} · '
-                            '${connection.inspection!.customCertificate == true ? "сертификат профиля" : "системное доверие"}',
+                            '${connection.inspection!.customCertificate == true ? "сертификат профиля" : "системное доверие"}'
+                            '${connection.inspection!.hostname?.isNotEmpty == true ? "\nСервер: ${connection.inspection!.hostname}" : ""}'
+                            '${connection.inspection!.addresses?.isNotEmpty == true ? "\nАдреса: ${connection.inspection!.addresses}" : ""}',
                 ),
               ),
             const ListTile(

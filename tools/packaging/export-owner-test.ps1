@@ -12,7 +12,7 @@ if ($digest.signing -ne 'dedicated_owner_test_certificate' -or $payload.signing 
 if ($Certificate.Subject -cne ('CN=LiWeTun Owner Test ' + $env:GITHUB_RUN_ID) -or $Certificate.Subject -cne $Certificate.Issuer) { throw 'Unexpected test publisher' }
 $eku = @($Certificate.Extensions | Where-Object { $_.Oid.Value -eq '2.5.29.37' })
 if ($eku.Count -ne 1 -or $eku[0].EnhancedKeyUsages.Count -ne 1 -or $eku[0].EnhancedKeyUsages[0].Value -ne '1.3.6.1.5.5.7.3.3') { throw 'Test certificate must be code-signing only' }
-$installer = 'build/installer-ci-only/LiWeTun-0.1.0-owner-test.exe'
+$installer = 'build/installer-ci-only/LiWeTun-0.1.1-owner-test.exe'
 $installerHash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($installerHash -ne $digest.installer_sha256 -or $digest.source_commit -ne $env:GITHUB_SHA) { throw 'Qualified installer digest mismatch' }
 # CI trust has already been removed. Verify the retained signer identity and
@@ -25,12 +25,12 @@ if ($public.HasPrivateKey) { throw 'Private signing key export is forbidden' }
 $certificateHash = $public.GetCertHashString([Security.Cryptography.HashAlgorithmName]::SHA256).ToLowerInvariant()
 $notAfter = $public.NotAfter.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
 New-Item -ItemType Directory $output | Out-Null
-Copy-Item $installer (Join-Path $output 'LiWeTun-0.1.0-owner-test.exe')
+Copy-Item $installer (Join-Path $output 'LiWeTun-0.1.1-owner-test.exe')
 [IO.File]::WriteAllBytes((Join-Path $output 'LiWeTun-Owner-Test.cer'),$publicBytes)
 $manifest = @{
-    kind='dedicated_owner_test'; version='0.1.0+1'; source_run=$env:GITHUB_RUN_ID; service_source=$env:GITHUB_SHA
+    kind='dedicated_owner_test'; version='0.1.1+2'; source_run=$env:GITHUB_RUN_ID; service_source=$env:GITHUB_SHA
     gui_source=$payload.gui_source; sdk_source_run=$payload.sdk_source_run
-    installer_file='LiWeTun-0.1.0-owner-test.exe'; installer_sha256=$installerHash
+    installer_file='LiWeTun-0.1.1-owner-test.exe'; installer_sha256=$installerHash
     certificate_file='LiWeTun-Owner-Test.cer'; certificate_sha256=$certificateHash
     certificate_sha1=$public.Thumbprint; publisher=$public.Subject
     certificate_not_before_utc=$public.NotBefore.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
@@ -46,5 +46,5 @@ $readme = $readme.Replace('%CERT_SHA256%',$certificateHash).Replace('%INSTALLER_
 # The handoff contains exactly these four files. Never upload build directories,
 # stores, signing keys, connection fixtures or the generic CI certificate.
 $names = @((Get-ChildItem $output -File).Name | Sort-Object)
-if (($names -join '|') -cne 'LiWeTun-0.1.0-owner-test.exe|LiWeTun-Owner-Test.cer|README_RU.txt|TEST-MANIFEST.json') { throw 'Unexpected owner handoff contents' }
+if (($names -join '|') -cne 'LiWeTun-0.1.1-owner-test.exe|LiWeTun-Owner-Test.cer|README_RU.txt|TEST-MANIFEST.json') { throw 'Unexpected owner handoff contents' }
 $manifest | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 build/package-evidence/owner-test-manifest.json

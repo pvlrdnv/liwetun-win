@@ -73,7 +73,7 @@ Code Backend::Start(std::string uri) {
   if (!ready_) { Clear(uri); return Code::RuntimeUnavailable; }
   std::lock_guard lock(mutex_);
   if (busy_ || stop_ || shutdown_) { Clear(uri); return Code::Busy; }
-  if (!ReservedAdapterNamesAbsent()) { Clear(uri); return Code::CoreFailure; }
+  if (!ReservedAdapterNamesAbsent()) { Clear(uri); return Code::AdapterPreflightRejected; }
   pending_ = std::move(uri);
   core_state_ = UINT32_MAX;
   busy_ = true;

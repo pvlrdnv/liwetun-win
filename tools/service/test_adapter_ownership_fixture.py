@@ -23,12 +23,12 @@ class AdapterOwnershipFixtureTests(unittest.TestCase):
                 validate_rename(value)
 
     def test_refusal_requires_no_sdk_core_observation_or_fabricated_reply(self):
-        reply = dict(code=6, state=0, core_state=2**32 - 1)
-        validate_idle_reply(reply, 6)
-        for changes in [dict(code=0), dict(code=False), dict(state=True), dict(state=2),
+        reply = dict(code=10, state=0, core_state=2**32 - 1)
+        validate_idle_reply(reply, 10)
+        for changes in [dict(code=0), dict(code=6), dict(code=False), dict(state=True), dict(state=2),
                         dict(core_state=0), dict(core_state=None)]:
             with self.assertRaises(ValueError):
-                validate_idle_reply(dict(reply, **changes), 6)
+                validate_idle_reply(dict(reply, **changes), 10)
 
     def test_refused_start_preserves_retained_markers_and_does_not_admit_ownership(self):
         commands = []
@@ -42,7 +42,7 @@ class AdapterOwnershipFixtureTests(unittest.TestCase):
         queried = SimpleNamespace(returncode=0, stdout=json.dumps(dict(code=0, state=0, core_state=2**32 - 1)))
         with patch('adapter_ownership_fixture.subprocess.run', return_value=queried):
             result = observe_refusal(SimpleNamespace(command=command), owner, 'synthetic-client',
-                                     dict(code=6, state=0, core_state=2**32 - 1), {})
+                                     dict(code=10, state=0, core_state=2**32 - 1), {})
         self.assertTrue(result['refusal_passed'])
         self.assertFalse(result['adapter_ownership_qualified'])
         self.assertFalse(result['release_ready'])
@@ -55,7 +55,7 @@ class AdapterOwnershipFixtureTests(unittest.TestCase):
         queried = SimpleNamespace(returncode=0, stdout=json.dumps(dict(code=0, state=0, core_state=2**32 - 1)))
         with patch('adapter_ownership_fixture.subprocess.run', return_value=queried):
             with self.assertRaises(ValueError):
-                observe_refusal(session, owner, 'synthetic-client', dict(code=6, state=0, core_state=2**32 - 1), {})
+                observe_refusal(session, owner, 'synthetic-client', dict(code=10, state=0, core_state=2**32 - 1), {})
 
     def test_missing_observation_never_proves_preservation_or_interference(self):
         unknown = {key: None for key in baseline()}

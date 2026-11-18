@@ -1,5 +1,37 @@
 # Development checkpoint — 2026-11-18
 
+## Owner feedback: TT presentation and startup refusal diagnostics
+
+The first Windows 10 x64 owner report confirms accepted native TT import and
+saved profile, service runtime ready, then generic coreFailure and an idle
+observation without SDK state. It does not identify the refused startup stage
+or establish a remote server/authentication failure. No real URI was requested,
+no owner report/profile was copied into this repository and no host network
+settings were changed.
+
+Confirmed presentation omission: decoded embedded name/host/addresses were never
+returned to Flutter, so direct imports always displayed numbered fallback names.
+Added a separate bounded presentation C ABI while preserving the existing 16-byte
+inspection ABI used by the service. Only name, hostname and address list enter
+the private UI; credentials/certificate content remain excluded. Control/bidi
+characters are neutralized, UTF-8 truncation is bounded, and diagnostics/export
+privacy is tested. Cached raw links are inspected again after upgrade, so existing
+profiles can acquire their embedded names without reimporting. Subscription names
+retain precedence; an absent embedded name retains the numbered fallback.
+
+Initial read-only adapter refusal now has closed code 10,
+`adapterPreflightRejected`, instead of generic coreFailure. No SDK has started
+on that path; the UI remains idle and the report preserves the distinct reason.
+The second pre-SDK gate and actual SDK failures still use coreFailure. Guards
+remain unchanged; this does not prove or repair the owner's connection failure.
+Owner-test version advances to **0.1.1+2** to distinguish subsequent reports.
+
+LOCAL: analyze PASS; full Dart suite **227 PASS / 6 platform skips**, followed by
+**22 focused PASS** after stronger actual widget/metadata privacy checks. Python
+service fixtures **95 PASS**. Rust formatting PASS using pinned 1.95.0 in /tmp.
+No local C/C++ linker frontend is available; Rust/native compilation and updated
+Windows/package qualification are pending. No desktop traffic success is claimed.
+
 ## Owner-test package delivered — 44364045177 PASS
 
 Owner explicitly approved trusting a dedicated test publisher on the separate

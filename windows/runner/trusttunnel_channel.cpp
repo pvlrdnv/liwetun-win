@@ -56,6 +56,16 @@ TrustTunnelChannel::TrustTunnelChannel(flutter::BinaryMessenger* messenger) {
     }
     Map response{{Value("status"), Value(status)}};
     if (code == 0 && info.abi_version == 1) {
+      LiwetunTtPresentation presentation{};
+      if (liwetun_tt_presentation(reinterpret_cast<const uint8_t*>(uri->data()),
+                                  uri->size(), &presentation) != 0 ||
+          presentation.abi_version != 1) {
+        result->Success(Value(Map{{Value("status"), Value("internal_error")}}));
+        return;
+      }
+      response.emplace(Value("name"), Value(reinterpret_cast<const char*>(presentation.name)));
+      response.emplace(Value("hostname"), Value(reinterpret_cast<const char*>(presentation.hostname)));
+      response.emplace(Value("addresses"), Value(reinterpret_cast<const char*>(presentation.addresses)));
       response.emplace(Value("transport"), Value(static_cast<int32_t>(info.transport)));
       response.emplace(Value("customCertificate"), Value(info.custom_certificate != 0));
       response.emplace(Value("hasIpv6"), Value(info.has_ipv6 != 0));

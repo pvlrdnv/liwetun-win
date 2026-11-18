@@ -16,11 +16,18 @@ final class NativeInspection {
     this.transport,
     this.customCertificate,
     this.hasIpv6,
+    this.name,
+    this.hostname,
+    this.addresses,
   });
   final NativeImportStatus status;
   final int? transport;
   final bool? customCertificate;
   final bool? hasIpv6;
+  // Private presentation data; never include in journal or support exports.
+  final String? name;
+  final String? hostname;
+  final String? addresses;
 }
 
 abstract interface class TrustTunnelInspector {
@@ -55,8 +62,22 @@ final class WindowsTrustTunnel implements TrustTunnelInspector {
           response?['hasIpv6'] is! bool) {
         return const NativeInspection(NativeImportStatus.unavailable);
       }
+      for (final key in ['name', 'hostname', 'addresses']) {
+        final text = response?[key];
+        if (text != null &&
+            (text is! String ||
+                text.length > 8192 ||
+                RegExp(
+                  r'[\x00-\x1f\x7f-\x9f\u061c\u200e\u200f\u2028-\u202e\u2066-\u2069]',
+                ).hasMatch(text))) {
+          return const NativeInspection(NativeImportStatus.unavailable);
+        }
+      }
       return NativeInspection(
         status,
+        name: (response?['name'] as String?)?.trim(),
+        hostname: response?['hostname'] as String?,
+        addresses: response?['addresses'] as String?,
         transport: transport as int,
         customCertificate: response!['customCertificate'] as bool,
         hasIpv6: response['hasIpv6'] as bool,

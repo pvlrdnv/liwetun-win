@@ -54,6 +54,7 @@ enum ReasonCode {
   serviceUnavailable,
   serviceDenied,
   coreFailure,
+  adapterPreflightRejected,
   replay,
   stale,
   accessChanged,
@@ -254,7 +255,7 @@ final class Journal {
     final snapshot = events;
     final summary = {
       'schema_version': 3,
-      'app_version': '0.1.0+1',
+      'app_version': '0.1.1+2',
       'environment': environment.toJson(),
       'journal_storage': _disk.state.name,
       'journal_retention_days': 7,
@@ -305,5 +306,6 @@ final class Journal {
 
   bool get _serviceStateKnown =>
       _serviceObservation?.code == ServiceCode.ok ||
-      _serviceObservation?.code == ServiceCode.coreFailure;
+      _serviceObservation?.code == ServiceCode.coreFailure ||
+      _serviceObservation?.code == ServiceCode.adapterPreflightRejected;
 }

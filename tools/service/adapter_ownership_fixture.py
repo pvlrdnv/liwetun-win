@@ -82,7 +82,7 @@ def observe_refusal(session, owner, client, start_reply, diagnostic, progress_di
         if progress_directory is not None:
             checkpoint(progress_directory, stage)
     progress(4)
-    validate_idle_reply(start_reply, 6)
+    validate_idle_reply(start_reply, 10)
     active = validate_sample(owner.command('sample'))
     diagnostic['after_refused_start'] = active
     validate_idle_reply(session.command('query'), 0)

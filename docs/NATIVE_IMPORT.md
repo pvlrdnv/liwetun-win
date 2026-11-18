@@ -76,3 +76,14 @@ The persistent PowerShell policy was verified as RemoteSigned before/after.
 The final harness directly executes the verified exe; it runs no .ps1 and uses
 no policy override. Synthetic credentials and certificates stay in a temporary
 task directory, not the repository or diagnostic journal.
+
+### Private presentation metadata (0.1.1 candidate)
+
+The separate `liwetun_tt_presentation` ABI returns bounded, NUL-terminated UTF-8
+name/hostname/address-list buffers for the profile UI only. Existing inspection
+ABI1 remains 16 bytes. No username, password, certificate body or arbitrary parser
+error is returned. Display controls/bidi overrides are replaced with spaces;
+UTF-8 truncation retains complete code points. Embedded names replace numbered
+fallbacks for direct profiles; subscription labels retain precedence. These fields
+must never enter typed journal events or support reports. Synthetic native and
+widget/export tests cover this boundary; Windows execution is pending.

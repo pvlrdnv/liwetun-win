@@ -13,6 +13,7 @@ enum ServiceCode {
   serviceUnavailable,
   timeout,
   untrustedInstallation,
+  adapterPreflightRejected,
 }
 
 enum ServiceState { disconnected, connecting, tunnelReady, recovering, error }
