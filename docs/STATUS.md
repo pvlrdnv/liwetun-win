@@ -1,6 +1,6 @@
 # Development checkpoint — 2026-11-18
 
-## Owner-authorized public visibility and CI cost guard
+## Public visibility verified; private CI allocation blocked
 
 Owner requested public visibility after the private Actions included allowance
 was consumed. No billing/spending changes are authorized. Before visibility
@@ -9,6 +9,10 @@ all 347 retained Actions log archives (690 text files / 58,591,192 bytes).
 Remote branch/tag inventory matched the audited history and no jobs were active.
 [Preflight receipt](evidence/publication-preflight-20261118.json); raw logs stay
 outside Git. Scanner findings are a bounded check, not proof against all secrets.
+The final pre-publication scan included the policy commit: **196 commits, zero
+findings**. GitHub REST response and an independent repository query verified
+**PUBLIC** visibility, description unchanged. No CI runs were dispatched during
+this publication work and no account billing settings were changed.
 
 All 13 workflow jobs now require an explicitly public repository before runner
 allocation; missing/private metadata skips jobs. All remain manual-dispatch-only

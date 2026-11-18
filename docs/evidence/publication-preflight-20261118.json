@@ -19,5 +19,10 @@
   "standard_runner_labels_only": true,
   "private_runner_allocation_guard_jobs": 13,
   "billing_settings_changed": false,
-  "release_ready": false
+  "release_ready": false,
+  "git_commits_scanned_at_publication": 196,
+  "visibility_change_completed": true,
+  "visibility_verified": "PUBLIC",
+  "visibility_verified_via": "github_rest_patch_response_and_gh_repo_view",
+  "ci_runs_dispatched_during_publication": 0
 }
