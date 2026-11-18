@@ -10,6 +10,15 @@ restoration requirements remain unchanged. This is discrete observation, not
 continuous foreign traffic monitoring. H2/H3 Windows execution is pending;
 IPv6, disabled-device, active competing tunnel and release gates remain open.
 
+Prepared a separate default-OFF endpoint shutdown trace build, chained after
+the existing completion profile. Eight process-total counters record QUIC close
+attempt/accept/error, final flush result and UDP send/drop/error counts; no packet
+contents, addresses or free-form output. A fixed bounded JSON file is written
+on normal exit. Successful send/flush is not delivery or client invalidation.
+Five new guard tests and actual pinned-source preparation/receipt-chain checks
+PASS locally. Compilation and real shutdown observation are pending. Existing
+endpoint runtime pins are unchanged; this adds no claimed H3 epoch fix.
+
 ## Retained foreign adapter during SDK traffic — focused H2/H3 PASS
 
 Added a default-OFF fresh2 HTTPS control. A separate signed fixture retains its

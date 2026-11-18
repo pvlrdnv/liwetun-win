@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "scope": "disposable_endpoint_shutdown_counters_only",
+  "files": {
+    "lib/src/lib.rs": {
+      "input_sha256": "a226f10c00623d259819ec93bb1f1156704c0b16af1c3ce6ae3cc14444f7b8ec",
+      "output_sha256": "bb2c80eac833b863a42f03c53d13031c39ca3b97d05db2f51e1317048959a6fe"
+    },
+    "lib/src/quic_multiplexer.rs": {
+      "input_sha256": "5ab8bc00a11f26d09ea1928782cdabb9454d3d207c19c46a68e05ac8ee45ece2",
+      "output_sha256": "f5b2abec4bdd3bf511b0048345382655de749313597105561a7cbf4d68c1a5a7"
+    },
+    "endpoint/src/main.rs": {
+      "input_sha256": "93f161c6678a557d58801122fbf9ebba3d16bffdf3bf143abf0eb689cb7c1ee9",
+      "output_sha256": "73220523f4a7f738d96399a47c477bf655ab89afae9f62408a8721fefe4ccae5"
+    }
+  },
+  "requires_profile": "endpoint_shutdown_completion_candidate",
+  "counter_fields": [
+    "quic_close_attempts",
+    "quic_close_accepted",
+    "quic_close_errors",
+    "close_flush_ok",
+    "close_flush_errors",
+    "process_udp_send_ok",
+    "process_udp_would_block_drops",
+    "process_udp_send_errors"
+  ],
+  "production_admitted": false,
+  "release_ready": false
+}

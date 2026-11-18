@@ -1,6 +1,7 @@
 """Opt-in diagnostic endpoint shutdown completion barrier; never production."""
 import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -61,9 +62,16 @@ def prepare(source):
     target.write_bytes(after)
 
 
-def record(source, output):
+def record(source, output, *, trace=False):
     pin = json.loads(PIN.read_bytes())
-    if digest(checked_target(source, pin).read_bytes()) != pin['output_sha256']:
+    expected = pin['output_sha256']
+    if trace:
+        trace_pin = json.loads((ROOT / 'tools/service/endpoint-trace-inputs.json').read_bytes())
+        traced = trace_pin['files'][pin['file']]
+        if traced['input_sha256'] != expected:
+            raise RuntimeError('endpoint_shutdown_trace_chain_mismatch')
+        expected = traced['output_sha256']
+    if digest(checked_target(source, pin).read_bytes()) != expected:
         raise RuntimeError('endpoint_shutdown_output_mismatch')
     receipt = json.loads(output.read_bytes())
     close_pin = ROOT / 'tools/service/endpoint-close-inputs.json'
@@ -81,7 +89,8 @@ if __name__ == '__main__':
         if sys.argv[1:] == ['prepare']:
             prepare(source)
         elif sys.argv[1:] == ['record']:
-            record(source, ROOT / 'build/endpoint/fixture-provenance.json')
+            record(source, ROOT / 'build/endpoint/fixture-provenance.json',
+                   trace=os.environ.get('LIWETUN_ENDPOINT_SHUTDOWN_TRACE') == 'true')
         else:
             raise RuntimeError('invalid_endpoint_shutdown_mode')
     except (OSError, ValueError, KeyError, RuntimeError):
