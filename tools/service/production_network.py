@@ -16,7 +16,7 @@ import subprocess
 import sys
 import time
 
-from network import Child, ROOT, ps, snapshot, totals, tun, wait_clean
+from network import Child, ROOT, ps, snapshot, totals, tun, wait_clean, adapter_absent
 from physical_forwarder import SYNTHETIC_IPV6, SYNTHETIC_IPV6_PAYLOAD, SYNTHETIC_IPV6_UDP_PORT
 from owned_https_fixture import MODES as HTTPS_MODES
 
@@ -452,6 +452,7 @@ def main():
     attachment_guard = os.environ.get('ATTACHED_TUN') == 'true'
     owned_probe = os.environ.get('OWNED_PROBE') == 'true'
     ownership_audit = os.environ.get('LIWETUN_ADAPTER_OWNERSHIP_AUDIT') == 'true'
+    preserved_adapter = os.environ.get('LIWETUN_PRESERVED_ADAPTER') == 'true'
     ownership_variant = os.environ.get('LIWETUN_ADAPTER_OWNER_VARIANT', 'visible')
     if ownership_variant not in ['visible', 'renamed'] or (ownership_variant != 'visible' and not ownership_audit):
         raise RuntimeError('invalid_adapter_owner_audit')
@@ -505,6 +506,9 @@ def main():
         raise RuntimeError('invalid_owned_probe_mode')
     if ownership_audit and (profile != 'valid' or family != 'ipv4' or termination != 'stop' or traffic_pattern != 'normal'):
         raise RuntimeError('invalid_adapter_owner_audit')
+    if preserved_adapter and (os.environ.get('FRESH_ADAPTER') != 'true' or not owned_probe
+            or owned_probe_mode != 'https' or ownership_audit):
+        raise RuntimeError('invalid_preserved_adapter_fixture')
     synthetic_ipv6 = family == 'synthetic-ipv6'
     report = ROOT / 'build/service-evidence/production-network.json'
     report.parent.mkdir(exist_ok=True, parents=True)
@@ -521,6 +525,7 @@ def main():
               'owned_https_ci_enabled': owned_probe and owned_probe_mode in HTTPS_MODES,
               'owned_probe_mode': owned_probe_mode,
               'adapter_ownership_audit_enabled': ownership_audit,
+              'preserved_foreign_adapter_fixture_enabled': preserved_adapter,
               'adapter_owner_variant': ownership_variant if ownership_audit else None,
               'adapter_ownership_qualified': False,
               'attachment_context_proves_endpoint_traversal': False,
@@ -548,6 +553,7 @@ def main():
     endpoint = forwarder = session = watchdog = wfp_watch = traffic_watch = local_receiver = None
     https_roots = None
     foreign_owner = None
+    foreign_configuration = None
     restored = False
     try:
         if owned_probe_mode in HTTPS_MODES:
@@ -651,6 +657,15 @@ def main():
             result['adapter_owner_fixture_ready'] = ready
             result['adapter_owner_fixture_baseline'] = baseline_adapter
             checkpoint(report.parent, 2)
+        elif preserved_adapter:
+            stage = 'retained_preserved_adapter'
+            from adapter_ownership_fixture import validate_ready, pristine
+            from preserved_adapter_fixture import capture
+            foreign_owner = Child([str(client), '--adapter-owner-spare-fixture'])
+            validate_ready(json.loads(foreign_owner.receive()))
+            if not pristine(foreign_owner.command('sample')):
+                raise RuntimeError('adapter_owner_fixture_not_ready')
+            foreign_configuration = capture(ps)
         stage = 'production_session'
         profile_file = protocol if profile == 'valid' else profile
         if ownership_audit:
@@ -980,6 +995,12 @@ def main():
             traffic_watch = Child([str(client), '--traffic-watch'])
             if traffic_watch.receive() != 'ready':
                 raise RuntimeError('aggregate_traffic_watcher_not_ready')
+        if preserved_adapter:
+            stage = 'foreign_adapter_preservation_while_sdk_active'
+            from preserved_adapter_fixture import observe
+            result['foreign_active_observation'] = {}
+            result['foreign_preserved_while_active'] = observe(foreign_owner, foreign_configuration, ps,
+                                                              result['foreign_active_observation'])
         stage = 'terminate_and_restore'
         # No stdin EOF/graceful Stop in this fault case: Child.close without a
         # command kills exactly its owned process. The service must detect loss
@@ -1013,6 +1034,21 @@ def main():
         elif session:
             session.close('stop')
         session = None
+        if preserved_adapter:
+            stage = 'foreign_adapter_preservation_after_sdk_attachment_and_wfp_teardown'
+            from preserved_adapter_fixture import wait_stopped, observe, close_owned_fixture
+            def own_resources_gone():
+                if not adapter_absent():
+                    return False
+                state = owned_wfp(client)
+                return (state['sdk_sessions'] == wfp_before['sdk_sessions']
+                        and state['sdk_dynamic_sessions'] == wfp_before['sdk_dynamic_sessions'])
+            wait_stopped(client, own_resources_gone)
+            result['foreign_after_stop_observation'] = {}
+            result['foreign_preserved_after_sdk_stop'] = observe(foreign_owner, foreign_configuration, ps,
+                                                                 result['foreign_after_stop_observation'])
+            result['foreign_fixture_creator_cleanup'] = close_owned_fixture(foreign_owner)
+            foreign_owner = None
         stage = 'observe_routes_dns_adapter_restore'
         result['restoration_observation'] = {}
         restored = wait_clean(baseline, result['restoration_observation'])
@@ -1054,6 +1090,8 @@ def main():
                         'owned_probe_epoch_change_not_qualified', 'endpoint_restart_failed',
                         'owned_probe_bypass_not_qualified',
                         'owned_bypass_receiver_not_ready',
+                        'foreign_adapter_observation_unavailable', 'foreign_adapter_preservation_failed',
+                        'foreign_adapter_stop_not_confirmed',
                         'owned_socket_path_not_qualified', 'invalid_owned_probe_report'})
         reason = error.args[0] if error.args else None
         result['failure_reason'] = reason if isinstance(reason, str) and reason in reasons else 'unknown'

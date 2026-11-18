@@ -219,7 +219,7 @@ try {
     $result | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 build/service-evidence/qualification.json
 } finally {
     try {
-        if ($env:LIWETUN_ADAPTER_OWNERSHIP_AUDIT -eq 'true' -and (Test-Path (Join-Path $root 'adapter-owner-native-stages.jsonl'))) {
+        if (($env:LIWETUN_ADAPTER_OWNERSHIP_AUDIT -eq 'true' -or $env:LIWETUN_PRESERVED_ADAPTER -eq 'true') -and (Test-Path (Join-Path $root 'adapter-owner-native-stages.jsonl'))) {
             New-Item -ItemType Directory -Force build/service-evidence | Out-Null
             Copy-Item (Join-Path $root 'adapter-owner-native-stages.jsonl') build/service-evidence/adapter-owner-native-stages.jsonl
         }

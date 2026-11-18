@@ -241,3 +241,17 @@ closed and verifies its same-source factory receipt before use. Actual SDK
 configuration/network checks are pending. Full ownership, SDK network/recovery/
 Stop controls and desktop/release qualification remain open. Existing service
 preflight and ordinary runtime pins/package are unchanged.
+
+## Retained foreign fixture across actual SDK start/Stop
+
+The separate default-OFF `preserved_adapter` network control holds a healthy
+creator-owned adapter alongside fresh2 HTTPS traffic. Native samples compare its
+IPv4/alias/MTU/metric; private parent snapshots compare DNS and non-link-local
+routes without exporting identifiers. Link-local/multicast OS routes are excluded.
+After Stop, fresh service queries plus SDK-adapter absence and WFP restoration
+must settle before the fixture creator closes its own handle. Final global
+baseline restoration remains required. Windows execution is pending.
+
+This does not exercise active foreign traffic or disabled/problem devices.
+Pinned Wintun global orphan cleanup behavior and general coexistence remain open;
+the control cannot promote full ownership or package admission.

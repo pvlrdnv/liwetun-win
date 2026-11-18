@@ -5,12 +5,15 @@
 #include <iphlpapi.h>
 #include <algorithm>
 #include <cstdio>
+#include <cwchar>
 #include <iostream>
 #include <optional>
 #include <utility>
 
 namespace {
 constexpr wchar_t kAlias[] = L"LiWeTun";
+constexpr wchar_t kPreservedAlias[] = L"LiWeTun.CI.PreservedOwner";
+static_assert(sizeof(kPreservedAlias) / sizeof(wchar_t) <= 128);
 constexpr wchar_t kRenamedAlias[] = L"LiWeTun.CI.RenamedOwner";
 constexpr ULONG kMarkerMtu = 1337;
 constexpr ULONG kMarkerMetric = 427;
@@ -53,12 +56,17 @@ std::optional<Sample> Read(NET_LUID luid) {
   std::sort(result.addresses.begin(), result.addresses.end());
   return result;
 }
-bool AliasAbsent() {
+bool AliasAbsent(const wchar_t* alias) {
   MIB_IF_TABLE2* table = nullptr;
   if (GetIfTable2(&table) != NO_ERROR || !table) return false;
   Table release{table};
   if (table->NumEntries > 4096) return false;
-  for (ULONG i = 0; i < table->NumEntries; ++i) if (std::wstring(table->Table[i].Alias) == kAlias) return false;
+  for (ULONG i = 0; i < table->NumEntries; ++i) {
+    const auto* name = table->Table[i].Alias;
+    if (wcsnlen_s(name, IF_MAX_STRING_SIZE + 1) > IF_MAX_STRING_SIZE) return false;
+    const int comparison = CompareStringOrdinal(name, -1, alias, -1, TRUE);
+    if (!comparison || comparison == CSTR_EQUAL) return false;
+  }
   return true;
 }
 void Print(const Sample& baseline, const std::optional<Sample>& current) {
@@ -100,9 +108,12 @@ void Stage(HANDLE file, unsigned stage) {
 }
 }
 
-int RunAdapterOwnerFixture() {
+int RunAdapterOwnerFixture(bool preserved_spare) {
   try {
-    if (!Disposable() || !AliasAbsent()) return 90;
+    std::wstring preserved_name{kPreservedAlias};
+    preserved_name.resize(127, L'x'); // refuse duplicate suffix before any foreign rename
+    const auto* alias = preserved_spare ? preserved_name.c_str() : kAlias;
+    if (!Disposable() || !AliasAbsent(alias)) return 90;
     liwetun::Image self, driver;
     if (!liwetun::OpenTrustedImage(liwetun::SelfPath(), self) ||
         !liwetun::OpenTrustedImage(liwetun::Directory(self.path) + L"\\wintun.dll", driver) || !DriverDigest(driver)) return 91;
@@ -120,7 +131,7 @@ int RunAdapterOwnerFixture() {
     // The fixture retains its own created handle. SDK is another owner and has
     // no authority to adopt/configure it. No pre-existing adapter is removed.
     Stage(stage.get(), 3);
-    Adapter adapter{create(kAlias, L"LiWeTun.CI.ForeignOwner", nullptr), close};
+    Adapter adapter{create(alias, L"LiWeTun.CI.ForeignOwner", nullptr), close};
     if (!adapter.value) return 94;
     NET_LUID retained{}; luid(adapter.value, &retained);
     if (!retained.Value) return 95;
@@ -140,7 +151,7 @@ int RunAdapterOwnerFixture() {
     if (SetIpInterfaceEntry(&marker) != NO_ERROR) return 97;
     Stage(stage.get(), 6);
     auto baseline = Read(retained);
-    if (!baseline || baseline->alias != kAlias || baseline->mtu != kMarkerMtu ||
+    if (!baseline || baseline->alias != alias || baseline->mtu != kMarkerMtu ||
         baseline->metric != kMarkerMetric || !baseline->addresses.empty()) return 98;
     Stage(stage.get(), 7);
     std::cout << "{\"ready\":true,\"fixture_created_adapter\":true,\"retained_creation_handle\":true,"
@@ -148,6 +159,7 @@ int RunAdapterOwnerFixture() {
     std::string command;
     for (unsigned call = 0; call < 256 && std::getline(std::cin, command); ++call) {
       if (command == "confirm-renamed") {
+        if (preserved_spare) return 99;
         Stage(stage.get(), 8);
         const auto current = Read(retained);
         const bool valid = current && current->alias == kRenamedAlias && current->mtu == kMarkerMtu &&

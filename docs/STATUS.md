@@ -1,5 +1,33 @@
 # Development checkpoint — 2026-11-18
 
+## Retained foreign adapter during SDK traffic — implementation pending CI
+
+Added a default-OFF fresh2 HTTPS control. A separate signed fixture retains its
+own creation handle while the SDK starts, transfers traffic and stops. Private
+OS snapshots compare DNS and non-link-local routes; typed native samples compare
+IPv4, alias, MTU and metric. After Stop, two fresh queries must also observe the
+SDK adapter absent and WFP baseline restored before the fixture creator closes
+its own handle. No adapter identifiers or configuration leave parent memory.
+Local **78 fixture tests PASS**, workflow YAML and whitespace checks PASS.
+Actual Windows H2/H3 verification is pending. This is a healthy retained fixture,
+not active foreign traffic, disabled-device or complete coexistence qualification.
+Normal runtime/package and all release/ownership gates remain unchanged.
+
+## Shutdown comparison — epoch invalidation observed, repeatability still open
+
+On `85566d3`, the new shutdown endpoint passed fresh2 H3 positive 44310802734
+and deadline 44310807071. Actual H3 epoch invalidation passed with legacy SDK
+44310802365 and fresh2 44310802794 (changed epoch, flags 129, null proof counts,
+no response/health, disarm and restoration). A repeated fresh2 epoch attempt
+**44310802562 FAIL**: graceful exit was reported but the client retained its epoch
+and timed out with flags 15 / 497 TX / 1544 RX, still without health qualification.
+[All five original reports](evidence/shutdown-h3-comparison-44310802365.json).
+Thus the source completion barrier is **not established as a sufficient fix**;
+do not replace the failed case or claim a reliable complete 16-case matrix.
+All runtime/package/health/ownership gates remain closed. Further diagnosis of
+QUIC shutdown delivery/client transition timing remains separate from active
+foreign-adapter preservation controls; no production server or owner device change.
+
 ## Fresh2 ordinary controls PASS; separate H3 shutdown fixture built
 
 All eight additional ordinary cases **PASS on `1e12d47`**, health worker OFF:
