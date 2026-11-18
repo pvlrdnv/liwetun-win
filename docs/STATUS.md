@@ -1,5 +1,36 @@
 # Development checkpoint — 2026-11-18
 
+## Current focused fresh2 HTTPS matrix — 16/16 PASS
+
+On `472fa45`, the exact eight-mode set passed on **both H2 and H3**: positive
+HTTPS, wrong nonce, untrusted certificate, deadline, cancellation, migration,
+actual SDK epoch change and bypass. All 16 selected runs used the same pinned
+fresh2 SDK; H2 used endpoint 43880327333, H3 the separate priority diagnostic
+endpoint 44322304971. Every selected case restored route/DNS/adapter/WFP state
+without watchdog and removed fixture roots. [All sixteen original reports and
+hashes](evidence/fresh2-https-matrix-472fa45.json).
+
+Five independent H3 fresh2 epoch repeats plus legacy epoch/positive/deadline
+also passed as detailed below. The current matrix supersedes the *incomplete
+qualification* of the older 15/16 attempt; earlier failed runs remain failed and
+archived. This is focused Server 2022 CI with native fences ON, not public HTTPS/
+DNS health, full adapter ownership, all-flags-OFF package, desktop or release
+admission. Normal runtime/service/package pins and gates remain unchanged.
+
+## Priority fixture — five fresh2 H3 epoch repeats PASS
+
+On `472fa45`, fresh2 H3 epoch **44324251370 / 44324259312 / 44324267247 /
+44324273954 / 44324281613 PASS**. Every independent attempt observed exactly one
+accepted QUIC close and successful final flush, actual changed SDK epoch, flags
+129/null proof counts, no response/health success, disarm and full global/WFP
+restoration without watchdog. Legacy SDK epoch **44324287561**, fresh2 positive
+**44324295887** and deadline **44324303421 PASS**. [All eight reports](evidence/priority-h3-repeats-44324251370.json).
+This supports the diagnostic shutdown-before-EOF race hypothesis in these
+controls; it is not an unrestricted delivery/repeatability or production claim.
+Earlier failed runs remain failed. Thirteen additional current-source H2/H3
+HTTPS controls passed to complete the separate focused matrix above. No normal
+SDK/service/package, full ownership, desktop or release admission changes.
+
 ## H3 trace narrows the failed control; priority hypothesis pending
 
 On `d024d71`, traced H3 fresh2 epoch **44321240113 FAIL** with close-attempt
