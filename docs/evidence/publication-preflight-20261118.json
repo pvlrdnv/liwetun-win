@@ -1,0 +1,23 @@
+{
+  "date": "2026-11-18",
+  "repository": "pvlrdnv/liwetun-win",
+  "owner_authorized_public_visibility": true,
+  "scanner": "gitleaks 8.30.1",
+  "scanner_official_archive_sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
+  "git_scope": "all_local_refs_including_remote_feature_branch",
+  "git_commits_scanned_before_policy_change": 195,
+  "git_findings": 0,
+  "actions_runs_audited": 347,
+  "actions_log_archives_downloaded": 347,
+  "actions_log_text_files_scanned": 690,
+  "actions_log_text_bytes_scanned": 58591192,
+  "actions_log_findings": 0,
+  "raw_logs_or_findings_committed": false,
+  "active_ci_runs": 0,
+  "unreviewed_remote_branches_or_tags": false,
+  "manual_dispatch_only": true,
+  "standard_runner_labels_only": true,
+  "private_runner_allocation_guard_jobs": 13,
+  "billing_settings_changed": false,
+  "release_ready": false
+}

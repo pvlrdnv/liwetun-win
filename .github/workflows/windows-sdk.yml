@@ -26,6 +26,7 @@ permissions:
   contents: read
 jobs:
   sdk:
+    if: ${{ toJSON(github.event.repository.private) == 'false' }}
     runs-on: windows-2022
     timeout-minutes: 80
     env:

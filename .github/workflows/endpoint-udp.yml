@@ -38,6 +38,7 @@ permissions:
   contents: read
 jobs:
   endpoint:
+    if: ${{ toJSON(github.event.repository.private) == 'false' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 35
     env:

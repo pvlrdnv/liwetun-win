@@ -4,8 +4,15 @@ Scope: only this independent client repository. Sibling LikeWeb repositories
 are reference-only; do not edit them, production state or their Git metadata.
 No production connections, live credentials, deployment or server changes.
 
-Use a feature branch. Do not push to main. Remote: private GitHub repository
-pvlrdnv/liwetun-win; no word VPN in repository name or GitHub description.
+Use a feature branch. Do not push to main. Remote: GitHub repository
+pvlrdnv/liwetun-win; owner authorized public visibility on 2026-11-18.
+No word VPN in repository name or GitHub description.
+Before dispatching CI, verify public visibility and use only standard free
+GitHub-hosted Windows/Linux runners. Do not consume a private-repository compute
+allowance, use paid/larger runners or change billing/spending limits without an
+explicit owner budget. Keep workflows manually dispatched and batch related
+checks to avoid redundant runner setup. Returning to private requires stopping
+CI until the owner agrees its budget. Public copies/forks cannot be recalled.
 Never commit personal connection URIs, tokens, PEMs, configs or raw core output.
 
 Read README.md, docs/ADR-001.md and docs/STATUS.md before implementation.

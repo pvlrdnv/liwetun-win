@@ -1,5 +1,24 @@
 # Development checkpoint — 2026-11-18
 
+## Owner-authorized public visibility and CI cost guard
+
+Owner requested public visibility after the private Actions included allowance
+was consumed. No billing/spending changes are authorized. Before visibility
+change, Gitleaks 8.30.1 found **0 findings** across 195 commits/all local refs and
+all 347 retained Actions log archives (690 text files / 58,591,192 bytes).
+Remote branch/tag inventory matched the audited history and no jobs were active.
+[Preflight receipt](evidence/publication-preflight-20261118.json); raw logs stay
+outside Git. Scanner findings are a bounded check, not proof against all secrets.
+
+All 13 workflow jobs now require an explicitly public repository before runner
+allocation; missing/private metadata skips jobs. All remain manual-dispatch-only
+and use standard Windows/Linux runners. AGENTS.md requires public-visibility
+verification before dispatch, batches related checks and forbids private compute
+allowance/paid runners or billing changes without an explicit owner budget.
+Public visibility does not qualify application release. Returning to private
+cannot retract third-party downloads/forks; see
+[GitHub visibility consequences](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility).
+
 ## Problem-device lifecycle — CI unavailable before checkout
 
 Source audit of original Wintun 0.14.1 confirms global cleanup skips healthy
