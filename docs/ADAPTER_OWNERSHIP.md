@@ -205,7 +205,7 @@ atomic reservation. Keep this candidate outside normal runtime/service/package
 admission while the create boundary is redesigned or an appropriate supported
 API is qualified. No upstream issue/message has been sent on the owner's behalf.
 
-## Policy 2: qualified maximum-name boundary, integration pending
+## Policy 2: factory and SDK build qualified, network checks pending
 
 Source inspection identified a refusal boundary in the pinned original API:
 `NciSetAdapterName` formats the foreign suffix in a `MAX_ADAPTER_NAME` buffer
@@ -234,6 +234,10 @@ now fails that test. Source preparation/Python guards pass. [Actual integrated
 factory/native checks PASS](evidence/adapter-policy2-44296517432.json) on `ba80aa9`:
 the exact post-preflight insertion is refused, retained alias unchanged, new
 handle absent, and full adapter/route/DNS restoration verified. Full SDK
-compilation/ABI and configuration checks are pending. Full ownership, SDK network/recovery/
+compilation/ABI **PASS 44296517605** on that same source;
+[build/source/binary receipt](evidence/sdk-fresh2-44296517605.json). The default-OFF
+network workflow selects a separate fresh runtime pin with all admission gates
+closed and verifies its same-source factory receipt before use. Actual SDK
+configuration/network checks are pending. Full ownership, SDK network/recovery/
 Stop controls and desktop/release qualification remain open. Existing service
 preflight and ordinary runtime pins/package are unchanged.

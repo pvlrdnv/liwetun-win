@@ -1,0 +1,263 @@
+{
+  "source_run": 44296517605,
+  "source_commit": "ba80aa9fb11c2ad86d171960a3fd66c36381b7b3",
+  "files": {
+    "trusttunnel.dll": "7be8d9cf124a903dc9d7b1541160af2e1e4324b657b41e02f2da8dcba579b311",
+    "wintun.dll": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce"
+  },
+  "reports": {
+    "source-profile": {
+      "sha256": "bb7e39e02fde4e31762941f2145d19f37273bb2df27b59bb6727671f74f45b91",
+      "report": {
+        "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+        "policy_version": 1,
+        "bootstrap_sha256": "7e7c23f79a5275653f899a135528190e319334dd547f3284fab58289d56dfeb2",
+        "conan_input_lock_sha256": "2680c44369acf682190acbb322273a3a0a648edcbbba851e99b0c0166595c246",
+        "source_pinned_candidate": true,
+        "source_pin_manifest_sha256": "cf9d5d299aeae007c9314b4235d8a45ad52076de46da5e5150e952d3d05cd474",
+        "prepare_script_sha256": "488808df5f2c2c73e607208f7cfa6599ff603b027a7f0150912da7ac1f92cc69",
+        "patched_files": {
+          "platform/windows/src/trusttunnel.cpp": "18f177634cb29230b169c111a894eec8e2ad328fa8c197872c3091038f4b88c0",
+          "core/src/tunnel.cpp": "e1b829734e7c55b456501232cfaba40f9814d7fd97945c1c7231548a6b79d2ac"
+        },
+        "release_qualified": false
+      }
+    },
+    "traffic-profile": {
+      "sha256": "8acd44c90883f14b39ff18e3cf9bbee4e202000384072cfcb0360566bb7a08e4",
+      "report": {
+        "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+        "traffic_abi": 1,
+        "privacy_policy_version": 1,
+        "source_pinned_candidate": true,
+        "manifest_sha256": "40d21c0edd085dc7bae109ae97f9bc0ef0d338e42e83c8e712c872383bd88686",
+        "patcher_sha256": "a230cc14e19ed473f52c60d17953f31b4fcd51901f345a8ab1a201c10e5cd23e",
+        "baseline_newlines": "lf",
+        "written_newlines": "lf",
+        "baseline_files": {
+          "core/src/connection_statistics.h": "75a172284d754df05dc9a7ee7dc421a53785515b533500b4b0296b64aa386b02",
+          "core/src/connection_statistics.cpp": "e503feb22e284ef85e944e7b0a562ec2b797720d86748b23fb6193c4cd40e7c2",
+          "core/include/vpn/vpn.h": "c322e5026cbd49628d114ad7e8ec12883936a2adfd41e945a539163b5c822c53",
+          "core/include/vpn/internal/vpn_client.h": "afbd3463119cefcafd0ec7eb092f231765296a024d130a8ca5e2e7b4c61200f4",
+          "core/src/vpn_manager.cpp": "6ab6c8181dc32548cca54fa40fedc63f0eefe616c2d3684a37fe57976549b6b4",
+          "trusttunnel/include/vpn/trusttunnel/client.h": "e64206813b32e8eb5b85a500595046a051d9447956b393921ed54068c617936b",
+          "trusttunnel/src/client.cpp": "c5bcecafca8dbb3cc762249c38dc6722e659d1c041900bfed214c3e2d56cffe4",
+          "platform/windows/src/trusttunnel.cpp": "90e57a429375c9496fd29a876b0db0faef9f75e357e3589225c72df561f55968",
+          "core/src/tunnel.cpp": "93d10f4a34a94f9dc649c850a212b99e8cfb86d37913c150ca8071281666c6e8"
+        },
+        "patched_files": {
+          "core/src/connection_statistics.h": "86f9bf6d8bec43ea1f53c4c65d9e4d7ab4873a9f1678e9842174c60c16eeed0f",
+          "core/src/connection_statistics.cpp": "669efcb6f06dc8616057dae0a9caef240c2cc939c4d7cceed08284b968372069",
+          "core/include/vpn/vpn.h": "7f4bcf142184cb8b3090078035d009c03a5afe394a38ee90dcde10bbe46b7952",
+          "core/include/vpn/internal/vpn_client.h": "71cdeff43b3c8427802b4c2599b5864a97d15607511dd88c9b4f7bbfa91c3e13",
+          "core/src/vpn_manager.cpp": "936755b511f4dedd8a066002f0e9dc29ce664d39abcc0a219a9f48706d5343a5",
+          "trusttunnel/include/vpn/trusttunnel/client.h": "11e17c9db5b92a4a1354c743868a61db2b86de0f562f4c3db2c5651c9aa0e132",
+          "trusttunnel/src/client.cpp": "915107f78da20a0dfeb2093946308f77e9907744eed2f2119112940c4dbbeec4",
+          "platform/windows/src/trusttunnel.cpp": "69bbb956491431bed4bb9d2e7238d89a408c4d112935cdeb9db6d637931eb5cd",
+          "core/src/tunnel.cpp": "a8a73a9fd19a0ba5d0143b1f7082dde2a8f29c8076797c6053289064f4bc5800"
+        },
+        "added_files": {
+          "platform/windows/src/traffic_abi.h": "1541911357ef9fe588da9894167e4d39df263b8527a1a3a2fa738017768c22bd",
+          "platform/windows/src/liwetun_traffic_counter.h": "e1fff651abde77c972f9b2b0b05d2517c03e9d0d857631d4a015d3ca4f0d45e7"
+        },
+        "distribution_qualified": false,
+        "network_requalified": false,
+        "release_ready": false
+      }
+    },
+    "attached-tun-profile": {
+      "sha256": "0cdcc9a1e5f3958b84a2bf97c2c67dc1906e4b36fedb2430a66fd2c63c305208",
+      "report": {
+        "attached_tun_abi": 1,
+        "snapshot_bytes": 40,
+        "privacy_policy_version": 1,
+        "manifest_sha256": "23d38d5622e8cc80d0b7728401b01c84f40e14cb65bc4640548ccffb4b03fc2e",
+        "patcher_sha256": "931f0f044143ad2e47d9bad1d9b49cdb7b7a006703652051fc39d211287566d5",
+        "baseline_files": {
+          "net/include/net/os_tunnel.h": "992e3ed10bfa395e5684b88724b84eef0585bf091f78dd4c1767a738ecaf4ef3",
+          "net/src/os_tunnel_win.h": "2b9a922bea7f60c3641277f6e35c6d1abbd15af87b3b323d9723430885aff0db",
+          "net/src/os_tunnel_win.cpp": "a6b529fc3159e816eb5e253bc3dc323eebec2ec0afa33d445b07c1f5252a8c04",
+          "trusttunnel/include/vpn/trusttunnel/client.h": "11e17c9db5b92a4a1354c743868a61db2b86de0f562f4c3db2c5651c9aa0e132",
+          "trusttunnel/src/client.cpp": "915107f78da20a0dfeb2093946308f77e9907744eed2f2119112940c4dbbeec4",
+          "platform/windows/src/trusttunnel.cpp": "69bbb956491431bed4bb9d2e7238d89a408c4d112935cdeb9db6d637931eb5cd"
+        },
+        "written_files": {
+          "net/include/net/os_tunnel.h": "0eecac65e858e014b397dbdefb14baa2877ae35f0f43e94e5563f8b4705b79bd",
+          "net/src/os_tunnel_win.h": "d071b694e5a39456a2e4c841b5c99cf43d9a67a333a6772b2c0c62c4eb175a89",
+          "net/src/os_tunnel_win.cpp": "b25498670ff0483a07f767b1841cd55f152032fbb5eba415515804f1805e880e",
+          "trusttunnel/include/vpn/trusttunnel/client.h": "4cc81d8294866b6525d736aed3e2a80807e0d72a21e80ba5ce55840b91e901cf",
+          "trusttunnel/src/client.cpp": "88963351a2995a9184b2c5b120f2314df826f6fc0a2d853369f232b71f25a63c",
+          "platform/windows/src/trusttunnel.cpp": "875a81f7bc2aa5895c93f62b3c96d2de492c0395e2156e70791966d2956af7d7",
+          "platform/windows/src/attached_tun_abi.h": "3fa6c56f552e42538b8be25f92fadf3507dffeddfa51dad2d20242d0875a43b4",
+          "platform/windows/src/attached_tun_snapshot.h": "4fb4e7551a595ce5eb94f3de4433de6e20e953b2bfa0a07ceaa8cc9990eaa59f"
+        },
+        "caller_serializes_start_stop": true,
+        "contains_interface_identifiers": true,
+        "interface_identifiers_for_internal_use_only": true,
+        "adapter_ownership_proven": false,
+        "probe_traversal_proven": false,
+        "network_requalified": false,
+        "release_ready": false
+      }
+    },
+    "owned-probe-profile": {
+      "sha256": "e42f0eafc24e774a0b942e062fc3ff0a1e1708f5ba7b52824221c7ecfa269f1b",
+      "report": {
+        "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+        "owned_probe_abi": 1,
+        "request_bytes": 32,
+        "snapshot_bytes": 56,
+        "privacy_policy_version": 1,
+        "manifest_sha256": "d8feacba38db7766526aeae351f9bd605ef6b6edbcf117995ea32a32ac3fbb36",
+        "patcher_sha256": "3192eb3a538440b543bc6a3383f2b19573c8dab3c77242de83dfda4aeb2bceda",
+        "baseline_files": {
+          "core/include/vpn/internal/vpn_client.h": "71cdeff43b3c8427802b4c2599b5864a97d15607511dd88c9b4f7bbfa91c3e13",
+          "core/src/vpn_manager.h": "5cb048a42e9536394509e081929d1b889a1117112b910ac6785f221ef42f1507",
+          "core/src/vpn_manager.cpp": "936755b511f4dedd8a066002f0e9dc29ce664d39abcc0a219a9f48706d5343a5",
+          "core/src/tunnel.cpp": "a8a73a9fd19a0ba5d0143b1f7082dde2a8f29c8076797c6053289064f4bc5800",
+          "trusttunnel/include/vpn/trusttunnel/client.h": "4cc81d8294866b6525d736aed3e2a80807e0d72a21e80ba5ce55840b91e901cf",
+          "trusttunnel/src/client.cpp": "88963351a2995a9184b2c5b120f2314df826f6fc0a2d853369f232b71f25a63c",
+          "platform/windows/src/trusttunnel.cpp": "875a81f7bc2aa5895c93f62b3c96d2de492c0395e2156e70791966d2956af7d7"
+        },
+        "written_files": {
+          "core/include/vpn/internal/vpn_client.h": "92d1c100b0a85183bc5908a30ed4e61d67a3e689d4d3d49729ce5f55d76c81ee",
+          "core/src/vpn_manager.h": "5ed50a32f81f7240d3666c4c2f804d507e89ee2d69ba584a1a61f8e80e4c4000",
+          "core/src/vpn_manager.cpp": "9d4b8dc9999a1713780871502747b40a26a2966a45815a5def2624807dd3dfdb",
+          "core/src/tunnel.cpp": "4a516386c6aee35c6c61e7fe021f1b431336b36700cebf42686f359ec044af62",
+          "trusttunnel/include/vpn/trusttunnel/client.h": "52c1d614628a163566788649bd9ab6269dc66be9b3c242dc3b9df6a0c7aa9875",
+          "trusttunnel/src/client.cpp": "82418ba67c073aa3706ef0a38f1011f5806240f1515bec9707e2a321e30ab711",
+          "platform/windows/src/trusttunnel.cpp": "014b1b11c332f8375d63db3b14791d552cdc715bfe75f32e93c35d10554c9ed9",
+          "core/include/vpn/internal/probe_abi.h": "a73d712e41b081e87c1f7d21fda60e8fc8bb111ceda5c292db736ef32a9cf130",
+          "core/include/vpn/internal/probe_slot.h": "d236f04b07369e0911c5b715a01c0c57385b856405ef219dc9d174dc9d095128",
+          "core/include/vpn/internal/sdk_probe_core.h": "8a15d5dfb752fc6278563cc70da668b81cfd1df4986f472544ed1003dd1cffc6",
+          "core/include/vpn/internal/probe_tunnel_adapter.h": "0f4e9bb125161e08cdf45bf6d9e172ce8836b06534a1efc744002511c3cfb6ee",
+          "core/include/vpn/internal/windows_probe_socket.h": "e0d096e707dac6745aed8ce8bfa3acadac241a0ff2b151125da7e1e50f68372e",
+          "platform/windows/src/owned_probe_exports.inc": "05de849126b441bf79be15fad80825925dba4aa8775f38107a297ff5e28e53f1"
+        },
+        "caller_serializes_start_stop": true,
+        "caller_holds_fresh_socket": true,
+        "private_tuple_registration_exported": false,
+        "browsing_events_enabled": false,
+        "routing_policy_changed": false,
+        "live_sdk_path_qualified": false,
+        "release_ready": false
+      }
+    },
+    "fresh-adapter-profile": {
+      "sha256": "fccd5e35cde68eb1a04e4b760e1b955c4044fed8219907c48c2054c4473bf90e",
+      "report": {
+        "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+        "adapter_creation_policy": 2,
+        "physical_alias_characters": 127,
+        "required_wintun_sha256": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce",
+        "manifest_sha256": "68eeb9290d1c3d672875b7b9a3ebd051028edaf3c1e448daca2884c5e4d9eb45",
+        "patcher_sha256": "37f7231ee2d2016f85213154a8104b58d7fbd88d3fd0bd9e171545eaca6adbde",
+        "baseline_files": {
+          "net/src/os_tunnel_win.cpp": "b25498670ff0483a07f767b1841cd55f152032fbb5eba415515804f1805e880e",
+          "net/src/os_tunnel_win.h": "d071b694e5a39456a2e4c841b5c99cf43d9a67a333a6772b2c0c62c4eb175a89",
+          "platform/windows/src/trusttunnel.cpp": "014b1b11c332f8375d63db3b14791d552cdc715bfe75f32e93c35d10554c9ed9"
+        },
+        "written_files": {
+          "net/src/os_tunnel_win.cpp": "66e3ec58cc417a63132b2121e5dce327069b58f4e78cd42d6032f5db0eb37d1f",
+          "net/src/os_tunnel_win.h": "6adec5913c724d98f27e3145e66aa36ae07339cd38038c54f3ed6f79b660e30f",
+          "platform/windows/src/trusttunnel.cpp": "ec9f398345730a7bb63eb9053228bf0082a1c78b4f03af366e29e3250f1afc12",
+          "net/src/fresh_adapter.h": "c630ef8653e4f298ed42a62d3f7d23785615405d5bfa221d97ab45e0ef2d2cff",
+          "net/src/windows_fresh_adapter.h": "09d9b2dd8592d83e63c5cdcfaec3516ea6100191b24eaeaea65b18803d70f727"
+        },
+        "open_existing_adapter": false,
+        "private_random_guid_and_alias": true,
+        "verify_created_handle_before_configuration": true,
+        "original_wintun_unchanged": true,
+        "identifiers_exported": false,
+        "privileged_physical_name_race_qualified": false,
+        "adapter_ownership_qualified": false,
+        "network_requalified": false,
+        "service_admitted": false,
+        "package_admitted": false,
+        "release_ready": false
+      }
+    },
+    "traffic-abi-check": {
+      "sha256": "7287cb8fcdd862335962d5b7cbbc2b15740e2230267cf13a9204a4c254d1d91a",
+      "report": {
+        "traffic_abi": 1,
+        "snapshot_bytes": 64,
+        "null_reads_rejected": true,
+        "privacy_policy_version": 1,
+        "tunnel_started": false,
+        "network_changed": false,
+        "release_ready": false
+      }
+    },
+    "attached-tun-abi-check": {
+      "sha256": "4676d028d482fe277188fb04a1aca820fd990d90dc6a54af4888dc3645806f11",
+      "report": {
+        "attached_tun_abi": 1,
+        "snapshot_bytes": 40,
+        "null_reads_rejected": true,
+        "tunnel_started": false,
+        "network_changed": false,
+        "actual_interface_qualified": false,
+        "probe_traversal_proven": false,
+        "adapter_ownership_proven": false,
+        "release_ready": false
+      }
+    },
+    "owned-probe-abi-check": {
+      "sha256": "66c351b5309784e4a276f00be202280fc0ce95abcb5f5d2979fd7eb2430d7d84",
+      "report": {
+        "owned_probe_abi": 1,
+        "request_bytes": 32,
+        "snapshot_bytes": 56,
+        "null_reads_rejected": true,
+        "null_arm_rejected": true,
+        "null_disarm_rejected": true,
+        "tunnel_started": false,
+        "network_changed": false,
+        "live_sdk_path_qualified": false,
+        "release_ready": false
+      }
+    },
+    "fresh-adapter-abi-check": {
+      "sha256": "993b9e61ccfd0a718d1349528ccc97079c17fff1d898559dba75983535a425fd",
+      "report": {
+        "adapter_creation_policy": 2,
+        "build_marker_only": true,
+        "tunnel_started": false,
+        "network_changed": false,
+        "adapter_ownership_qualified": false,
+        "network_requalified": false,
+        "service_admitted": false,
+        "package_admitted": false,
+        "release_ready": false
+      }
+    },
+    "fresh-adapter-contract": {
+      "sha256": "9574fa6cb4cf3ad451b5823f38c50e9ba346a928bd1154790aeb2b15f0af0a09",
+      "report": {
+        "release_ready": false,
+        "windows_read_only_binding_passed": true,
+        "adapter_ownership_qualified": false,
+        "network_configuration_changed": false,
+        "tunnel_started": false,
+        "source_guards_passed": true,
+        "policy_contract_passed": true
+      }
+    }
+  },
+  "recipe_lock_matched": true,
+  "notice_inventory_sha256": "5ba2805356e2471979720b43ee956c2bd63bd98d5609528f9cf4bbf415b5e42d",
+  "notice_files_integrity_verified": 20,
+  "package_records": 28,
+  "package_records_with_notices": 15,
+  "source_supplements_still_required": 13,
+  "adapter_creation_policy": 2,
+  "abi_checks_without_tunnel_start_passed": true,
+  "network_requalified": false,
+  "adapter_ownership_qualified": false,
+  "service_admitted": false,
+  "package_admitted": false,
+  "windows_10_qualified": false,
+  "windows_11_qualified": false,
+  "release_ready": false
+}

@@ -18,6 +18,10 @@ on:
         description: CI-only service-owned synthetic TCP path proof (requires all SDK profiles)
         type: boolean
         default: false
+      fresh_adapter:
+        description: CI-only pinned policy-2 adapter SDK (requires all previous SDK profiles)
+        type: boolean
+        default: false
       owned_probe_mode:
         description: Exact echo, cancellation, deadline, or deliberately wrong reply nonce
         type: choice
@@ -136,6 +140,7 @@ jobs:
       TRAFFIC_METRICS: ${{ inputs.traffic_metrics }}
       ATTACHED_TUN: ${{ inputs.attached_tun }}
       OWNED_PROBE: ${{ inputs.owned_probe }}
+      FRESH_ADAPTER: ${{ inputs.fresh_adapter }}
       LIWETUN_ADAPTER_OWNERSHIP_AUDIT: ${{ inputs.adapter_ownership_audit }}
       LIWETUN_ADAPTER_OWNER_VARIANT: ${{ inputs.adapter_ownership_variant }}
       LIWETUN_OWNED_PROBE_MODE: ${{ inputs.owned_probe_mode }}
@@ -170,6 +175,11 @@ jobs:
           if ($env:TRAFFIC_METRICS -eq 'true' -and $env:LIWETUN_PRODUCTION_PROBE -ne 'true') { throw 'Aggregate traffic qualification requires ordinary traffic mode' }
           if ($env:ATTACHED_TUN -eq 'true' -and ($env:SOURCE_PINNED -ne 'true' -or $env:TRAFFIC_METRICS -ne 'true')) { throw 'Attachment fence requires aggregate immutable-source profile' }
           if ($env:OWNED_PROBE -eq 'true' -and ($env:ATTACHED_TUN -ne 'true' -or $env:LIWETUN_PRODUCTION_PROFILE -ne 'valid' -or $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4' -or $env:LIWETUN_PRODUCTION_TERMINATION -ne 'stop' -or $env:LIWETUN_TRAFFIC_PATTERN -ne 'normal')) { throw 'Owned probe requires its focused IPv4 Stop/normal fixture' }
+          if ($env:FRESH_ADAPTER -eq 'true' -and ($env:OWNED_PROBE -ne 'true' -or $env:ATTACHED_TUN -ne 'true' -or $env:TRAFFIC_METRICS -ne 'true' -or $env:SOURCE_PINNED -ne 'true' -or $env:LIWETUN_ADAPTER_OWNERSHIP_AUDIT -eq 'true')) { throw 'Fresh adapter requires its pinned owned context and separate factory ownership audit' }
+          if ($env:FRESH_ADAPTER -eq 'true') {
+            python -m unittest discover -s tools/sdk -p 'test_fresh_runtime.py'
+            if ($LASTEXITCODE -ne 0) { throw 'Fresh adapter runtime guard contracts failed' }
+          }
           if ($env:LIWETUN_OWNED_PROBE_MODE -notin @('echo','cancel','deadline','wrong-nonce','migration','epoch-change','bypass','https','https-wrong-nonce','https-untrusted','https-deadline','https-cancel','https-migration','https-epoch-change','https-bypass') -or ($env:LIWETUN_OWNED_PROBE_MODE -ne 'echo' -and $env:OWNED_PROBE -ne 'true')) { throw 'Negative fixture requires owned probe mode' }
           if ($env:LIWETUN_ENDPOINT_STREAM_CLOSE -eq 'true' -and (!$env:LIWETUN_ENDPOINT_FIXTURE_RUN -or $env:OWNED_PROBE -ne 'true')) { throw 'Endpoint wakeup candidate requires explicit focused owned probe fixture' }
           if ($env:LIWETUN_PRODUCTION_PROBE -ne 'true' -and $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4') { throw 'Synthetic IPv6 requires production probe mode' }
@@ -205,13 +215,13 @@ jobs:
         run: |
           if ($env:SDK_RUN_ID -notmatch '^[0-9]{1,20}$') { throw 'Invalid SDK run ID' }
           if ($env:TRAFFIC_METRICS -eq 'true' -and $env:SOURCE_PINNED -ne 'true') { throw 'Traffic SDK requires immutable source pins' }
-          $pinFile = if ($env:OWNED_PROBE -eq 'true') { 'native/sdk/runtime-probe.json' } elseif ($env:ATTACHED_TUN -eq 'true') { 'native/sdk/runtime-attached.json' } elseif ($env:TRAFFIC_METRICS -eq 'true') { 'native/sdk/runtime-traffic.json' } elseif ($env:SOURCE_PINNED -eq 'true') { 'native/sdk/runtime-sources.json' } else { 'native/sdk/runtime.json' }
+          $pinFile = if ($env:FRESH_ADAPTER -eq 'true') { 'native/sdk/runtime-fresh.json' } elseif ($env:OWNED_PROBE -eq 'true') { 'native/sdk/runtime-probe.json' } elseif ($env:ATTACHED_TUN -eq 'true') { 'native/sdk/runtime-attached.json' } elseif ($env:TRAFFIC_METRICS -eq 'true') { 'native/sdk/runtime-traffic.json' } elseif ($env:SOURCE_PINNED -eq 'true') { 'native/sdk/runtime-sources.json' } else { 'native/sdk/runtime.json' }
           $pin = Get-Content $pinFile -Raw | ConvertFrom-Json
           if ($env:SOURCE_PINNED -eq 'true') {
             if ($pin.source_pin_manifest_sha256 -ne (Get-FileHash native/sdk/source-pins.json -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.conan_input_lock_sha256 -ne (Get-FileHash native/sdk/conan-sources.lock -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.source_pinned_candidate -ne $true -or $pin.release_qualified -ne $false) { throw 'Candidate SDK source receipt mismatch' }
           }
           if ($env:TRAFFIC_METRICS -eq 'true') {
-            $variant = if ($env:OWNED_PROBE -eq 'true') { 'owned_socket_probe_candidate' } elseif ($env:ATTACHED_TUN -eq 'true') { 'attached_tun_candidate' } else { 'aggregate_traffic_candidate' }
+            $variant = if ($env:FRESH_ADAPTER -eq 'true') { 'fresh_adapter_candidate' } elseif ($env:OWNED_PROBE -eq 'true') { 'owned_socket_probe_candidate' } elseif ($env:ATTACHED_TUN -eq 'true') { 'attached_tun_candidate' } else { 'aggregate_traffic_candidate' }
             if ($pin.traffic_profile_manifest_sha256 -ne (Get-FileHash native/sdk/traffic-inputs.json -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.traffic_abi_header_sha256 -ne (Get-FileHash native/traffic/traffic_abi.h -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.traffic_abi -ne 1 -or $pin.sdk_variant -ne $variant) { throw 'Traffic SDK receipt mismatch' }
           }
           if ($env:ATTACHED_TUN -eq 'true') {
@@ -219,6 +229,9 @@ jobs:
           }
           if ($env:OWNED_PROBE -eq 'true') {
             if ($pin.owned_probe_profile_manifest_sha256 -ne (Get-FileHash native/sdk/owned-probe-inputs.json -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.owned_probe_abi_header_sha256 -ne (Get-FileHash native/probe/probe_abi.h -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.owned_probe_abi -ne 1) { throw 'Owned probe SDK receipt mismatch' }
+          }
+          if ($env:FRESH_ADAPTER -eq 'true') {
+            if ($pin.adapter_creation_policy -ne 2 -or $pin.fresh_adapter_profile_manifest_sha256 -ne (Get-FileHash native/sdk/fresh-adapter-inputs.json -Algorithm SHA256).Hash.ToLowerInvariant() -or $pin.service_admitted -ne $false -or $pin.package_admitted -ne $false -or $pin.adapter_ownership_qualified -ne $false) { throw 'Fresh adapter SDK receipt mismatch or improper promotion' }
           }
           if ($env:SDK_RUN_ID -ne [string]$pin.source_run) { throw 'SDK run does not match reviewed runtime manifest' }
           $run = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:SDK_RUN_ID" | ConvertFrom-Json
@@ -228,6 +241,13 @@ jobs:
           foreach ($file in @('trusttunnel.dll', 'wintun.dll')) {
             $expected = $pin.files.PSObject.Properties[$file].Value
             if ($expected -notmatch '^[0-9a-f]{64}$' -or (Get-FileHash (Join-Path build/sdk-runtime $file) -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'SDK digest mismatch' }
+          }
+          if ($env:FRESH_ADAPTER -eq 'true') {
+            $run | Select-Object id,name,status,conclusion,head_sha | ConvertTo-Json | Set-Content build/fresh-sdk-run-metadata.json
+            python tools/sdk/check_fresh_runtime.py --manifest $pinFile --run-metadata build/fresh-sdk-run-metadata.json --run-id $env:SDK_RUN_ID --runtime build/sdk-runtime --output build/service-evidence/fresh-runtime-verification.json
+            if ($LASTEXITCODE -ne 0) { throw 'Fresh adapter runtime provenance rejected' }
+            python tools/sdk/check_fresh_adapter_abi.py --runtime build/sdk-runtime --output build/service-evidence/fresh-adapter-abi-check.json
+            if ($LASTEXITCODE -ne 0) { throw 'Fresh adapter runtime build-policy marker mismatch' }
           }
           New-Item -ItemType Directory -Force build/service-evidence | Out-Null
           Copy-Item $pinFile build/service-evidence/sdk-runtime-input.json

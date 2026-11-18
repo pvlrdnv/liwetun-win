@@ -1,6 +1,6 @@
 # Development checkpoint — 2026-11-18
 
-## Fresh adapter policy 2 — actual factory race control PASS, SDK build pending
+## Fresh adapter policy 2 — factory and SDK build PASS, network checks pending
 
 The original signed Wintun supports a useful refusal boundary: a valid physical
 alias of `MAX_ADAPTER_NAME-1` characters fills its duplicate-name suffix buffer.
@@ -25,7 +25,14 @@ on `ba80aa9`. The exact post-preflight insertion now refuses with **no foreign
 alias change and no new handle accepted**. Retained logical owner, alias-only/
 GUID-only collisions, post-create refusal cleanup, four concurrent creations and
 exact adapter/route/DNS restoration also pass. [Closed native/factory reports](evidence/adapter-policy2-44296517432.json).
-Full SDK DLL/ABI build **44296517605** is still in progress. Obsolete policy-1
+Full SDK DLL/ABI build **44296517605 PASS** on `ba80aa9`, including policy 2,
+all preceding ABI/null guards, exact source/header/profile/recipe digests and
+original Wintun. Fresh DLL SHA256:
+`7be8d9cf124a903dc9d7b1541160af2e1e4324b657b41e02f2da8dcba579b311`.
+All 20 downloaded packaged notice files match their inventory; 15 package sets
+match archived bodies and 13 still require recorded source supplements. This is
+integrity/closure evidence, not redistribution approval.
+[Build receipt](evidence/sdk-fresh2-44296517605.json). Obsolete policy-1
 build 44294099414 completed **cancelled**; no policy-1 DLL/network qualification.
 
 Prepared CI observer support for the private 127-character alias and a separate
@@ -39,8 +46,12 @@ execution is still pending; no ordinary runtime pin or installer change.
 A separate read-only Windows check now exercises the actual PowerShell/.NET
 pattern and both clean-host observer paths without starting SDK/driver/session;
 **[PASS 44297839007](evidence/adapter-discovery-44297839007.json)** on `2084cab`, including strict newline/length boundaries,
-with no network configuration change. The network workflow's fresh-runtime option is being
-prepared locally and will stay uncommitted until the SDK binary receipt exists.
+with no network configuration change. The network workflow now has a separate
+default-OFF fresh-runtime option backed by `native/sdk/runtime-fresh.json` and
+that successful SDK receipt. Its explicit provenance guard also binds the
+same-source actual factory receipt and all closed qualification gates. Ordinary
+runtime pins and package selection remain unchanged. Actual fresh H2/H3 network
+execution is next; no SDK process-start/ABI marker is treated as working traffic.
 
 Added an explicit CI-only runtime verifier: successful exact SDK run/head,
 profile/ABI/header digests, original Wintun bytes, same-source actual factory
@@ -48,6 +59,12 @@ receipt, and literal-false admission/qualification gates are all required.
 It cannot promote a candidate from a successful process start or stale receipt.
 **Nine synthetic provenance/refusal tests PASS** locally. Updated the optional
 SDK modification notice; original upstream license bodies remain unchanged.
+Notice integrity check **PASS: 38 SDK + 22 Rust texts**, release approval false.
+Legacy owned-probe SDK H2/HTTPS regression after the observer change **PASS
+44298655329** on `cf7ae52`: actual current-epoch TLS/nonce/path proof (497 TX /
+1703 RX), disarm and exact route/DNS/adapter/WFP restoration without watchdog.
+[Closed reports](evidence/adapter-observer-h2-44298655329.json). This run does not
+qualify the fresh SDK, Windows desktops or an owner installation.
 
 This is a pinned-original-API behavior boundary, not an atomic name reservation
 or permission to use another Wintun version. Original DLL/hash/signature and
