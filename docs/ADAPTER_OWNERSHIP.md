@@ -1,8 +1,9 @@
 # Adapter ownership release gate
 
 Status: unsafe adoption reproduced in bounded disposable CI (44255030943).
-A first visible-alias refusal barrier is implemented in the service; Windows
-qualification pending. Complete SDK ownership/race protection is not implemented.
+The service pre-existing-name refusal barrier is qualified on Windows CI for
+visible and renamed aliases (44257822140 / 44257826925). Complete SDK ownership /
+creation-race protection is not implemented.
 The existing held-handle export proves attachment identity, not fresh creation
 or authority to configure a pre-existing adapter. HTTPS endpoint correlation
 does not close this independent release gate.
@@ -125,3 +126,22 @@ Primary sources inspected for this gate:
 
 The SDK factory check/start interval remains non-atomic. Pre-existing-name refusal
 is a partial mitigation and is not fresh-creation or collision/race qualification.
+
+## Qualified pre-existing-name refusal
+
+On source `d3c75c1`, [visible and renamed-alias cases both PASS](evidence/adapter-name-refusal-44257822140.json).
+Start returned CoreFailure before any observed core state or endpoint payload,
+and the retained fixture's IPv4/MTU/metric/alias markers remained intact before
+and after Stop. The fixture alone removed its own adapter. Exact network/WFP
+restoration passed without watchdog action. The earlier transposed property-key
+byte and its failed renamed case remain documented in STATUS.md.
+
+[Healthy H2/H3 HTTPS regression PASS](evidence/adapter-guard-https-44257831987.json),
+and [updated ordinary installer PASS](evidence/package-adapter-guard-44257841904.json)
+with all seven test flags OFF. These confirm this service barrier's focused
+behavior; they do not reclassify the original SDK factory as ownership-safe.
+
+Next SDK work must provide fresh creation authority through configuration and
+teardown, including internal recovery. The interval between these read-only
+checks and SDK creation remains non-atomic. No complete ownership, creation-race,
+desktop or release qualification is claimed.

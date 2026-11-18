@@ -1,13 +1,13 @@
 # Development checkpoint — 2026-11-18
 
-## Latest checkpoint — service-owned HTTPS CI complete, release gates open
+## Latest checkpoint — pre-existing-name refusal qualified, full ownership open
 
 Focused service-owned TLS 1.2/HTTP qualification now passes **16 disposable
 Server 2022 cases**: positive, wrong nonce, untrusted certificate, deadline,
 receive cancellation, actual migration, actual epoch change and local bypass,
 each over H2 and H3. [Aggregate receipt](evidence/owned-https-requalification.json)
 links every immutable source/run/report with its SHA256. The separate 16-case
-loopback TLS matrix also passed. **59 local Python fixture checks PASS**.
+loopback TLS matrix also passed. **60 local Python fixture checks PASS**.
 
 All live HTTPS cases use the same pinned owned-probe SDK binary. Valid replies
 after migration/local delivery remain unqualified; changed epochs discard old
@@ -26,72 +26,40 @@ unchanged. No owner installation or testing action is needed for this CI stage.
 
 ## Current adapter ownership work
 
-Actual unsafe adoption is **reproduced** on disposable CI 44255030943, source
-`9e95c07`, using the pinned aggregate SDK 44038398682 with NO_GLOBAL_ROUTES=ON.
-The separate fixture retained its creation handle while SDK changed IPv4, MTU
-and metric on that same adapter. Changes remained after SDK Stop. Only the
-fixture's own adapter was then removed; exact network/WFP restoration passed
-without watchdog intervention. No identifiers, addresses or raw logs were
-exported. [Closed evidence](evidence/adapter-owner-reproduced-44255030943.json).
-This proves the release blocker; it does not qualify ownership safety.
+Actual SDK unsafe adoption was reproduced in bounded disposable CI 44255030943,
+source `9e95c07`: it changed IPv4, MTU and metric on a separate fixture's retained
+adapter, and those changes remained after SDK Stop. Only that fixture's adapter
+was then removed; exact network/WFP restoration passed without watchdog action.
+[Reproduction](evidence/adapter-owner-reproduced-44255030943.json). The first
+normal-routing attempt 44252986740 ended cancelled without artifacts and remains
+inconclusive. No owner-device or production experiment was performed.
 
-The first normal-routing attempt 44252986740 ended cancelled without artifacts;
-its reproduction and cleanup remain unqualified. The successful bounded audit
-needed no global routes or system DNS changes. Closed numeric checkpoints
-retained native and parent stages. Normal runtime/package pins remain unchanged.
+The service now performs bounded, read-only OS checks before accepting Start
+and again immediately before calling the SDK. A pre-existing visible reserved
+alias, internal Wintun name or failed/malformed/oversized observation refuses
+Start using the existing CoreFailure reply. No existing adapter is opened or
+configured by the guard. Windows qualification **PASS** on `d3c75c1`: visible
+name 44257822140 and renamed-alias/internal-name 44257826925. Both returned code 6,
+disconnected state and unobserved core before SDK start; retained fixture markers
+were unchanged before/after Stop, with zero endpoint payload, owner-only fixture
+removal and exact network/WFP restoration without watchdog intervention.
+[Full refusal reports](evidence/adapter-name-refusal-44257822140.json).
 
-A first service refusal barrier is now implemented: query the OS interface table
-before accepting Start and again immediately before SDK start, refusing a
-pre-existing reserved alias or failed/oversized/ambiguous observation. No existing
-adapter is opened or configured by this gate. The existing typed CoreFailure
-response is used; public IPC and GUI capabilities are unchanged. **59 local
-Python fixture checks PASS**; syntax/YAML/diff PASS. Actual Windows refusal,
-healthy H2/H3 regression and updated package qualification are pending.
+Healthy service-owned HTTPS H2/H3 **PASS** (44257831987 / 44257836784) on the same
+source: exact current-socket TLS/nonce/path proof, disarm and full cleanup.
+[Regression](evidence/adapter-guard-https-44257831987.json). Updated ordinary
+package **PASS** (44257841904), all 14 installer groups, seven test flags OFF,
+medium-integrity GUI, original Wintun and four preserved input receipt hashes.
+[Package](evidence/package-adapter-guard-44257841904.json). Signatures are still
+ephemeral CI only; no owner package or desktop/release qualification.
+**60 local Python fixture checks**, Python/YAML and diff checks PASS.
 
-This alias preflight is **not complete ownership or race protection**. An adapter
-whose Wintun internal name differs from its visible alias and a creation race
-remain SDK/factory work, with separate guards/binary/network qualification
-required. Production HTTPS/DNS capability and ownership/release admission remain
-false. LikeWeb and the owner's device/network/trust were not modified.
-
-First service-barrier attempts on `8fdddb6` (44256254164 / 44256260395 /
-44256266011 / 44256271476) stopped at compilation: the new translation unit
-lacked explicit Winsock IP/NetIO declarations. [Closed receipt](evidence/adapter-admission-compile-44256254164.json).
-No driver fixture/tunnel started in those attempts. Explicit headers are added,
-and a fast standalone clean-host OS-binding check is added before further full
-network/package runs. The refusal barrier is also extended read-only to the
-internal Wintun device-name property, since renaming the visible alias alone
-must not hide a pre-existing SDK open-by-name target. SetupAPI queries are
-bounded and errors refuse Start; no adapter is opened, renamed or configured by
-the production guard. API compilation/clean-host qualification is pending.
-
-Read-only name admission OS binding/clean-host preflight **PASS** on Windows
-(44256771327), source `a2ae82f`, with existing socket/HTTP/Schannel contracts.
-No adapter/TUN or network configuration was created/changed by that contract.
-[Receipt](evidence/adapter-admission-contract-44256771327.json).
-The service checks both visible aliases and the internal Wintun device-name
-property via bounded read-only SetupAPI enumeration. No Wintun open operation is
-used by the gate. Absent properties on other network devices are expected;
-failed/malformed/oversized observation refuses Start.
-
-The existing-adapter fixture gains a `renamed` variant: CI renames only its own
-retained adapter, confirms unchanged IP/MTU/metric markers, then requires Start
-refusal even though the visible reserved alias is now absent. Only a closed
-rename confirmation is exported. **60 local Python fixture checks PASS**;
-Windows visible/renamed refusal, healthy H2/H3 and updated package runs pending.
-Full fresh-identity/creation-race protection still requires SDK work; no ownership
-or release gate is marked complete by this preflight.
-
-On `a018801`, visible-alias refusal 44257161489, healthy service-owned HTTPS
-H2/H3 44257179946 / 44257185247 and package 44257190700 PASS. Renamed fixture
-44257171911 FAIL: its name rebase/markers were valid, but Start was accepted.
-The guard's copied Wintun property GUID had a transposed byte (E7 instead of
-7E), so its private-name lookup did not find the target. The byte is corrected
-against the original Wintun source. [Original closed report](evidence/adapter-guard-renamed-44257171911-failed.json).
-That failed case restored the final network baseline and did not trigger the
-watchdog, but did not reach final WFP qualification. Current-source renamed /
-visible refusal and healthy/package regressions are pending. Complete adapter
-ownership/race qualification remains false.
+This is a **pre-existing-name refusal barrier**, not complete SDK ownership or
+creation-race protection. SDK recovery/creation must enforce fresh per-attempt
+identity before configuration, with a separate guarded source/binary profile
+and foreign-adapter/race controls. The original SDK binary remains unchanged;
+full ownership, production health, trusted distribution and Windows 10/11
+acceptance remain open. LikeWeb and the owner's device/network/trust are unchanged.
 
 ## Health development record
 
