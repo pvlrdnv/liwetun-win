@@ -176,6 +176,13 @@ try {
         $privacy = @(& $client --sdk-privacy 2>&1)
         if ($LASTEXITCODE -ne 0 -or $privacy.Count -ne 1 -or $privacy[0].ToString().Trim() -ne 'privacy_profile_verified') { throw 'SDK raw logging suppression failed' }
         $checks.Add('sdk_canary_no_raw_logs_or_files')
+        $problemProbe = Join-Path $Build 'liwetun_problem_probe.exe'
+        if ($cache -contains 'LIWETUN_BUILD_PROBLEM_PROBE:BOOL=ON') {
+            if (!(Test-Path $problemProbe)) { throw 'Problem-node CI fixture missing' }
+            python tools/service/problem_node_service_fixture.py --client $client --helper $problemProbe --driver (Join-Path $root 'wintun.dll') --uri-file build/service-local-uri.txt
+            if ($LASTEXITCODE -ne 0) { throw 'Problem-node service refusal failed; see closed receipt' }
+            $checks.Add('problem_wintun_start_refused_with_retained_node_preserved')
+        }
         $driver = (& $client --driver-cycle | ConvertFrom-Json)
         if ($LASTEXITCODE -ne 0 -or !$driver.adapter_created -or !$driver.adapter_removed) { throw 'Actual Wintun adapter lifecycle failed' }
         $checks.Add('real_wintun_create_close')

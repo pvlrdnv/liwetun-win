@@ -35,6 +35,16 @@ Prepared an [upstream report draft](UPSTREAM_WINTUN_REPORT_DRAFT.md), not sent t
 any external recipient. Original signed DLL bytes and application license remain
 unchanged; no in-memory patch, global mutex hold or unrelated device repair.
 
+Prepared an additional end-to-end signed-service refusal control. A separate
+CI-only helper holds its own disabled node while the trusted installed client
+requests Start/query/Stop; closed samples and private snapshots must preserve
+the node/configuration until its creator restores and closes it. The helper is
+a separate executable behind default-OFF LIWETUN_BUILD_PROBLEM_PROBE, never
+linked into the service/GUI or copied into the installed payload. The focused
+service workflow enables it and batches it with the existing lifecycle checks.
+Two new observation/privacy contracts and **95 full local service-fixture tests
+PASS**; YAML/whitespace checks PASS. Actual Windows IPC execution is pending.
+
 ## Public visibility verified; private CI allocation blocked
 
 Owner requested public visibility after the private Actions included allowance

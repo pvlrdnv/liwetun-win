@@ -40,6 +40,9 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
       - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
         with:
           arch: x64
@@ -47,11 +50,13 @@ jobs:
         run: rustup toolchain install 1.95.0 --profile minimal
       - name: Build actual service and adversarial client
         run: |
+          python -m unittest discover -s tools/service -p 'test_problem_node_service_fixture.py'
+          if ($LASTEXITCODE -ne 0) { throw 'Problem-node observation contracts failed' }
           if ($env:TRAFFIC_METRICS -eq 'true' -and ($env:SOURCE_PINNED -ne 'true' -or !$env:SDK_RUN_ID)) { throw 'Traffic SDK requires immutable pins and its reviewed run' }
           if ($env:SOURCE_PINNED -eq 'true' -and !$env:SDK_RUN_ID) { throw 'Candidate qualification requires pinned SDK' }
           if ($env:PRODUCTION_LIFECYCLE -eq 'true' -and !$env:SDK_RUN_ID) { throw 'Production lifecycle requires pinned SDK' }
           $noGlobalRoutes = if ($env:PRODUCTION_LIFECYCLE -eq 'true') { 'OFF' } else { 'ON' }
-          cmake -S native/service -B build/service -A x64 "-DLIWETUN_TEST_NO_GLOBAL_ROUTES=$noGlobalRoutes" -DLIWETUN_TEST_TUN_NETWORK=OFF
+          cmake -S native/service -B build/service -A x64 "-DLIWETUN_TEST_NO_GLOBAL_ROUTES=$noGlobalRoutes" -DLIWETUN_TEST_TUN_NETWORK=OFF -DLIWETUN_BUILD_PROBLEM_PROBE=ON
           if ($LASTEXITCODE -ne 0) { throw 'Service configure failed' }
           cmake --build build/service --config Release --parallel 2
           if ($LASTEXITCODE -ne 0) { throw 'Service build failed' }
