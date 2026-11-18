@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "file": "lib/src/tunnel.rs",
+  "input_sha256": "fd0006a794269e28b161a507b05a63ca312f0d507009a7ce273edcf8cf6b9d8b",
+  "output_sha256": "2d731c4298368c32d165e23d473f63cc2522e24f9ab0e2059233d1afe9b498ae",
+  "scope": "disposable_endpoint_shutdown_before_eof_hypothesis",
+  "requires_profile": "endpoint_shutdown_trace",
+  "production_admitted": false,
+  "release_ready": false
+}

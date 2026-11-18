@@ -1,5 +1,25 @@
 # Development checkpoint — 2026-11-18
 
+## H3 trace narrows the failed control; priority hypothesis pending
+
+On `d024d71`, traced H3 fresh2 epoch **44321240113 FAIL** with close-attempt
+counter **0**, current epoch/flags 15 and request deadline; no HTTP/health success.
+Repeated fresh2 epoch **44321248954 PASS** and legacy SDK **44321257121 PASS**
+both observed one accepted QUIC close and successful final flush, followed by
+actual changed SDK epoch/flags 129/null proof counts. Positive **44321263619**
+and deadline **44321273430 PASS**. All restored route/DNS/adapter baselines without
+watchdog; final WFP qualification is not claimed for the failed case.
+[All five reports](evidence/trace-h3-comparison-44321240113.json).
+This is correlation, not proof of every failure's cause or close delivery.
+
+Source inference: the unbiased `Tunnel.listen` select may choose ready downstream
+EOF instead of the simultaneously submitted shutdown notification, dropping its
+completion guard without invoking downstream graceful close. Prepared a separate
+default-OFF priority profile (`biased;`, shutdown branch first), after the traced
+profile. Five source/anchor/path/output guard tests PASS; actual compilation and
+H3 repeatability checks are pending. Client SDK, release package and prior pins
+are unchanged. Do not reclassify earlier failed controls as passed.
+
 ## Retained fixture during endpoint recovery — H2/H3 PASS
 
 Extended the default-OFF preserved-adapter control to ordinary IPv4 endpoint
