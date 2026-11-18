@@ -1,6 +1,6 @@
 # Development checkpoint — 2026-11-18
 
-## Problem-device lifecycle — isolated experiment pending
+## Problem-device lifecycle — CI unavailable before checkout
 
 Source audit of original Wintun 0.14.1 confirms global cleanup skips healthy
 nodes but attempts removal of problem nodes, queued by Create/Close. A new
@@ -13,7 +13,13 @@ session, external device selector or exported identifiers. Parent snapshots stay
 private and final adapter/route/DNS baselines are required. Experiment completion
 and actual preservation have separate fields; a green harness cannot qualify
 ownership if foreign preservation fails. YAML/whitespace checks PASS locally;
-actual Windows compilation and outcome are pending. No owner-device changes.
+actual Windows compilation and outcome are pending. **44349616522 did not start
+any steps**, including checkout: GitHub's annotation reports account billing or
+Actions spending-limit unavailability. This is an infrastructure refusal, not
+a compile/native failure or preservation result. [Closed no-execution receipt](evidence/problem-device-not-started-44349616522.json).
+Owner was asked to restore Actions availability; no billing changes or additional
+runner retries are attempted while that answer is pending. Local source review
+and YAML/whitespace checks continue; no owner-device changes.
 
 ## Current focused fresh2 HTTPS matrix — 16/16 PASS
 

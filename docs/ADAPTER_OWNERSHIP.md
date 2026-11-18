@@ -277,3 +277,19 @@ do not establish continuous preservation during the outage.
 This does not exercise active foreign traffic or disabled/problem devices.
 Pinned Wintun global orphan cleanup behavior and general coexistence remain open;
 the control cannot promote full ownership or package admission.
+
+## Disabled retained node — standalone lifecycle experiment prepared
+
+Original [0.14.1 source](https://git.zx2c4.com/wintun/tree/api/adapter.c?h=0.14.1) queues global orphan cleanup on Create/Close and skips
+nodes only when their status has no `DN_HAS_PROBLEM` bit. Source risk is distinct
+from the healthy retained fixtures above. The standalone problem-device fixture
+creates a policy-2 adapter, verifies actual identity, locates only that GUID's
+PnP node and disables only that node while retaining its creator handle. It
+then creates/closes another policy-2 adapter and samples the retained node before
+creator cleanup. It exports no identities and cannot select an external device.
+Experiment completion and preservation are separate fields; a completed unsafe
+reproduction must not be called ownership-safe.
+
+Actual run **44349616522 never reached checkout** because GitHub Actions was
+unavailable; see [closed receipt](evidence/problem-device-not-started-44349616522.json).
+Compilation, actual disable/cleanup behavior and complete ownership remain unknown.
