@@ -62,6 +62,11 @@ Start before SDK adapter creation. The paired control proves healthy acceptance,
 disabled refusal with zero Create calls, unchanged retained disabled node, and
 healthy acceptance after its creator restores it.
 
+An [actual signed-service control](evidence/problem-node-service-44358195161.json)
+also verified idle/unknown-core-state Start refusal and retained-node preservation
+through query/Stop, followed by creator-only cleanup. This is a preexisting-node
+refusal qualification, not a global-cleanup repair.
+
 This does not prevent a node from becoming problematic later while Create/Close
 cleanup is queued. Full lifecycle ownership and release admission remain closed.
 Holding a system-wide Wintun mutex throughout a connection, patching a loaded

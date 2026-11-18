@@ -308,7 +308,12 @@ The paired control **PASS 44355747535** on `7977c05`: raw removal reproduced,
 guarded disabled retained node unchanged with zero candidate Create calls,
 healthy fixture accepted before/after creator restoration, all final baselines
 restored. [Both original reports](evidence/adapter-problem-guard-44355747535.json).
-This tests the actual read-only predicate used at Start and before SDK init;
-it does not establish end-to-end service problem-node refusal. Later state
-changes/queued cleanup remain outside this mitigation; no full ownership or
-runtime admission follows. The original signed Wintun bytes stay unchanged.
+The separate end-to-end signed-service control **44358195161 PASS** on `79ecf89`:
+actual signed Start refused with idle state/unknown core state; the retained
+disabled node and held configuration stayed unchanged after refusal and Stop;
+only its creator restored/closed it. Final adapter/route/DNS baselines restored,
+with **20 service checks** including subsequent SDK lifecycle/cleanup.
+[Original reports](evidence/problem-node-service-44358195161.json).
+This qualifies preexisting problem-node service refusal. Later state changes/
+queued cleanup remain outside this mitigation; no full ownership or runtime
+admission follows. The original signed Wintun bytes stay unchanged.
