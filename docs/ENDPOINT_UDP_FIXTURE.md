@@ -81,3 +81,10 @@ to two seconds; timeout exits nonzero. Input/output hashes and anchors are pinne
 in `tools/service/endpoint-shutdown-inputs.json`. Existing UDP/reader candidate
 binary pins remain immutable. Build success alone cannot qualify QUIC shutdown
 or SDK epoch invalidation; actual controlled Windows comparisons remain required.
+
+The candidate [compiled and passed its Linux two-flow UDP control](evidence/endpoint-shutdown-build-44308610276.json)
+in 44308610276, source `1e12d47`. Its binary/provenance are separately pinned in
+`tools/service/endpoint-runtime-shutdown.json`, with actual shutdown/epoch and
+production admission still false. Windows consumption requires explicit H3,
+owned-probe, reader-wakeup and shutdown flags; omitting a prerequisite refuses
+before network setup. Existing original/UDP/reader runtime pins are retained.

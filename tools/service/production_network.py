@@ -528,6 +528,7 @@ def main():
               'endpoint_udp_relay': 'wsl_local',
               'endpoint_diagnostic_source_fix': bool(os.environ.get('LIWETUN_ENDPOINT_FIXTURE_RUN')),
               'endpoint_reader_wakeup_candidate': os.environ.get('LIWETUN_ENDPOINT_STREAM_CLOSE') == 'true',
+              'endpoint_shutdown_completion_candidate': os.environ.get('LIWETUN_ENDPOINT_SHUTDOWN') == 'true',
               'full_matrix_qualified': False, 'release_ready': False}
     if ownership_audit:
         result.update(mode='preexisting_adapter_name_refusal',

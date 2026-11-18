@@ -1,5 +1,28 @@
 # Development checkpoint — 2026-11-18
 
+## Fresh2 ordinary controls PASS; separate H3 shutdown fixture built
+
+All eight additional ordinary cases **PASS on `1e12d47`**, health worker OFF:
+H2 lease death 44308616927 / owned-service crash 44308617038; H2 wrong CA
+44308616917 / wrong auth 44308616924; actual endpoint recovery without a new
+Start H2 44308621906 / H3 44308622038; synthetic IPv6 + AAAA H2 44308622607 /
+H3 44308622696. Every case restored route/DNS/adapter/WFP baselines without
+watchdog intervention. [Eight closed reports](evidence/fresh2-faults-44308616917.json).
+Together with ordinary H2/H3 positives below, this is ten focused Server 2022
+controls with the same fresh2 SDK. Native test attachment fence remains ON.
+Synthetic IPv6 exits through IPv4 and DNS uses IPv4 transport; no native IPv6
+Internet/DNS wire, desktop, all-flags-OFF package or full ownership qualification.
+
+Shutdown-completion endpoint candidate **build/UDP PASS 44308610276** on
+`1e12d47`: source/patch/reader/shutdown profile and binary hashes verified,
+two authenticated TLS/UDP exchanges passed on Linux. Binary SHA256
+`c6c4b7b0805502cfa0871ac4ffc860cb007b6da91a6224d971bf8195dfcff250`.
+[Build receipt](evidence/endpoint-shutdown-build-44308610276.json). Added a
+separate default-OFF Windows fixture selection with immutable runtime pin and
+all prior profile guards; existing endpoint pins stay unchanged. Actual H3
+shutdown/epoch behavior is still unqualified and the earlier 15/16 matrix remains
+partial. No client SDK/policy/binary, normal package or production server change.
+
 ## Fresh2 focused HTTPS matrix — 15/16 PASS, H3 epoch control open
 
 On `9f27da3`, real fresh2 H2/H3 positives, wrong nonce, untrusted certificate,
