@@ -261,8 +261,13 @@ wrong auth 44316710617, lease death 44316718816, ordinary H3 HTTPS/DNS and Stop
 44316727886. All retained observations and creator cleanup passed, with full
 global/WFP restoration and no watchdog. Both refusals sent no endpoint payload
 and left no SDK adapter. [Original reports](evidence/preserved-faults-44316702438.json).
-The fixture rejects service-crash, endpoint-restart and IPv6 combinations;
-those preservation cases have not been qualified.
+The later service-crash extension uses the already authenticated retained process
+and WFP observer, requiring process death, SDK-adapter absence and restored WFP
+in two consecutive observations before creator cleanup. Actual H2 **44317597838** /
+H3 **44317606215 PASS** on `dce5e20`: ordinary HTTPS/DNS, unchanged foreign
+configuration across owned-service death, creator-only fixture removal and full
+restoration, without watchdog. [Original reports](evidence/preserved-crash-44317597838.json).
+The fixture still rejects endpoint-restart and IPv6 preservation combinations.
 
 This does not exercise active foreign traffic or disabled/problem devices.
 Pinned Wintun global orphan cleanup behavior and general coexistence remain open;

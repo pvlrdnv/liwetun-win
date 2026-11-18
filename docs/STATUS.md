@@ -29,16 +29,21 @@ lease death forced only the owned client process. Retained markers/DNS/non-link-
 routes stayed unchanged before and after SDK teardown in every case, with
 creator-only fixture removal, full global/WFP restoration and no watchdog.
 [Four original report sets](evidence/preserved-faults-44316702438.json).
-The service-crash/endpoint-restart/IPv6 combinations remain refused by this
-fixture's input guard. These six preservation cases and two refusal regressions
+At that checkpoint, service-crash/endpoint-restart/IPv6 combinations were refused
+by this fixture's input guard. These six preservation cases and two refusal regressions
 do not qualify full adapter ownership, an active competing tunnel or desktop use.
 
-Prepared an additional default-OFF preserved-fixture service-crash case. It uses
+Added an additional default-OFF preserved-fixture service-crash case. It uses
 the already retained trusted service process/WFP observer, requires process death,
 SDK-adapter absence and WFP baseline in two consecutive observations before
 creator cleanup; no post-crash idle service response is fabricated. Six focused
-local preservation tests PASS. Actual H2/H3 crash execution is pending; recovery
-and IPv6 preservation remain excluded.
+local preservation tests and **79 full local service-fixture tests PASS**.
+Actual H2 **44317597838** / H3 **44317606215 PASS** on `dce5e20`: ordinary HTTPS/DNS,
+forced owned-service death, retained-process-ended observation, unchanged foreign
+markers/DNS/non-link-local routes after SDK teardown, creator-only fixture removal,
+full global/WFP restoration and no watchdog. [Original reports](evidence/preserved-crash-44317597838.json).
+This makes eight focused retained-fixture preservation cases plus two reserved-name
+refusal regressions; all ten PASS. Recovery and IPv6 preservation remain excluded.
 
 ## Shutdown comparison — epoch invalidation observed, repeatability still open
 
