@@ -24,6 +24,27 @@ trusted signing/distribution and separate Windows 10/11 desktop acceptance remai
 open. LikeWeb, production and the owner's corporate tunnel/network/trust remain
 unchanged. No owner installation or testing action is needed for this CI stage.
 
+## Current adapter ownership work
+
+A disposable reproduction fixture is implemented, without any shipped-service
+or SDK change. Its separate signed CI client creates an adapter only after exact
+alias absence, retains its original creation handle and sets private known MTU /
+metric markers. The existing SDK is then started normally against the synthetic
+H2 endpoint. The oracle requires changes to IPv4 addresses, MTU and metric on
+that same retained adapter, not just process/core start. It then requires SDK
+Stop/teardown before sampling and closing only the fixture's own adapter.
+
+Only closed booleans/counts cross this fixture IPC; aliases, addresses, interface
+IDs, driver/core output and credentials are never exported. The pinned signed
+Wintun hash and protected helper image are verified before creation. Baseline
+network/WFP restoration and no watchdog intervention remain mandatory. Success
+means **unsafe adoption reproduced**, with `adapter_ownership_qualified=false`,
+not ownership safety or release acceptance. The mode is explicit and CI-only;
+ordinary package flags, runtime pins, GUI and service commands are unchanged.
+**56 local Python checks PASS**; syntax/YAML/diff checks PASS. Windows helper
+compilation and actual reproduction are pending. No local driver/service,
+network, trust or LikeWeb changes.
+
 ## Health development record
 
 Next negative prerequisite: `owned_probe_mode=wrong-nonce` now returns an exact

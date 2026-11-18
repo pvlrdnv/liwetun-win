@@ -196,9 +196,14 @@ try {
                 throw 'Real TUN network qualification failed; see safe network.json'
             }
             if ($ProductionTraffic) {
-                if ($env:LIWETUN_PRODUCTION_PROFILE -in @('wrong-auth','wrong-ca')) { $checks.Add('production_single_profile_refusal_and_cleanup') }
-                else { $checks.Add('production_single_unbound_https_dns_and_cleanup') }
-                $lifecycle = @{verified_by='production_single_unbound_ipv4_fixture';full_matrix_qualified=$false}
+                if ($env:LIWETUN_ADAPTER_OWNERSHIP_AUDIT -eq 'true') {
+                    $checks.Add('retained_fixture_adapter_interference_reproduced_not_safe')
+                    $lifecycle = @{verified_by='retained_fixture_adapter_interference_reproduction';adapter_ownership_qualified=$false;internet_delivery_tested=$false;full_matrix_qualified=$false}
+                } else {
+                    if ($env:LIWETUN_PRODUCTION_PROFILE -in @('wrong-auth','wrong-ca')) { $checks.Add('production_single_profile_refusal_and_cleanup') }
+                    else { $checks.Add('production_single_unbound_https_dns_and_cleanup') }
+                    $lifecycle = @{verified_by='production_single_unbound_ipv4_fixture';full_matrix_qualified=$false}
+                }
             } else {
                 $checks.Add('tun_https_dns_transport_and_cleanup')
                 $lifecycle = @{verified_by='live_endpoint_network_cases';refused_endpoint_smoke='not_run'}

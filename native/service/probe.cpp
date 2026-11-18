@@ -11,6 +11,7 @@
 #include <iphlpapi.h>
 
 using namespace liwetun;
+int RunAdapterOwnerFixture();
 std::optional<bool> AdapterPresent(const wchar_t* alias) {
   MIB_IF_TABLE2* table = nullptr;
   if (GetIfTable2(&table) != NO_ERROR) return std::nullopt;
@@ -40,6 +41,7 @@ void PrintTraffic(const TrafficReply& data) {
 }
 int wmain(int argc, wchar_t** argv) {
   const std::wstring mode = argc >= 2 ? argv[1] : L"";
+  if (mode == L"--adapter-owner-fixture" && argc == 2) return RunAdapterOwnerFixture();
   if (mode == L"--traffic-watch" && argc == 2) {
     wchar_t disposable[8]{};
     if (GetEnvironmentVariableW(L"GITHUB_ACTIONS", disposable, 8) != 4 || std::wstring(disposable) != L"true") return 70;

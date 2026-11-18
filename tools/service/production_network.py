@@ -451,16 +451,21 @@ def main():
     traffic_required = os.environ.get('TRAFFIC_METRICS') == 'true'
     attachment_guard = os.environ.get('ATTACHED_TUN') == 'true'
     owned_probe = os.environ.get('OWNED_PROBE') == 'true'
+    ownership_audit = os.environ.get('LIWETUN_ADAPTER_OWNERSHIP_AUDIT') == 'true'
     owned_probe_mode = os.environ.get('LIWETUN_OWNED_PROBE_MODE', 'echo')
     if owned_probe_mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce', 'migration', 'epoch-change', 'bypass', *HTTPS_MODES] or (owned_probe_mode != 'echo' and not owned_probe):
         raise RuntimeError('invalid_owned_probe_mode')
     cancel_probe = owned_probe and owned_probe_mode == 'cancel'
-    negative_probe = owned_probe and owned_probe_mode != 'echo'
+    negative_probe = (owned_probe and owned_probe_mode != 'echo') or ownership_audit
     negative_key = {'cancel': 'owned_probe_cancellation', 'deadline': 'owned_probe_deadline',
                     'wrong-nonce': 'owned_probe_wrong_nonce', 'migration': 'owned_probe_migration',
                     'epoch-change': 'owned_probe_epoch_change', 'bypass': 'owned_probe_bypass'}.get(owned_probe_mode)
     if owned_probe_mode in HTTPS_MODES:
         negative_key = 'owned_https'
+    if ownership_audit:
+        if owned_probe or attachment_guard or not traffic_required:
+            raise RuntimeError('invalid_adapter_owner_audit')
+        negative_key = 'adapter_ownership_audit'
     if owned_probe and not attachment_guard:
         raise RuntimeError('invalid_owned_probe_mode')
     if attachment_guard and not traffic_required:
@@ -495,6 +500,8 @@ def main():
         raise RuntimeError('invalid_traffic_pattern')
     if owned_probe and (profile != 'valid' or family != 'ipv4' or termination != 'stop' or traffic_pattern != 'normal'):
         raise RuntimeError('invalid_owned_probe_mode')
+    if ownership_audit and (profile != 'valid' or family != 'ipv4' or termination != 'stop' or traffic_pattern != 'normal'):
+        raise RuntimeError('invalid_adapter_owner_audit')
     synthetic_ipv6 = family == 'synthetic-ipv6'
     report = ROOT / 'build/service-evidence/production-network.json'
     report.parent.mkdir(exist_ok=True, parents=True)
@@ -510,12 +517,17 @@ def main():
               'owned_bypass_ci_enabled': owned_probe and owned_probe_mode in ['bypass', 'https-bypass'],
               'owned_https_ci_enabled': owned_probe and owned_probe_mode in HTTPS_MODES,
               'owned_probe_mode': owned_probe_mode,
+              'adapter_ownership_audit_enabled': ownership_audit,
+              'adapter_ownership_qualified': False,
               'attachment_context_proves_endpoint_traversal': False,
               'server_https_egress_bound_physical': True,
               'endpoint_udp_relay': 'wsl_local',
               'endpoint_diagnostic_source_fix': bool(os.environ.get('LIWETUN_ENDPOINT_FIXTURE_RUN')),
               'endpoint_reader_wakeup_candidate': os.environ.get('LIWETUN_ENDPOINT_STREAM_CLOSE') == 'true',
               'full_matrix_qualified': False, 'release_ready': False}
+    if ownership_audit:
+        result.update(mode='retained_fixture_adapter_interference_reproduction',
+                      internet_delivery_tested=False, https_health_qualified=False, dns_health_qualified=False)
     if synthetic_ipv6:
         result.update(mode='single_production_synthetic_ipv6_nat64',
                       ipv6_fixture_exit_translates_to_ipv4=True,
@@ -528,6 +540,7 @@ def main():
     stage = 'fixture_preparation'
     endpoint = forwarder = session = watchdog = wfp_watch = traffic_watch = local_receiver = None
     https_roots = None
+    foreign_owner = None
     restored = False
     try:
         if owned_probe_mode in HTTPS_MODES:
@@ -605,6 +618,17 @@ def main():
         if watchdog.receive() != 'ready':
             raise RuntimeError('watchdog_not_ready')
         before = totals()
+        if ownership_audit:
+            stage = 'retained_fixture_adapter'
+            foreign_owner = Child([str(client), '--adapter-owner-fixture'])
+            ready = json.loads(foreign_owner.receive())
+            from adapter_ownership_fixture import pristine, validate_ready
+            validate_ready(ready)
+            baseline_adapter = foreign_owner.command('sample')
+            if not pristine(baseline_adapter):
+                raise RuntimeError('adapter_owner_fixture_not_ready')
+            result['adapter_owner_fixture_ready'] = ready
+            result['adapter_owner_fixture_baseline'] = baseline_adapter
         stage = 'production_session'
         profile_file = protocol if profile == 'valid' else profile
         session = Child([str(client), '--network-session', str(directory / (profile_file + '.uri'))])
@@ -613,7 +637,24 @@ def main():
         if owned_probe_mode in ['bypass', 'https-bypass']:
             stage = 'owned_bypass_receiver_ready'
             local_receiver = owned_bypass_receiver(directory / 'owned-https' if owned_probe_mode == 'https-bypass' else None)
-        if cancel_probe:
+        if ownership_audit:
+            stage = 'adapter_ownership_reproduction'
+            from adapter_ownership_fixture import observe_reproduction
+            result['adapter_ownership_observation'] = {}
+            result['adapter_ownership_audit'] = observe_reproduction(session, foreign_owner, client,
+                                                                    result['adapter_ownership_observation'])
+            session.close()
+            session = None
+            removed = foreign_owner.command('close')
+            from adapter_ownership_fixture import validate_cleanup
+            validate_cleanup(removed)
+            exited = foreign_owner.process.wait(timeout=5)
+            result['adapter_owner_fixture_cleanup'] = removed
+            if removed != dict(fixture_adapter_removed=True, release_ready=False) or exited != 0:
+                raise RuntimeError('adapter_owner_fixture_cleanup_failed')
+            foreign_owner.close()
+            foreign_owner = None
+        elif cancel_probe:
             stage = 'cancel_owned_request_during_receive'
             result['owned_probe_cancellation'] = cancel_owned_request(
                 session, endpoint, client.parent / 'owned-probe-context.json')
@@ -672,7 +713,7 @@ def main():
             time.sleep(.1)
         result['ordinary_origin_route_is_tun'] = selected
         if negative_probe:
-            traffic_ok = result[negative_key]['qualified']
+            traffic_ok = result[negative_key]['reproduction_passed' if ownership_audit else 'qualified']
         elif profile == 'valid':
             if not info or not selected:
                 raise RuntimeError('production_route_not_selected')
@@ -968,6 +1009,9 @@ def main():
                    'fixture_child_closed', 'lease_client_already_exited', 'lease_client_not_forced',
                    'service_crash_not_observed'}
         reasons.update({'owned_probe_not_waiting', 'owned_probe_cancellation_not_qualified',
+                        'adapter_interference_not_reproduced', 'adapter_owner_fixture_not_ready',
+                        'adapter_owner_fixture_cleanup_failed', 'invalid_adapter_owner_sample',
+                        'adapter_owner_stop_failed', 'fixture_adapter_not_retained',
                         'owned_https_not_waiting', 'owned_https_not_qualified', 'invalid_owned_https_report',
                         'owned_probe_deadline_not_qualified', 'owned_probe_wrong_nonce_not_qualified',
                         'owned_probe_migration_not_qualified',
@@ -986,6 +1030,10 @@ def main():
                 local_receiver.close()
             if session:
                 session.close('stop')
+            if foreign_owner:
+                exited = foreign_owner.process.poll()
+                result['adapter_owner_fixture_exit_code'] = exited if type(exited) is int and 0 <= exited <= 100 else None
+                foreign_owner.close('close')
             restored = wait_clean(baseline)
             if watchdog:
                 if restored and watchdog.process.poll() is None:
@@ -1004,7 +1052,7 @@ def main():
                 watchdog.close()
             if traffic_watch:
                 traffic_watch.close()
-            if endpoint and negative_probe:
+            if endpoint and negative_probe and not ownership_audit:
                 try:
                     result['owned_probe_receiver_before_fixture_shutdown'] = endpoint.command('stats')['owned_probe_sink']
                 except Exception:

@@ -1,6 +1,7 @@
 # Adapter ownership release gate
 
-Status: source audit and required acceptance, not an implemented ownership fix.
+Status: source audit plus disposable reproduction fixture implemented; actual
+Windows reproduction pending. No ownership fix or admission is implemented.
 The existing held-handle export proves attachment identity, not fresh creation
 or authority to configure a pre-existing adapter. HTTPS endpoint correlation
 does not close this independent release gate.
@@ -58,3 +59,23 @@ owned HTTPS/path controls with the new SDK. Keep disposable Server 2022 evidence
 separate from installed Windows 10 and Windows 11 acceptance. Trusted signing,
 production health endpoint/revocation policy and independent DNS observation
 remain additional gates.
+
+## Reproduction fixture
+
+The explicit `adapter_ownership_audit` network workflow mode uses the currently
+pinned aggregate SDK, with all seven service test flags OFF, on disposable CI.
+Its separate signed test client verifies the original Wintun hash, refuses any
+existing task alias, creates one fixture adapter and retains its creation handle.
+Before SDK start it verifies no non-link-local IPv4 and known fixture MTU/metric.
+
+The observer requires actual IPv4/MTU/metric changes while the SDK is active,
+then SDK teardown and continued access to that retained adapter before closing
+the fixture's own handle. Only closed facts/counts are exported. The fixture
+measures IPv4, MTU, metric and alias; it does not establish per-interface DNS or
+route preservation. Its passing result means reproduction of unsafe adoption,
+with ownership and release qualification explicitly false.
+
+This helper is not linked into the installed GUI or service, exposes no new
+service IPC operation, and refuses to run outside the explicit disposable CI
+environment. Global network/WFP restoration after removal is independently
+required. Real Windows compilation/reproduction is pending.
