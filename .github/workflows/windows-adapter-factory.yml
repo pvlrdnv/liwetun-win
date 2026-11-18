@@ -31,7 +31,7 @@ jobs:
           if ((Get-AuthenticodeSignature $driver.FullName).Status -ne 'Valid') { throw 'Original Wintun signature not trusted' }
       - name: Compile isolated factory fixture
         run: |
-          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_WIN32_WINNT=0x0A00 native/health/test_windows_fresh_adapter_live.cpp native/service/adapter_admission.cpp /Fobuild/factory-runtime/ /Febuild/factory-runtime/factory.exe /link bcrypt.lib iphlpapi.lib ws2_32.lib setupapi.lib
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_WIN32_WINNT=0x0A00 native/health/test_windows_fresh_adapter_live.cpp native/service/adapter_admission.cpp /Fobuild/factory-runtime/ /Febuild/factory-runtime/factory.exe /link bcrypt.lib iphlpapi.lib ws2_32.lib setupapi.lib cfgmgr32.lib
           if ($LASTEXITCODE -ne 0) { throw 'Isolated adapter factory build failed' }
       - name: Verify actual creation, retained foreign adapter and owner-only teardown
         run: |

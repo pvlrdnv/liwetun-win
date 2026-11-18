@@ -1,0 +1,52 @@
+{
+  "source_run": 44353969169,
+  "source_commit": "53a66ba437a0a993533badeae79997c740e49fa8",
+  "scope": "disposable_server_2022_original_wintun_policy2_factory_disabled_retained_foreign_device",
+  "metadata": {
+    "conclusion": "success",
+    "databaseId": 44353969169,
+    "headSha": "53a66ba437a0a993533badeae79997c740e49fa8",
+    "jobs": [
+      {
+        "completedAt": "2026-11-18T17:02:23Z",
+        "conclusion": "success",
+        "name": "problem-device",
+        "startedAt": "2026-11-18T17:01:43Z"
+      }
+    ],
+    "status": "completed"
+  },
+  "report_sha256": "d648af6a4c2869d65ff1a76c5b546e0ca4fd6585d02dae15754dbef2fd3335f7",
+  "report": {
+    "dns_baseline_restored": true,
+    "source_commit": "53a66ba437a0a993533badeae79997c740e49fa8",
+    "problem_disabled_observed": true,
+    "foreign_removed_after_candidate_close": true,
+    "adapter_ownership_qualified": false,
+    "candidate_created": true,
+    "session_started": false,
+    "release_ready": false,
+    "harness_passed": true,
+    "experiment_completed": true,
+    "foreign_preservation_passed": false,
+    "fixture_created_and_retained_device": true,
+    "factory_only": true,
+    "original_wintun_sha256": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce",
+    "adapter_baseline_restored": true,
+    "foreign_removed_before_creator_close": true,
+    "sdk_started": false,
+    "fixture_disabled_own_exact_node": true,
+    "routes_baseline_restored": true,
+    "native_process_completed": true,
+    "identifiers_exported": false,
+    "foreign_removed_after_candidate_create": true
+  },
+  "experiment_completed": true,
+  "foreign_preservation_qualified": false,
+  "unsafe_foreign_device_removal_reproduced": true,
+  "active_foreign_traffic_tested": false,
+  "sdk_started": false,
+  "service_admitted": false,
+  "package_admitted": false,
+  "release_ready": false
+}

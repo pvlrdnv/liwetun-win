@@ -6,6 +6,7 @@
 #include <netioapi.h>
 #include <devpropdef.h>
 #include <setupapi.h>
+#include <cfgmgr32.h>
 
 namespace liwetun {
 namespace {
@@ -17,8 +18,24 @@ bool Reserved(const wchar_t* name) {
   const int match = CompareStringOrdinal(name, -1, L"LiWeTun", -1, TRUE);
   return !match || match == CSTR_EQUAL;
 }
+bool EnumeratorStateAcceptable(const wchar_t* enumerator, bool refuse_any) {
+  HDEVINFO devices = SetupDiGetClassDevsW(&kNetworkClass, enumerator, nullptr, 0);
+  if (devices == INVALID_HANDLE_VALUE) return false;
+  struct Release { HDEVINFO value; ~Release() { SetupDiDestroyDeviceInfoList(value); } } release{devices};
+  for (DWORD i = 0; i < 4096; ++i) {
+    SP_DEVINFO_DATA device{}; device.cbSize = sizeof(device);
+    if (!SetupDiEnumDeviceInfo(devices, i, &device)) return GetLastError() == ERROR_NO_MORE_ITEMS;
+    if (refuse_any) return false;
+    ULONG status = 0, problem = 0;
+    if (CM_Get_DevNode_Status(&status, &problem, device.DevInst, 0) != CR_SUCCESS ||
+        (status & DN_HAS_PROBLEM)) return false;
+  }
+  return false;
+}
 bool InternalNameAbsent() {
-  HDEVINFO devices = SetupDiGetClassDevsW(&kNetworkClass, nullptr, nullptr, DIGCF_PRESENT);
+  // Original Wintun cleanup includes non-present/problem nodes. Observe the
+  // same broader inventory without opening, enabling or removing any device.
+  HDEVINFO devices = SetupDiGetClassDevsW(&kNetworkClass, nullptr, nullptr, 0);
   if (devices == INVALID_HANDLE_VALUE) return false;
   struct Release { HDEVINFO value; ~Release() { SetupDiDestroyDeviceInfoList(value); } } release{devices};
   for (DWORD i = 0; i < 4096; ++i) {
@@ -34,6 +51,9 @@ bool InternalNameAbsent() {
     }
     if (type != DEVPROP_TYPE_STRING || size < sizeof(wchar_t) || size > sizeof(name) ||
         size % sizeof(wchar_t) || name[size / sizeof(wchar_t) - 1] != L'\0' || Reserved(name)) return false;
+    ULONG status = 0, problem = 0;
+    if (CM_Get_DevNode_Status(&status, &problem, device.DevInst, 0) != CR_SUCCESS ||
+        (status & DN_HAS_PROBLEM)) return false;
   }
   return false;
 }
@@ -47,6 +67,10 @@ bool ReservedAdapterNamesAbsent() noexcept {
     // Stable ordinal comparison; never use an alias match as ownership proof.
     if (Reserved(table->Table[i].Alias)) return false;
   }
-  return InternalNameAbsent();
+  // Match the pinned API's software-device inventory independently of its name
+  // property, which a partially installed/problem node might not have. Legacy
+  // root-enumerated Wintun devices are refused conservatively, never repaired.
+  return EnumeratorStateAcceptable(L"SWD\\Wintun", false) &&
+      EnumeratorStateAcceptable(L"ROOT\\Wintun", true) && InternalNameAbsent();
 }
 }

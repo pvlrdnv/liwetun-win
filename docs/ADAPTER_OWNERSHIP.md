@@ -293,3 +293,18 @@ reproduction must not be called ownership-safe.
 Actual run **44349616522 never reached checkout** because GitHub Actions was
 unavailable; see [closed receipt](evidence/problem-device-not-started-44349616522.json).
 Compilation, actual disable/cleanup behavior and complete ownership remain unknown.
+
+Actual public CI **44353969169** on `53a66ba` completed: original pinned Wintun
+removed the disabled retained node before creator Close, after candidate Create.
+**Foreign preservation FAIL**, despite successful harness execution and complete
+adapter/route/DNS restoration. [Original receipt](evidence/adapter-problem-44353969169.json).
+This separately demonstrates that policy 2 cannot establish full lifecycle
+ownership by itself. No active foreign data session or SDK was tested.
+
+A read-only service preflight mitigation is prepared, including the software
+enumerator independently of the optional name property and non-present nodes.
+Problem/unknown state and legacy root Wintun refuse Start before SDK creation.
+The new paired control must preserve the disabled retained node with zero gated
+candidate Create calls, while accepting the healthy fixture before/after its
+creator restores it. Execution is pending. Later state changes/queued cleanup
+remain outside this mitigation; no full ownership or runtime admission follows.

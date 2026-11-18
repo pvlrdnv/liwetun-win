@@ -37,7 +37,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Health Schannel candidate build failed' }
           & ./build/health-tls.exe
           if ($LASTEXITCODE -ne 0) { throw 'Health Schannel no-network guards failed' }
-          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_WIN32_WINNT=0x0A00 native/service/test_adapter_admission.cpp native/service/adapter_admission.cpp /Fobuild/ /Febuild/adapter-admission.exe /link iphlpapi.lib setupapi.lib
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_WIN32_WINNT=0x0A00 native/service/test_adapter_admission.cpp native/service/adapter_admission.cpp /Fobuild/ /Febuild/adapter-admission.exe /link iphlpapi.lib setupapi.lib cfgmgr32.lib
           if ($LASTEXITCODE -ne 0) { throw 'Read-only adapter admission build failed' }
           & ./build/adapter-admission.exe
           if ($LASTEXITCODE -ne 0) { throw 'Clean-host adapter admission failed' }

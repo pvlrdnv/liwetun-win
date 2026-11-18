@@ -33,6 +33,8 @@ jobs:
         run: |
           cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_WIN32_WINNT=0x0A00 native/health/test_windows_adapter_problem.cpp /Fobuild/problem-runtime/ /Febuild/problem-runtime/problem.exe /link bcrypt.lib iphlpapi.lib ws2_32.lib setupapi.lib cfgmgr32.lib uuid.lib ole32.lib advapi32.lib
           if ($LASTEXITCODE -ne 0) { throw 'Problem-device fixture build failed' }
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_WIN32_WINNT=0x0A00 native/health/test_windows_adapter_problem_guard.cpp native/service/adapter_admission.cpp /Fobuild/problem-runtime/ /Febuild/problem-runtime/problem-guard.exe /link bcrypt.lib iphlpapi.lib ws2_32.lib setupapi.lib cfgmgr32.lib uuid.lib ole32.lib advapi32.lib
+          if ($LASTEXITCODE -ne 0) { throw 'Problem-device refusal fixture build failed' }
       - name: Observe lifecycle only; experiment success is not preservation qualification
         run: |
           function Snapshot {
@@ -81,6 +83,39 @@ jobs:
           $report.harness_passed = $all -and $report.adapter_baseline_restored -and $report.routes_baseline_restored -and $report.dns_baseline_restored
           $report | ConvertTo-Json | Set-Content build/problem-evidence/problem-device.json
           if (-not $report.harness_passed) { throw 'Experiment did not complete cleanly; see closed receipt' }
+          # Use the same original DLL and clean baseline for the refusal control.
+          # Raw removal reproduction and guarded preservation are separate facts.
+          $guard = Start-Process build/problem-runtime/problem-guard.exe -ArgumentList ('"' + $dll + '"') -PassThru -NoNewWindow -RedirectStandardOutput build/problem-guard-private.txt -RedirectStandardError build/problem-guard-error-private.txt
+          $guardFinished = $guard.WaitForExit(180000)
+          if (-not $guardFinished) { $guard.Kill(); $guard.WaitForExit() }
+          $guard.Refresh()
+          $facts = $null
+          try { $facts = Get-Content build/problem-guard-private.txt -Raw | ConvertFrom-Json -ErrorAction Stop } catch { }
+          $guardAfter = Snapshot
+          for ($attempt=0; $attempt -lt 40 -and ($guardAfter.adapters -ne $before.adapters -or $guardAfter.routes -ne $before.routes -or $guardAfter.dns -ne $before.dns); $attempt++) {
+            Start-Sleep -Milliseconds 250
+            $guardAfter = Snapshot
+          }
+          $guardReport = @{
+            source_commit='${{ github.sha }}'; native_process_completed=$guardFinished; passed=$false
+            preflight_only=$true; sdk_started=$false; identifiers_exported=$false
+            original_wintun_sha256=$report.original_wintun_sha256
+            candidate_create_calls=$null; later_problem_state_race_qualified=$false
+            adapter_ownership_qualified=$false; release_ready=$false
+            adapter_baseline_restored=($guardAfter.adapters -eq $before.adapters)
+            routes_baseline_restored=($guardAfter.routes -eq $before.routes)
+            dns_baseline_restored=($guardAfter.dns -eq $before.dns)
+          }
+          $guardAll = $guardFinished -and $guard.ExitCode -eq 0 -and $facts.experiment_completed -ceq $true
+          foreach ($name in @('healthy_foreign_node_accepted','problem_disabled_observed','problem_node_start_refused','retained_disabled_node_unchanged','creator_restored_own_node','healthy_node_accepted_again')) {
+            $guardReport[$name] = $null -ne $facts -and $facts.$name -is [bool] -and $facts.$name
+            $guardAll = $guardAll -and $guardReport[$name]
+          }
+          if ($null -ne $facts -and $facts.candidate_create_calls -is [long] -and $facts.candidate_create_calls -eq 0) { $guardReport.candidate_create_calls = 0 }
+          if ($null -ne $facts -and $facts.stage -is [long] -and $facts.stage -ge 0 -and $facts.stage -le 3) { $guardReport.failure_stage = $facts.stage }
+          $guardReport.passed = $guardAll -and $guardReport.candidate_create_calls -ceq 0 -and $guardReport.adapter_baseline_restored -and $guardReport.routes_baseline_restored -and $guardReport.dns_baseline_restored
+          $guardReport | ConvertTo-Json | Set-Content build/problem-evidence/problem-guard.json
+          if (-not $guardReport.passed) { throw 'Read-only problem-node refusal not qualified; see closed receipt' }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

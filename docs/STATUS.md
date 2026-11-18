@@ -1,5 +1,26 @@
 # Development checkpoint — 2026-11-18
 
+## Problem-device removal reproduced; startup refusal mitigation prepared
+
+Public standard Windows CI **44353969169** on `53a66ba` completed the original
+Wintun experiment. **Preservation FAIL**: a separately created/retained disabled
+PnP node disappeared after candidate creation, before its creator closed it.
+The harness completed and restored adapter/route/DNS baselines; this green
+experiment is an unsafe reproduction, not ownership qualification.
+[Original closed report](evidence/adapter-problem-44353969169.json). SDK/service
+were not started, and no owner device was touched.
+
+Prepared a read-only service startup mitigation: enumerate known Wintun software
+devices, including non-present nodes, independently of their name property;
+refuse problem/unknown CM state and conservatively refuse legacy root Wintun.
+Existing Start and pre-SDK-init refusal checks reuse this predicate. No Wintun
+binary, signature or package pin changes. A batched fixture compares the unsafe
+raw API case with healthy acceptance → disabled-node refusal/no candidate Create
+→ unchanged retained disabled state → creator-only restoration/healthy acceptance.
+All workflow YAML and whitespace checks PASS locally. Actual guarded Windows
+compilation/execution is pending. This cannot prevent later foreign state changes
+while global cleanup is queued; full ownership and release gates remain closed.
+
 ## Public visibility verified; private CI allocation blocked
 
 Owner requested public visibility after the private Actions included allowance
