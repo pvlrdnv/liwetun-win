@@ -16,7 +16,12 @@ Source inference: the unbiased `Tunnel.listen` select may choose ready downstrea
 EOF instead of the simultaneously submitted shutdown notification, dropping its
 completion guard without invoking downstream graceful close. Prepared a separate
 default-OFF priority profile (`biased;`, shutdown branch first), after the traced
-profile. Five source/anchor/path/output guard tests PASS; actual compilation and
+profile. Five source/anchor/path/output guards, **93 full local service-fixture
+tests**, and actual four-profile preparation/receipt chain PASS.
+Compilation and two authenticated TLS/UDP flows **PASS 44322304971** on `3053b0c`.
+Run/source/archive/patch/four-profile/final-source/binary hashes verified;
+[build receipt](evidence/endpoint-priority-build-44322304971.json).
+Separate runtime-priority pin and explicit chained opt-in added. Actual Windows
 H3 repeatability checks are pending. Client SDK, release package and prior pins
 are unchanged. Do not reclassify earlier failed controls as passed.
 

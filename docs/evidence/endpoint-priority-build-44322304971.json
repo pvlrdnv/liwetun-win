@@ -1,0 +1,92 @@
+{
+  "source_run": 44322304971,
+  "source_commit": "3053b0c94a026dc109cd950b812b1d69751ffb0e",
+  "scope": "linux_diagnostic_endpoint_priority_build_two_h2_tls_udp_flows_only_h3_priority_unqualified",
+  "metadata": {
+    "conclusion": "success",
+    "databaseId": 44322304971,
+    "headSha": "3053b0c94a026dc109cd950b812b1d69751ffb0e",
+    "name": "Official endpoint UDP isolation",
+    "status": "completed",
+    "url": "https://github.com/pvlrdnv/liwetun-win/actions/runs/44322304971"
+  },
+  "provenance": {
+    "source_commit": "fab5b8353a19332f935fa30869307d37d4a898d1",
+    "patch_sha256": "2d63ccf32860e6c0263722456cbf6b7fc20a5647ceb4c9cac1a6ebbc85ee6baf",
+    "source_archive_sha256": "24be5fd781329445d9341d53f8159a3f7dfbfd8cd5d45cdbe3ee63447c68360d",
+    "binary_sha256": "f3e798101266925c7ebe1ab2ca56f8f291074f7a6fd7b4d90e16768033b88f6f",
+    "diagnostic_source_fix": true,
+    "release_ready": false,
+    "endpoint_close_fix": true,
+    "endpoint_close_manifest_sha256": "b28f5d58abfc0071cea3f33f5b29e1b7dcc88935cc531adbb0dc5a6ef9e376b8",
+    "endpoint_close_source_sha256": "4f65a1e6a41649bbea876147fc743d77da6e2dccbef9729c2401706f314d52b2",
+    "endpoint_shutdown_fix": true,
+    "endpoint_shutdown_manifest_sha256": "ee88d295d9b46167f77cba7043b39ef90367579ee47298f67146c09d19ccdd6b",
+    "endpoint_shutdown_source_sha256": "93f161c6678a557d58801122fbf9ebba3d16bffdf3bf143abf0eb689cb7c1ee9",
+    "endpoint_shutdown_trace": true,
+    "endpoint_trace_manifest_sha256": "545efaeabb30766f30626ba32e4bb92255831bbb7b25d8d2adee900892a8c3d9",
+    "endpoint_trace_source_hashes": {
+      "lib/src/lib.rs": "bb2c80eac833b863a42f03c53d13031c39ca3b97d05db2f51e1317048959a6fe",
+      "lib/src/quic_multiplexer.rs": "f5b2abec4bdd3bf511b0048345382655de749313597105561a7cbf4d68c1a5a7",
+      "endpoint/src/main.rs": "73220523f4a7f738d96399a47c477bf655ab89afae9f62408a8721fefe4ccae5"
+    },
+    "endpoint_shutdown_priority": true,
+    "endpoint_priority_manifest_sha256": "18c975b326979fa5838ad5d8f9a57ea3423661e3cd491df24c7b70a0fc9bd594",
+    "endpoint_priority_source_sha256": "2d731c4298368c32d165e23d473f63cc2522e24f9ab0e2059233d1afe9b498ae"
+  },
+  "udp_control": {
+    "passed": true,
+    "mode": "linux_endpoint_only_two_udp_flows_no_sdk_no_tun",
+    "endpoint_version": "v1.1.0",
+    "release_ready": false,
+    "diagnostic_source_fix": true,
+    "wire_probe": {
+      "tls_verified": true,
+      "connect_accepted": true,
+      "frame_received": true,
+      "metadata_matches": true,
+      "synthetic_answer": true,
+      "completed_flows": 2,
+      "passed": true
+    },
+    "fixture_counts": {
+      "requests": 2,
+      "request_bytes": 66,
+      "synthetic_answers": 2,
+      "synthetic_aaaa_answers": 0,
+      "other_answers": 0,
+      "non_questions": 0,
+      "owned_endpoint_udp_queues": {
+        "available": false,
+        "sockets": null,
+        "rx_kernel_bytes": null
+      },
+      "local_forwarder_counts": {
+        "auth_rejected": 0,
+        "destination_denied": 0,
+        "tcp_connected": 0,
+        "tcp_bytes": 0,
+        "udp_forwarded": 2,
+        "udp_replies": 2,
+        "errors": 0,
+        "active": 0,
+        "synthetic_dns_requests": 2,
+        "synthetic_dns_replies": 2,
+        "synthetic_aaaa_requests": 0,
+        "synthetic_aaaa_replies": 0,
+        "tcp_ipv6_destination_connected": 0,
+        "synthetic_ipv6_echo_requests": 0,
+        "synthetic_ipv6_echo_replies": 0,
+        "tcp_denied": 0,
+        "udp_denied_packets": 0,
+        "udp_denied_payload_bytes": 0
+      }
+    }
+  },
+  "provenance_sha256": "fc9e7c3acc5a2a1d2bf16aae0cc4219dc5d2a70354ca19e546ea4c949cad421c",
+  "udp_control_sha256": "414701e76d75bd83d4118ab26ed941cca23edaae9e46cb11d4135dbdef90b08a",
+  "shutdown_priority_qualified": false,
+  "h3_epoch_change_qualified": false,
+  "production_admitted": false,
+  "release_ready": false
+}

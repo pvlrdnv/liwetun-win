@@ -537,6 +537,7 @@ def main():
               'endpoint_reader_wakeup_candidate': os.environ.get('LIWETUN_ENDPOINT_STREAM_CLOSE') == 'true',
               'endpoint_shutdown_completion_candidate': os.environ.get('LIWETUN_ENDPOINT_SHUTDOWN') == 'true',
               'endpoint_shutdown_trace_enabled': os.environ.get('LIWETUN_ENDPOINT_SHUTDOWN_TRACE') == 'true',
+              'endpoint_shutdown_priority_candidate': os.environ.get('LIWETUN_ENDPOINT_SHUTDOWN_PRIORITY') == 'true',
               'full_matrix_qualified': False, 'release_ready': False}
     if ownership_audit:
         result.update(mode='preexisting_adapter_name_refusal',
