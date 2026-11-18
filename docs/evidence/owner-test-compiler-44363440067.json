@@ -1,0 +1,51 @@
+{
+  "source_run": 44363440067,
+  "source_commit": "0fe75c59b0febc31b037424c9845c2ba935c4f1a",
+  "scope": "failed_owner_test_nsis_invocation_before_installer_execution",
+  "reports": {
+    "qualification": {
+      "sha256": "e3bbb57445662007366f7808eeabfb317e10a9954dcdafb0616ab1a69d7ec7a1",
+      "report": {
+        "installer_tested": false,
+        "passed": false,
+        "checks": [
+          "original_microsoft_app_local_crt_staged",
+          "native_and_engine_notice_bytes_verified_not_legal_approval",
+          "all_native_payload_images_are_x64",
+          "gui_sdk_and_notice_inputs_verified",
+          "common_ci_signer_only_for_owned_components",
+          "original_wintun_bytes_preserved",
+          "actual_signed_gui_queries_production_service",
+          "medium_integrity_without_enabled_admin_group",
+          "owner_can_read_service_identity_but_not_write_process_or_duplicate_token",
+          "no_tunnel_start_or_network_configuration_change"
+        ],
+        "cleanup_passed": true,
+        "stage": "installer_qualification",
+        "release_ready": false,
+        "network_unchanged": true
+      }
+    },
+    "installer-qualification": {
+      "sha256": "1d6da1b30893db7663e12094fb1d8ac417f5c4ebd0fd32b4df7d5a5617e6e1bc",
+      "report": {
+        "desktop_owner_selection_tested": false,
+        "before_fixture_cleanup": {
+          "directory": false,
+          "shortcut": false,
+          "registration": false
+        },
+        "signing": "dedicated_owner_test_certificate",
+        "tunnel_started": false,
+        "stage": "compiler_inputs",
+        "passed": false,
+        "invocations": [],
+        "release_ready": false,
+        "checks": [],
+        "cleanup_passed": true
+      }
+    }
+  },
+  "owner_package_exported": false,
+  "release_ready": false
+}

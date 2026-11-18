@@ -1,6 +1,6 @@
 # Development checkpoint — 2026-11-18
 
-## Owner-test package — dedicated certificate authorized, build pending
+## Owner-test package delivered — 44364045177 PASS
 
 Owner explicitly approved trusting a dedicated test publisher on the separate
 Windows 10 PC. Added default-OFF owner_test packaging mode, requiring the full
@@ -12,9 +12,19 @@ exact-certificate-removal instructions may enter the handoff. No profiles or
 signing keys are exported. Artifact upload requires success after CI cleanup.
 Existing qualified GUI 44073703263 and aggregate SDK 44038398682 are reused with
 the current service startup mitigation. No full GUI/SDK rebuild or network matrix.
-All workflow YAML/whitespace checks PASS locally; actual owner-test installer
-qualification and delivery are pending. Desktop acceptance and public release
-remain unqualified; corporate/development PCs remain excluded.
+All workflow YAML/whitespace checks PASS locally. First owner-mode attempt
+44363440067 failed at NSIS invocation before installer execution, with cleanup
+and unchanged networking; [closed report](evidence/owner-test-compiler-44363440067.json).
+Changed invocation to one typed argument array. Actual **44364045177 PASS** on
+`731915b`: **11 package and 14 installer groups**, full cleanup/network restoration,
+then successful export of exactly four handoff files with no private key/profiles.
+Downloaded ZIP SHA256 matches GitHub's artifact digest; installer/CER hashes
+match the qualified manifest and the four-file archive contents were verified. CER subject/issuer, code-signing-only EKU and 30-day expiry
+independently checked using OpenSSL, without modifying any local trust store.
+[Download, independent hashes and owner steps](OWNER_TEST_BUILD_44364045177.md);
+[original reports](evidence/owner-test-package-44364045177.json). Manual owner
+acceptance is pending. Desktop/public release remain unqualified; corporate/
+development PCs remain excluded. No new GUI/SDK build or network matrix was run.
 
 ## Problem-device removal reproduced; focused startup refusal PASS
 

@@ -14,7 +14,9 @@ is not delivered. See [handoff instruction source](../tools/packaging/OWNER_TEST
 Fingerprint/hash verification must use values delivered separately from the
 archive. Uninstall the app before removing its exact test certificate and before
 certificate expiry. No development/corporate PC trust-store changes are allowed.
-The package is currently being prepared; it is not a stable public release.
+The exact qualified [owner-test package 44364045177](OWNER_TEST_BUILD_44364045177.md)
+is available with independent hashes and certificate expiry. It is not a stable
+public release; use only this delivered artifact, not an arbitrary workspace build.
 
 ## Delivery gates
 
