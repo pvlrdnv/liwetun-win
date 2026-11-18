@@ -1,6 +1,10 @@
 import unittest
+import json
+from types import SimpleNamespace
+from unittest.mock import patch
 
-from adapter_ownership_fixture import validate_sample, pristine, interference, validate_ready, validate_cleanup
+from adapter_ownership_fixture import (validate_sample, pristine, interference, validate_ready, validate_cleanup,
+                                       validate_idle_reply, observe_refusal)
 
 
 def baseline():
@@ -9,6 +13,41 @@ def baseline():
 
 
 class AdapterOwnershipFixtureTests(unittest.TestCase):
+    def test_refusal_requires_no_sdk_core_observation_or_fabricated_reply(self):
+        reply = dict(code=6, state=0, core_state=2**32 - 1)
+        validate_idle_reply(reply, 6)
+        for changes in [dict(code=0), dict(code=False), dict(state=True), dict(state=2),
+                        dict(core_state=0), dict(core_state=None)]:
+            with self.assertRaises(ValueError):
+                validate_idle_reply(dict(reply, **changes), 6)
+
+    def test_refused_start_preserves_retained_markers_and_does_not_admit_ownership(self):
+        commands = []
+        def command(value):
+            commands.append(value)
+            if value == 'query':
+                return dict(code=0, state=0, core_state=2**32 - 1)
+            self.assertEqual(value, 'stop')
+            return dict(code=0)
+        owner = SimpleNamespace(command=lambda _: baseline())
+        queried = SimpleNamespace(returncode=0, stdout=json.dumps(dict(code=0, state=0, core_state=2**32 - 1)))
+        with patch('adapter_ownership_fixture.subprocess.run', return_value=queried):
+            result = observe_refusal(SimpleNamespace(command=command), owner, 'synthetic-client',
+                                     dict(code=6, state=0, core_state=2**32 - 1), {})
+        self.assertTrue(result['refusal_passed'])
+        self.assertFalse(result['adapter_ownership_qualified'])
+        self.assertFalse(result['release_ready'])
+        self.assertEqual(commands, ['query', 'stop'])
+
+    def test_refusal_cannot_hide_configuration_changes_after_stop(self):
+        samples = iter([baseline(), dict(baseline(), metric_changed=True, fixture_marker_present=False)])
+        owner = SimpleNamespace(command=lambda _: next(samples))
+        session = SimpleNamespace(command=lambda value: dict(code=0, state=0, core_state=2**32 - 1))
+        queried = SimpleNamespace(returncode=0, stdout=json.dumps(dict(code=0, state=0, core_state=2**32 - 1)))
+        with patch('adapter_ownership_fixture.subprocess.run', return_value=queried):
+            with self.assertRaises(ValueError):
+                observe_refusal(session, owner, 'synthetic-client', dict(code=6, state=0, core_state=2**32 - 1), {})
+
     def test_missing_observation_never_proves_preservation_or_interference(self):
         unknown = {key: None for key in baseline()}
         unknown['available'] = False

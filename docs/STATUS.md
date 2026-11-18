@@ -7,7 +7,7 @@ Server 2022 cases**: positive, wrong nonce, untrusted certificate, deadline,
 receive cancellation, actual migration, actual epoch change and local bypass,
 each over H2 and H3. [Aggregate receipt](evidence/owned-https-requalification.json)
 links every immutable source/run/report with its SHA256. The separate 16-case
-loopback TLS matrix also passed. **51 local Python checks PASS**.
+loopback TLS matrix also passed. **59 local Python fixture checks PASS**.
 
 All live HTTPS cases use the same pinned owned-probe SDK binary. Valid replies
 after migration/local delivery remain unqualified; changed epochs discard old
@@ -26,34 +26,33 @@ unchanged. No owner installation or testing action is needed for this CI stage.
 
 ## Current adapter ownership work
 
-A disposable reproduction fixture is implemented, without any shipped-service
-or SDK change. Its separate signed CI client creates an adapter only after exact
-alias absence, retains its original creation handle and sets private known MTU /
-metric markers. The existing SDK is then started normally against the synthetic
-H2 endpoint. The oracle requires changes to IPv4 addresses, MTU and metric on
-that same retained adapter, not just process/core start. It then requires SDK
-Stop/teardown before sampling and closing only the fixture's own adapter.
+Actual unsafe adoption is **reproduced** on disposable CI 44255030943, source
+`9e95c07`, using the pinned aggregate SDK 44038398682 with NO_GLOBAL_ROUTES=ON.
+The separate fixture retained its creation handle while SDK changed IPv4, MTU
+and metric on that same adapter. Changes remained after SDK Stop. Only the
+fixture's own adapter was then removed; exact network/WFP restoration passed
+without watchdog intervention. No identifiers, addresses or raw logs were
+exported. [Closed evidence](evidence/adapter-owner-reproduced-44255030943.json).
+This proves the release blocker; it does not qualify ownership safety.
 
-Only closed booleans/counts cross this fixture IPC; aliases, addresses, interface
-IDs, driver/core output and credentials are never exported. The pinned signed
-Wintun hash and protected helper image are verified before creation. Baseline
-network/WFP restoration and no watchdog intervention remain mandatory. Success
-means **unsafe adoption reproduced**, with `adapter_ownership_qualified=false`,
-not ownership safety or release acceptance. The mode is explicit and CI-only;
-ordinary package flags, runtime pins, GUI and service commands are unchanged.
-**56 local Python checks PASS**; syntax/YAML/diff checks PASS. Windows helper
-compilation and actual reproduction are pending. No local driver/service,
-network, trust or LikeWeb changes.
+The first normal-routing attempt 44252986740 ended cancelled without artifacts;
+its reproduction and cleanup remain unqualified. The successful bounded audit
+needed no global routes or system DNS changes. Closed numeric checkpoints
+retained native and parent stages. Normal runtime/package pins remain unchanged.
 
-The first normal-routing audit 44252986740 (`0878ef7`) remained in the network
-step without a completed receipt; cancellation was requested. It is inconclusive,
-not a reproduced ownership result or a qualified cleanup. The exact cause is
-unknown. The focused audit now uses the existing **NO_GLOBAL_ROUTES=ON** mode:
-no global SDK routes or system DNS changes are needed to observe IPv4/MTU/metric
-interference. Other service test flags remain OFF; normal package guards/pins
-remain unchanged. Closed numeric native/parent checkpoints are added to retain
-the last reached operation on interruption, without raw logs or identifiers.
-Windows bounded-mode compilation/reproduction is pending.
+A first service refusal barrier is now implemented: query the OS interface table
+before accepting Start and again immediately before SDK start, refusing a
+pre-existing reserved alias or failed/oversized/ambiguous observation. No existing
+adapter is opened or configured by this gate. The existing typed CoreFailure
+response is used; public IPC and GUI capabilities are unchanged. **59 local
+Python fixture checks PASS**; syntax/YAML/diff PASS. Actual Windows refusal,
+healthy H2/H3 regression and updated package qualification are pending.
+
+This alias preflight is **not complete ownership or race protection**. An adapter
+whose Wintun internal name differs from its visible alias and a creation race
+remain SDK/factory work, with separate guards/binary/network qualification
+required. Production HTTPS/DNS capability and ownership/release admission remain
+false. LikeWeb and the owner's device/network/trust were not modified.
 
 ## Health development record
 

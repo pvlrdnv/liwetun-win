@@ -1,7 +1,8 @@
 # Adapter ownership release gate
 
-Status: source audit plus disposable reproduction fixture implemented; actual
-Windows reproduction pending. No ownership fix or admission is implemented.
+Status: unsafe adoption reproduced in bounded disposable CI (44255030943).
+A first visible-alias refusal barrier is implemented in the service; Windows
+qualification pending. Complete SDK ownership/race protection is not implemented.
 The existing held-handle export proves attachment identity, not fresh creation
 or authority to configure a pre-existing adapter. HTTPS endpoint correlation
 does not close this independent release gate.
@@ -86,3 +87,25 @@ The first normal-routing attempt 44252986740 had no completed receipt and a
 cancellation request; its outcome/cleanup are unqualified. Bounded-mode retries
 include closed numeric parent/native checkpoints. They do not export OS errors,
 addresses or adapter identity and cannot establish release readiness.
+
+## Actual bounded result and first refusal barrier
+
+[Run 44255030943](evidence/adapter-owner-reproduced-44255030943.json) reproduced
+actual SDK changes to the fixture-owned adapter's IPv4, MTU and metric while its
+original creation handle remained retained. Those changes persisted after SDK
+Stop. The fixture then removed only its own adapter, with exact final network /
+WFP restoration and no watchdog action. No global SDK routes or system DNS
+changes were enabled in this experiment. Ownership qualification remains false.
+
+The service now refuses an already occupied reserved visible alias, or an
+unavailable/oversized interface-table read, before accepting Start and again
+immediately before calling the SDK. Its checks are read-only; refusal uses the
+existing typed CoreFailure reply. The fixture now requires this refusal with no
+core-state observation, unchanged retained markers before/after Stop and zero
+endpoint transport growth. Actual Windows refusal qualification is pending.
+
+This is a partial mitigation. A visible alias is not the internal Wintun device
+name used by the SDK, and the check/start interval is not atomic. These checks
+do not authorize adoption, qualify a race or replace a fresh-identity SDK
+factory. Existing SDK binaries/pins and normal ownership/release admission
+remain unchanged until that independent work passes its required controls.

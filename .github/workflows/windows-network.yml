@@ -39,7 +39,7 @@ on:
           - https-epoch-change
           - https-bypass
       adapter_ownership_audit:
-        description: Reproduce configuration of a retained fixture adapter (does not qualify ownership safety)
+        description: Refuse a retained visible adapter before SDK start (not complete ownership safety)
         type: boolean
         default: false
       traffic_pattern:

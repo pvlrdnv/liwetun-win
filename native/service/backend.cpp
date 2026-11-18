@@ -1,4 +1,5 @@
 #include "backend.h"
+#include "adapter_admission.h"
 #include "liwetun_native.h"
 #include <cstring>
 #include <bcrypt.h>
@@ -72,6 +73,7 @@ Code Backend::Start(std::string uri) {
   if (!ready_) { Clear(uri); return Code::RuntimeUnavailable; }
   std::lock_guard lock(mutex_);
   if (busy_ || stop_ || shutdown_) { Clear(uri); return Code::Busy; }
+  if (!ReservedAdapterAliasAbsent()) { Clear(uri); return Code::CoreFailure; }
   pending_ = std::move(uri);
   core_state_ = UINT32_MAX;
   busy_ = true;
@@ -230,7 +232,10 @@ void Backend::Run() {
         SecureZeroMemory(endpoint, size);
         free_(endpoint);
       }
-      if (!config.empty()) core = start_(config.c_str(), false, OnState, this, nullptr, nullptr);
+      // Recheck after decoding, immediately before the SDK can open/create its
+      // adapter. This is a second refusal gate, not an atomic ownership claim.
+      if (!config.empty() && ReservedAdapterAliasAbsent())
+        core = start_(config.c_str(), false, OnState, this, nullptr, nullptr);
     } catch (...) { core = nullptr; }
     Clear(uri); Clear(config);
     {

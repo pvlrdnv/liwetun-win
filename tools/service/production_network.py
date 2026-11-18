@@ -526,7 +526,7 @@ def main():
               'endpoint_reader_wakeup_candidate': os.environ.get('LIWETUN_ENDPOINT_STREAM_CLOSE') == 'true',
               'full_matrix_qualified': False, 'release_ready': False}
     if ownership_audit:
-        result.update(mode='retained_fixture_adapter_interference_reproduction',
+        result.update(mode='preexisting_visible_adapter_alias_refusal',
                       internet_delivery_tested=False, https_health_qualified=False, dns_health_qualified=False,
                       routing_test_modes_enabled=True, network_test_modes_enabled=True,
                       no_global_routes_or_dns_test_mode=True)
@@ -639,17 +639,19 @@ def main():
         if ownership_audit:
             checkpoint(report.parent, 3)
         session = Child([str(client), '--network-session', str(directory / (profile_file + '.uri'))])
-        if json.loads(session.receive())['code'] not in [0, 6]:
+        start_reply = json.loads(session.receive())
+        if start_reply['code'] not in [0, 6]:
             raise RuntimeError('service_start_rejected')
         if owned_probe_mode in ['bypass', 'https-bypass']:
             stage = 'owned_bypass_receiver_ready'
             local_receiver = owned_bypass_receiver(directory / 'owned-https' if owned_probe_mode == 'https-bypass' else None)
         if ownership_audit:
-            stage = 'adapter_ownership_reproduction'
-            from adapter_ownership_fixture import observe_reproduction
+            stage = 'adapter_existing_alias_refusal'
+            from adapter_ownership_fixture import observe_refusal
             result['adapter_ownership_observation'] = {}
-            result['adapter_ownership_audit'] = observe_reproduction(session, foreign_owner, client,
-                                                                    result['adapter_ownership_observation'], report.parent)
+            result['adapter_owner_start_response'] = start_reply
+            result['adapter_ownership_audit'] = observe_refusal(session, foreign_owner, client, start_reply,
+                                                               result['adapter_ownership_observation'], report.parent)
             session.close()
             session = None
             checkpoint(report.parent, 8)
@@ -722,7 +724,12 @@ def main():
             time.sleep(.1)
         result['ordinary_origin_route_is_tun'] = selected
         if negative_probe:
-            traffic_ok = result[negative_key]['reproduction_passed' if ownership_audit else 'qualified']
+            traffic_ok = result[negative_key]['refusal_passed' if ownership_audit else 'qualified']
+            if ownership_audit:
+                delta = {key: value - before[key] for key, value in totals().items()}
+                result['adapter_owner_endpoint_transport_delta'] = delta
+                if any(value != 0 for value in delta.values()):
+                    raise RuntimeError('adapter_owner_refusal_not_qualified')
         elif profile == 'valid':
             if not info or not selected:
                 raise RuntimeError('production_route_not_selected')
@@ -1023,6 +1030,7 @@ def main():
                         'adapter_interference_not_reproduced', 'adapter_owner_fixture_not_ready',
                         'adapter_owner_fixture_cleanup_failed', 'invalid_adapter_owner_sample',
                         'adapter_owner_stop_failed', 'fixture_adapter_not_retained',
+                        'adapter_owner_refusal_not_qualified',
                         'owned_https_not_waiting', 'owned_https_not_qualified', 'invalid_owned_https_report',
                         'owned_probe_deadline_not_qualified', 'owned_probe_wrong_nonce_not_qualified',
                         'owned_probe_migration_not_qualified',

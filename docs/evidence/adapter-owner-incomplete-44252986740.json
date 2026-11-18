@@ -7,5 +7,8 @@
   "qualification_passed": false,
   "network_restoration_qualified": false,
   "adapter_ownership_qualified": false,
-  "release_ready": false
+  "release_ready": false,
+  "final_run_status": "completed",
+  "final_run_conclusion": "cancelled",
+  "artifacts_available": false
 }

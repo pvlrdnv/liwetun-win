@@ -197,8 +197,8 @@ try {
             }
             if ($ProductionTraffic) {
                 if ($env:LIWETUN_ADAPTER_OWNERSHIP_AUDIT -eq 'true') {
-                    $checks.Add('retained_fixture_adapter_interference_reproduced_not_safe')
-                    $lifecycle = @{verified_by='retained_fixture_adapter_interference_reproduction';adapter_ownership_qualified=$false;internet_delivery_tested=$false;full_matrix_qualified=$false}
+                    $checks.Add('preexisting_visible_adapter_alias_refused_before_sdk_start')
+                    $lifecycle = @{verified_by='preexisting_visible_adapter_alias_refusal';adapter_ownership_qualified=$false;internet_delivery_tested=$false;full_matrix_qualified=$false}
                 } else {
                     if ($env:LIWETUN_PRODUCTION_PROFILE -in @('wrong-auth','wrong-ca')) { $checks.Add('production_single_profile_refusal_and_cleanup') }
                     else { $checks.Add('production_single_unbound_https_dns_and_cleanup') }

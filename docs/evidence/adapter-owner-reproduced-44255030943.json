@@ -1,0 +1,280 @@
+{
+  "source_run": 44255030943,
+  "source_commit": "9e95c074be2f037de8bfc32826ca9c9c9f2cd4e6",
+  "scope": "disposable_ci_actual_sdk_changed_retained_fixture_adapter_without_global_routes_or_dns",
+  "evidence": {
+    "adapter-owner-progress": {
+      "schema_version": 1,
+      "stage": 12,
+      "adapter_ownership_qualified": false,
+      "release_ready": false
+    },
+    "general-watchdog": {
+      "action_completed": true,
+      "triggered": false,
+      "release_ready": false,
+      "method": "not_needed"
+    },
+    "production-network": {
+      "passed": true,
+      "mode": "retained_fixture_adapter_interference_reproduction",
+      "protocol": "http2",
+      "termination": "stop",
+      "traffic_pattern": "normal",
+      "profile": "valid",
+      "client_family": "ipv4",
+      "network_test_modes_enabled": true,
+      "routing_test_modes_enabled": true,
+      "client_host_routes_added": false,
+      "sdk_held_attachment_ci_guard_enabled": false,
+      "service_owned_socket_ci_probe_enabled": false,
+      "owned_migration_ci_enabled": false,
+      "owned_bypass_ci_enabled": false,
+      "owned_https_ci_enabled": false,
+      "owned_probe_mode": "echo",
+      "adapter_ownership_audit_enabled": true,
+      "adapter_ownership_qualified": false,
+      "attachment_context_proves_endpoint_traversal": false,
+      "server_https_egress_bound_physical": true,
+      "endpoint_udp_relay": "wsl_local",
+      "endpoint_diagnostic_source_fix": true,
+      "endpoint_reader_wakeup_candidate": false,
+      "full_matrix_qualified": false,
+      "release_ready": false,
+      "internet_delivery_tested": false,
+      "https_health_qualified": false,
+      "dns_health_qualified": false,
+      "no_global_routes_or_dns_test_mode": true,
+      "wsl_udp_preflight": {
+        "authenticated": true,
+        "associated": true,
+        "reply_received": true,
+        "relay_source_matches": true,
+        "synthetic_answer": true,
+        "poll_readable": true,
+        "passed": true
+      },
+      "endpoint_udp_preflight": {
+        "tls_verified": true,
+        "connect_accepted": true,
+        "frame_received": true,
+        "metadata_matches": true,
+        "synthetic_answer": true,
+        "completed_flows": 2,
+        "passed": true
+      },
+      "adapter_owner_fixture_ready": {
+        "ready": true,
+        "fixture_created_adapter": true,
+        "retained_creation_handle": true,
+        "marker_verified": true,
+        "identifiers_exported": false,
+        "release_ready": false
+      },
+      "adapter_owner_fixture_baseline": {
+        "available": true,
+        "alias_unchanged": true,
+        "ipv4_changed": false,
+        "mtu_changed": false,
+        "metric_changed": false,
+        "fixture_marker_present": true,
+        "nonlink_ipv4_count": 0
+      },
+      "adapter_ownership_observation": {
+        "active": {
+          "available": true,
+          "alias_unchanged": true,
+          "ipv4_changed": true,
+          "mtu_changed": true,
+          "metric_changed": true,
+          "fixture_marker_present": false,
+          "nonlink_ipv4_count": 1
+        },
+        "state": 2,
+        "after_stop": {
+          "available": true,
+          "alias_unchanged": true,
+          "ipv4_changed": true,
+          "mtu_changed": true,
+          "metric_changed": true,
+          "fixture_marker_present": false,
+          "nonlink_ipv4_count": 1
+        }
+      },
+      "adapter_ownership_audit": {
+        "reproduction_passed": true,
+        "ownership_safe": false,
+        "active": {
+          "available": true,
+          "alias_unchanged": true,
+          "ipv4_changed": true,
+          "mtu_changed": true,
+          "metric_changed": true,
+          "fixture_marker_present": false,
+          "nonlink_ipv4_count": 1
+        },
+        "after_stop": {
+          "available": true,
+          "alias_unchanged": true,
+          "ipv4_changed": true,
+          "mtu_changed": true,
+          "metric_changed": true,
+          "fixture_marker_present": false,
+          "nonlink_ipv4_count": 1
+        },
+        "scope": "retained_fixture_adapter_ipv4_mtu_metric_alias_only",
+        "sdk_stopped_before_fixture_close": true,
+        "identifiers_exported": false,
+        "adapter_ownership_qualified": false,
+        "release_ready": false
+      },
+      "adapter_owner_fixture_cleanup": {
+        "fixture_adapter_removed": true,
+        "release_ready": false
+      },
+      "ordinary_https_probe_attempted": false,
+      "application_dns_probe_attempted": false,
+      "ordinary_origin_route_is_tun": false,
+      "restoration_observation": {
+        "attempts": 1,
+        "query_failures": 0,
+        "coherent_clean_observed": true
+      },
+      "sdk_wfp_sessions_restored": true,
+      "deadline_triggered": false,
+      "routes_dns_adapter_restored": true
+    },
+    "qualification": {
+      "core_runtime_ready": 1,
+      "production_refused_endpoint_lifecycle": false,
+      "test_mode_owned_https": false,
+      "signed_service_ipc": "verified",
+      "release_ready": false,
+      "production_single_traffic_fixture": true,
+      "test_mode_attached_tun": false,
+      "checks": [
+        "old_disconnect_discards_unread_reply_reproduced",
+        "protocol_bounds",
+        "unsigned_service_denied",
+        "unsigned_client_denied_by_service",
+        "signed_owner_query",
+        "unknown_metrics_and_core_state_preserved",
+        "read_only_traffic_capability_without_fabricated_zero_metrics",
+        "busy_pipe_waits_without_resending",
+        "delayed_client_consumes_reply_before_disconnect",
+        "invalid_profile_denied",
+        "oversized_frame_denied",
+        "idempotent_stop",
+        "different_signer_denied_by_service",
+        "different_owner_sid_denied_even_to_admin",
+        "sdk_canary_no_raw_logs_or_files",
+        "real_wintun_create_close",
+        "retained_fixture_adapter_interference_reproduced_not_safe",
+        "service_uninstalled",
+        "dns_and_default_routes_unchanged"
+      ],
+      "test_mode_owned_bypass": false,
+      "test_mode_no_global_routes": false,
+      "test_mode_owned_migration": false,
+      "sdk_lifecycle": {
+        "verified_by": "retained_fixture_adapter_interference_reproduction",
+        "internet_delivery_tested": false,
+        "adapter_ownership_qualified": false,
+        "full_matrix_qualified": false
+      },
+      "driver_cycle": {
+        "adapter_created": true,
+        "adapter_removed": true
+      },
+      "test_mode_owned_probe": false,
+      "dns_and_default_routes_unchanged": true,
+      "test_mode_tun_network": false
+    },
+    "sdk-runtime-input": {
+      "source_run": 44038398682,
+      "source_commit": "84f9da68a2fee2e7cb4cb42ef2f80e264aad4d08",
+      "sdk_commit": "a1ce3f9d2572e8c3fd6c31e6c31881d307131f40",
+      "privacy_policy_version": 1,
+      "files": {
+        "trusttunnel.dll": "fcafa344cd1ce143a928c3f1cfc63f25686e7f6b739aa7ed58d4736d082d1ca5",
+        "wintun.dll": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce"
+      },
+      "source_pinned_candidate": true,
+      "source_pin_manifest_sha256": "cf9d5d299aeae007c9314b4235d8a45ad52076de46da5e5150e952d3d05cd474",
+      "conan_input_lock_sha256": "2680c44369acf682190acbb322273a3a0a648edcbbba851e99b0c0166595c246",
+      "network_requalified": true,
+      "release_qualified": false,
+      "network_qualification_scope": "disposable_ci_ordinary_ipv4_faults_recovery_and_synthetic_ipv6_with_aggregate_counters",
+      "qualification_receipt": "docs/evidence/sdk-traffic-requalification.json",
+      "windows_10_qualified": false,
+      "windows_11_qualified": false,
+      "native_ipv6_egress_qualified": false,
+      "traffic_abi": 1,
+      "traffic_profile_manifest_sha256": "40d21c0edd085dc7bae109ae97f9bc0ef0d338e42e83c8e712c872383bd88686",
+      "traffic_abi_header_sha256": "1541911357ef9fe588da9894167e4d39df263b8527a1a3a2fa738017768c22bd",
+      "sdk_variant": "aggregate_traffic_candidate"
+    },
+    "traffic-capability": {
+      "code": 0,
+      "flags": 1,
+      "instance": null,
+      "epoch": null,
+      "at_ms": null,
+      "tx": null,
+      "rx": null,
+      "last_tx_ms": null,
+      "last_rx_ms": null,
+      "core_state": null
+    }
+  },
+  "native_stages": [
+    {
+      "stage": 1
+    },
+    {
+      "stage": 2
+    },
+    {
+      "stage": 3
+    },
+    {
+      "stage": 4
+    },
+    {
+      "stage": 5
+    },
+    {
+      "stage": 6
+    },
+    {
+      "stage": 7
+    },
+    {
+      "stage": 8
+    },
+    {
+      "stage": 8
+    },
+    {
+      "stage": 8
+    },
+    {
+      "stage": 8
+    },
+    {
+      "stage": 9
+    },
+    {
+      "stage": 10
+    },
+    {
+      "stage": 11
+    },
+    {
+      "stage": 12
+    }
+  ],
+  "unsafe_adoption_reproduced": true,
+  "adapter_ownership_qualified": false,
+  "release_ready": false
+}
