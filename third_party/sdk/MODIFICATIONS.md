@@ -96,3 +96,25 @@ attachment profile, separate from every currently admitted runtime:
   are pinned in `owned-probe-inputs.json` / `owned-probe-profile.json`.
   These facts do not themselves prove an application HTTPS/DNS request or qualify
   a release. A dedicated health endpoint remains unselected.
+
+Optional fresh-adapter profile (`tools/sdk/fresh_adapter_profile.py`), after the
+owned-socket profile, outside normal service/package admission:
+
+- Removes the Windows SDK's open-existing-by-name path and deterministic
+  name-derived GUID. Creates a private per-attempt GUID and physical alias from
+  independent system CSPRNG material, with no configured logical-name adoption.
+- Policy 2 pads the physical alias to exactly 127 characters. This depends on
+  the pinned original Wintun 0.14.1 DLL's maximum-name duplicate-suffix refusal;
+  it is not a general guarantee for other binaries. Policy 1's shorter alias
+  failed the controlled foreign-name race and is superseded, not admitted.
+- Verifies actual GUID, complete alias, LUID and index on the returned creation
+  handle before IP/session setup. Retains private creation observations for the
+  existing attached-interface getter and clears them before handle teardown.
+  Adds a build-policy export; it is not a per-instance health/ownership receipt.
+- Changes only guarded Windows tunnel factory/attachment handling and the build
+  marker, plus two private headers. Original signed Wintun bytes and existing
+  transport/TLS/privacy behavior remain unchanged. Baseline/header/output digests
+  are recorded in `fresh-adapter-inputs.json` / `fresh-adapter-profile.json`.
+- Focused native/factory Server 2022 controls passed; full SDK/network, recovery,
+  desktop and release qualification remain separate gates. No private identity
+  is added to diagnostic output. This notice does not promote this candidate.

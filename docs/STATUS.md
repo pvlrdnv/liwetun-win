@@ -38,8 +38,16 @@ including four explicit candidate/discovery boundary checks. Actual SDK network
 execution is still pending; no ordinary runtime pin or installer change.
 A separate read-only Windows check now exercises the actual PowerShell/.NET
 pattern and both clean-host observer paths without starting SDK/driver/session;
-its execution is pending. The network workflow's fresh-runtime option is being
+**[PASS 44297839007](evidence/adapter-discovery-44297839007.json)** on `2084cab`, including strict newline/length boundaries,
+with no network configuration change. The network workflow's fresh-runtime option is being
 prepared locally and will stay uncommitted until the SDK binary receipt exists.
+
+Added an explicit CI-only runtime verifier: successful exact SDK run/head,
+profile/ABI/header digests, original Wintun bytes, same-source actual factory
+receipt, and literal-false admission/qualification gates are all required.
+It cannot promote a candidate from a successful process start or stale receipt.
+**Nine synthetic provenance/refusal tests PASS** locally. Updated the optional
+SDK modification notice; original upstream license bodies remain unchanged.
 
 This is a pinned-original-API behavior boundary, not an atomic name reservation
 or permission to use another Wintun version. Original DLL/hash/signature and

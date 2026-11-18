@@ -1,0 +1,19 @@
+{
+  "source_run": 44297839007,
+  "source_commit": "2084cab4f0ccb7fbc8267b9ab1f205358861dac5",
+  "report_sha256": "18aa0d397b66c557031d2be82115c1c9270b8b989c3724bcea238c15da01df3d",
+  "report": {
+    "legacy_clean_host_binding_passed": true,
+    "fresh_clean_host_binding_passed": true,
+    "actual_dotnet_pattern_boundary_passed": true,
+    "network_configuration_changed": false,
+    "tunnel_started": false,
+    "identifiers_exported": false,
+    "adapter_ownership_qualified": false,
+    "release_ready": false
+  },
+  "actual_sdk_adapter_discovery_tested": false,
+  "adapter_ownership_qualified": false,
+  "network_requalified": false,
+  "release_ready": false
+}
