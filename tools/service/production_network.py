@@ -452,6 +452,9 @@ def main():
     attachment_guard = os.environ.get('ATTACHED_TUN') == 'true'
     owned_probe = os.environ.get('OWNED_PROBE') == 'true'
     ownership_audit = os.environ.get('LIWETUN_ADAPTER_OWNERSHIP_AUDIT') == 'true'
+    ownership_variant = os.environ.get('LIWETUN_ADAPTER_OWNER_VARIANT', 'visible')
+    if ownership_variant not in ['visible', 'renamed'] or (ownership_variant != 'visible' and not ownership_audit):
+        raise RuntimeError('invalid_adapter_owner_audit')
     owned_probe_mode = os.environ.get('LIWETUN_OWNED_PROBE_MODE', 'echo')
     if owned_probe_mode not in ['echo', 'cancel', 'deadline', 'wrong-nonce', 'migration', 'epoch-change', 'bypass', *HTTPS_MODES] or (owned_probe_mode != 'echo' and not owned_probe):
         raise RuntimeError('invalid_owned_probe_mode')
@@ -518,6 +521,7 @@ def main():
               'owned_https_ci_enabled': owned_probe and owned_probe_mode in HTTPS_MODES,
               'owned_probe_mode': owned_probe_mode,
               'adapter_ownership_audit_enabled': ownership_audit,
+              'adapter_owner_variant': ownership_variant if ownership_audit else None,
               'adapter_ownership_qualified': False,
               'attachment_context_proves_endpoint_traversal': False,
               'server_https_egress_bound_physical': True,
@@ -526,7 +530,7 @@ def main():
               'endpoint_reader_wakeup_candidate': os.environ.get('LIWETUN_ENDPOINT_STREAM_CLOSE') == 'true',
               'full_matrix_qualified': False, 'release_ready': False}
     if ownership_audit:
-        result.update(mode='preexisting_visible_adapter_alias_refusal',
+        result.update(mode='preexisting_adapter_name_refusal',
                       internet_delivery_tested=False, https_health_qualified=False, dns_health_qualified=False,
                       routing_test_modes_enabled=True, network_test_modes_enabled=True,
                       no_global_routes_or_dns_test_mode=True)
@@ -628,6 +632,18 @@ def main():
             ready = json.loads(foreign_owner.receive())
             from adapter_ownership_fixture import pristine, validate_ready
             validate_ready(ready)
+            if ownership_variant == 'renamed':
+                renamed = ps("""
+                if (@(Get-NetAdapter -IncludeHidden | Where-Object Name -eq 'LiWeTun.CI.RenamedOwner').Count) { throw 'Fixture rename destination exists' }
+                $adapter = @(Get-NetAdapter -IncludeHidden | Where-Object Name -eq 'LiWeTun')
+                if ($adapter.Count -ne 1) { throw 'Ambiguous fixture adapter' }
+                $adapter[0] | Rename-NetAdapter -NewName 'LiWeTun.CI.RenamedOwner' -Confirm:$false | Out-Null
+                $true | ConvertTo-Json -Compress
+                """)
+                from adapter_ownership_fixture import validate_rename
+                if renamed is not True:
+                    raise RuntimeError('adapter_owner_fixture_not_ready')
+                result['adapter_owner_fixture_rename'] = validate_rename(foreign_owner.command('confirm-renamed'))
             baseline_adapter = foreign_owner.command('sample')
             if not pristine(baseline_adapter):
                 raise RuntimeError('adapter_owner_fixture_not_ready')

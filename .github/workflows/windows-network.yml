@@ -42,6 +42,13 @@ on:
         description: Refuse a retained visible adapter before SDK start (not complete ownership safety)
         type: boolean
         default: false
+      adapter_ownership_variant:
+        description: Existing visible alias or renamed fixture with the same internal Wintun name
+        type: choice
+        default: visible
+        options:
+          - visible
+          - renamed
       traffic_pattern:
         description: Normal traffic or a tiny TX-only native counter observation window
         type: choice
@@ -130,6 +137,7 @@ jobs:
       ATTACHED_TUN: ${{ inputs.attached_tun }}
       OWNED_PROBE: ${{ inputs.owned_probe }}
       LIWETUN_ADAPTER_OWNERSHIP_AUDIT: ${{ inputs.adapter_ownership_audit }}
+      LIWETUN_ADAPTER_OWNER_VARIANT: ${{ inputs.adapter_ownership_variant }}
       LIWETUN_OWNED_PROBE_MODE: ${{ inputs.owned_probe_mode }}
       LIWETUN_TRAFFIC_PATTERN: ${{ inputs.traffic_pattern }}
       SDK_RUN_ID: ${{ inputs.sdk_run_id }}
@@ -166,6 +174,7 @@ jobs:
           if ($env:LIWETUN_ENDPOINT_STREAM_CLOSE -eq 'true' -and (!$env:LIWETUN_ENDPOINT_FIXTURE_RUN -or $env:OWNED_PROBE -ne 'true')) { throw 'Endpoint wakeup candidate requires explicit focused owned probe fixture' }
           if ($env:LIWETUN_PRODUCTION_PROBE -ne 'true' -and $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4') { throw 'Synthetic IPv6 requires production probe mode' }
           if ($env:LIWETUN_ADAPTER_OWNERSHIP_AUDIT -eq 'true' -and ($env:TRAFFIC_METRICS -ne 'true' -or $env:OWNED_PROBE -eq 'true' -or $env:ATTACHED_TUN -eq 'true' -or $env:LIWETUN_PRODUCTION_TRANSPORT -ne 'http2' -or $env:LIWETUN_PRODUCTION_TERMINATION -ne 'stop' -or $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4' -or $env:LIWETUN_PRODUCTION_PROFILE -ne 'valid' -or $env:LIWETUN_TRAFFIC_PATTERN -ne 'normal')) { throw 'Adapter ownership audit requires its isolated aggregate H2 IPv4 Stop fixture' }
+          if ($env:LIWETUN_ADAPTER_OWNER_VARIANT -notin @('visible','renamed') -or ($env:LIWETUN_ADAPTER_OWNER_VARIANT -ne 'visible' -and $env:LIWETUN_ADAPTER_OWNERSHIP_AUDIT -ne 'true')) { throw 'Renamed adapter fixture requires explicit ownership audit' }
           rustup toolchain install 1.95.0 --profile minimal
           if ($LASTEXITCODE -ne 0) { throw 'Rust install failed' }
           $bounded = if ($env:LIWETUN_PRODUCTION_PROBE -eq 'true') { 'OFF' } else { 'ON' }

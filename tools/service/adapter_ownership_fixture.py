@@ -35,6 +35,14 @@ def validate_cleanup(value):
     return value
 
 
+def validate_rename(value):
+    if (not isinstance(value, dict) or set(value) != {'renamed_alias_confirmed', 'identifiers_exported'}
+            or value != dict(renamed_alias_confirmed=True, identifiers_exported=False)
+            or any(type(v) is not bool for v in value.values())):
+        raise ValueError('adapter_owner_fixture_not_ready')
+    return value
+
+
 def validate_sample(value):
     if not isinstance(value, dict) or set(value) != FIELDS or type(value['available']) is not bool:
         raise ValueError('invalid_adapter_owner_sample')
@@ -69,7 +77,7 @@ def validate_idle_reply(value, code):
 
 
 def observe_refusal(session, owner, client, start_reply, diagnostic, progress_directory=None):
-    """Qualify only refusal of the already present visible alias, not ownership/race safety."""
+    """Qualify only preexisting-name refusal, not ownership/race safety."""
     def progress(stage):
         if progress_directory is not None:
             checkpoint(progress_directory, stage)
@@ -101,8 +109,8 @@ def observe_refusal(session, owner, client, start_reply, diagnostic, progress_di
     diagnostic['after_stop'] = after
     if not pristine(after):
         raise ValueError('adapter_owner_refusal_not_qualified')
-    return dict(refusal_passed=True, preexisting_visible_alias_guard_qualified=True,
-                scope='preexisting_visible_alias_guard_only', start_refused_before_sdk=True,
+    return dict(refusal_passed=True, preexisting_adapter_name_guard_qualified=True,
+                scope='preexisting_adapter_name_guard_only', start_refused_before_sdk=True,
                 active=active, after_stop=after, sdk_stopped_before_fixture_close=True,
                 identifiers_exported=False, adapter_ownership_qualified=False, release_ready=False)
 

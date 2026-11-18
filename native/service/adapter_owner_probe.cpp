@@ -11,6 +11,7 @@
 
 namespace {
 constexpr wchar_t kAlias[] = L"LiWeTun";
+constexpr wchar_t kRenamedAlias[] = L"LiWeTun.CI.RenamedOwner";
 constexpr ULONG kMarkerMtu = 1337;
 constexpr ULONG kMarkerMetric = 427;
 using Create = void* (WINAPI*)(LPCWSTR, LPCWSTR, const GUID*);
@@ -138,7 +139,7 @@ int RunAdapterOwnerFixture() {
     Stage(stage.get(), 5);
     if (SetIpInterfaceEntry(&marker) != NO_ERROR) return 97;
     Stage(stage.get(), 6);
-    const auto baseline = Read(retained);
+    auto baseline = Read(retained);
     if (!baseline || baseline->alias != kAlias || baseline->mtu != kMarkerMtu ||
         baseline->metric != kMarkerMetric || !baseline->addresses.empty()) return 98;
     Stage(stage.get(), 7);
@@ -146,6 +147,16 @@ int RunAdapterOwnerFixture() {
         "\"marker_verified\":true,\"identifiers_exported\":false,\"release_ready\":false}" << std::endl;
     std::string command;
     for (unsigned call = 0; call < 256 && std::getline(std::cin, command); ++call) {
+      if (command == "confirm-renamed") {
+        Stage(stage.get(), 8);
+        const auto current = Read(retained);
+        const bool valid = current && current->alias == kRenamedAlias && current->mtu == kMarkerMtu &&
+            current->metric == kMarkerMetric && current->addresses == baseline->addresses;
+        if (valid) baseline->alias = current->alias;
+        std::cout << "{\"renamed_alias_confirmed\":" << (valid ? "true" : "false")
+            << ",\"identifiers_exported\":false}" << std::endl;
+        continue;
+      }
       if (command != "sample") break;
       Stage(stage.get(), 8);
       Print(*baseline, Read(retained));

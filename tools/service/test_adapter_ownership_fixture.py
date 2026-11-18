@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from adapter_ownership_fixture import (validate_sample, pristine, interference, validate_ready, validate_cleanup,
-                                       validate_idle_reply, observe_refusal)
+                                       validate_idle_reply, observe_refusal, validate_rename)
 
 
 def baseline():
@@ -13,6 +13,15 @@ def baseline():
 
 
 class AdapterOwnershipFixtureTests(unittest.TestCase):
+    def test_fixture_alias_rebase_keeps_identifiers_private_and_requires_confirmation(self):
+        validate_rename(dict(renamed_alias_confirmed=True, identifiers_exported=False))
+        for value in [dict(renamed_alias_confirmed=1, identifiers_exported=False),
+                      dict(renamed_alias_confirmed=False, identifiers_exported=False),
+                      dict(renamed_alias_confirmed=True, identifiers_exported=True),
+                      dict(renamed_alias_confirmed=True, identifiers_exported=False, name='not_exported')]:
+            with self.assertRaises(ValueError):
+                validate_rename(value)
+
     def test_refusal_requires_no_sdk_core_observation_or_fabricated_reply(self):
         reply = dict(code=6, state=0, core_state=2**32 - 1)
         validate_idle_reply(reply, 6)

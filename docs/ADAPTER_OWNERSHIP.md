@@ -109,3 +109,19 @@ name used by the SDK, and the check/start interval is not atomic. These checks
 do not authorize adoption, qualify a race or replace a fresh-identity SDK
 factory. Existing SDK binaries/pins and normal ownership/release admission
 remain unchanged until that independent work passes its required controls.
+
+The refusal gate now also reads the internal Wintun name property used by its
+open routine, using bounded read-only SetupAPI queries. The visible-name-only
+weakness is being qualified with a fixture whose visible alias is renamed while
+its creation handle and internal device name remain retained.
+[Clean-host Windows API binding PASS](evidence/adapter-admission-contract-44256771327.json);
+foreign-adapter and healthy-start qualification is pending.
+
+Primary sources inspected for this gate:
+
+- [Wintun original adapter create/open implementation](https://git.zx2c4.com/wintun/plain/api/adapter.c?h=0.14.1)
+- [Read-only device property lookup](https://learn.microsoft.com/en-us/windows/win32/api/setupapi/nf-setupapi-setupdigetdevicepropertyw)
+- [Present device enumeration](https://learn.microsoft.com/en-us/windows/win32/api/setupapi/nf-setupapi-setupdigetclassdevsw)
+
+The SDK factory check/start interval remains non-atomic. Pre-existing-name refusal
+is a partial mitigation and is not fresh-creation or collision/race qualification.

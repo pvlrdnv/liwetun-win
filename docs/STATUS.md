@@ -65,6 +65,23 @@ must not hide a pre-existing SDK open-by-name target. SetupAPI queries are
 bounded and errors refuse Start; no adapter is opened, renamed or configured by
 the production guard. API compilation/clean-host qualification is pending.
 
+Read-only name admission OS binding/clean-host preflight **PASS** on Windows
+(44256771327), source `a2ae82f`, with existing socket/HTTP/Schannel contracts.
+No adapter/TUN or network configuration was created/changed by that contract.
+[Receipt](evidence/adapter-admission-contract-44256771327.json).
+The service checks both visible aliases and the internal Wintun device-name
+property via bounded read-only SetupAPI enumeration. No Wintun open operation is
+used by the gate. Absent properties on other network devices are expected;
+failed/malformed/oversized observation refuses Start.
+
+The existing-adapter fixture gains a `renamed` variant: CI renames only its own
+retained adapter, confirms unchanged IP/MTU/metric markers, then requires Start
+refusal even though the visible reserved alias is now absent. Only a closed
+rename confirmation is exported. **60 local Python fixture checks PASS**;
+Windows visible/renamed refusal, healthy H2/H3 and updated package runs pending.
+Full fresh-identity/creation-race protection still requires SDK work; no ownership
+or release gate is marked complete by this preflight.
+
 ## Health development record
 
 Next negative prerequisite: `owned_probe_mode=wrong-nonce` now returns an exact
