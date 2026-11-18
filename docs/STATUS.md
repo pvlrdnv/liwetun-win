@@ -82,6 +82,17 @@ Windows visible/renamed refusal, healthy H2/H3 and updated package runs pending.
 Full fresh-identity/creation-race protection still requires SDK work; no ownership
 or release gate is marked complete by this preflight.
 
+On `a018801`, visible-alias refusal 44257161489, healthy service-owned HTTPS
+H2/H3 44257179946 / 44257185247 and package 44257190700 PASS. Renamed fixture
+44257171911 FAIL: its name rebase/markers were valid, but Start was accepted.
+The guard's copied Wintun property GUID had a transposed byte (E7 instead of
+7E), so its private-name lookup did not find the target. The byte is corrected
+against the original Wintun source. [Original closed report](evidence/adapter-guard-renamed-44257171911-failed.json).
+That failed case restored the final network baseline and did not trigger the
+watchdog, but did not reach final WFP qualification. Current-source renamed /
+visible refusal and healthy/package regressions are pending. Complete adapter
+ownership/race qualification remains false.
+
 ## Health development record
 
 Next negative prerequisite: `owned_probe_mode=wrong-nonce` now returns an exact
