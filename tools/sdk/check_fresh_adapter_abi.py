@@ -19,9 +19,9 @@ def main():
         marker = sdk.liwetun_adapter_creation_policy_v1
         marker.argtypes = []
         marker.restype = ctypes.c_uint32
-        if marker() != 1 or marker() != 1:
+        if marker() != 2 or marker() != 2:
             raise ValueError('creation_policy_marker_mismatch')
-    args.output.write_text(json.dumps(dict(adapter_creation_policy=1,
+    args.output.write_text(json.dumps(dict(adapter_creation_policy=2,
         build_marker_only=True, tunnel_started=False, network_changed=False,
         adapter_ownership_qualified=False, network_requalified=False,
         service_admitted=False, package_admitted=False, release_ready=False), indent=2) + '\n')

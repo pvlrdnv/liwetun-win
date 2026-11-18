@@ -178,7 +178,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'DNS recipe export failed' }
       - name: Configure and build actual SDK DLL
         run: |
-          $sdkVersion = if ($env:FRESH_ADAPTER -eq 'true') { '1.1.12-liwetun.fresh1' } elseif ($env:OWNED_PROBE -eq 'true') { '1.1.12-liwetun.probe1' } elseif ($env:ATTACHED_TUN -eq 'true') { '1.1.12-liwetun.attached1' } elseif ($env:TRAFFIC_METRICS -eq 'true') { '1.1.12-liwetun.traffic1' } else { '1.1.12-liwetun.1' }
+          $sdkVersion = if ($env:FRESH_ADAPTER -eq 'true') { '1.1.12-liwetun.fresh2' } elseif ($env:OWNED_PROBE -eq 'true') { '1.1.12-liwetun.probe1' } elseif ($env:ATTACHED_TUN -eq 'true') { '1.1.12-liwetun.attached1' } elseif ($env:TRAFFIC_METRICS -eq 'true') { '1.1.12-liwetun.traffic1' } else { '1.1.12-liwetun.1' }
           cmake -S build/vendor/sdk/platform/windows -B build/sdk-build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe "-DTT_CLIENT_VERSION=$sdkVersion"
           if ($LASTEXITCODE -ne 0) { throw 'SDK configure failed' }
           $profileArgs = @()

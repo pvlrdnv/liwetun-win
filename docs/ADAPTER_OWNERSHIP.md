@@ -204,3 +204,33 @@ checks, patch the original DLL in memory/on disk or declare a random name an
 atomic reservation. Keep this candidate outside normal runtime/service/package
 admission while the create boundary is redesigned or an appropriate supported
 API is qualified. No upstream issue/message has been sent on the owner's behalf.
+
+## Policy 2: qualified maximum-name boundary, integration pending
+
+Source inspection identified a refusal boundary in the pinned original API:
+`NciSetAdapterName` formats the foreign suffix in a `MAX_ADAPTER_NAME` buffer
+**before** calling the foreign rename. A valid maximum-length requested name
+leaves no room for that suffix and should return an error first. This is a
+specific original-binary behavior hypothesis, not a general Windows guarantee.
+
+[Actual 44295841552 PASS](evidence/adapter-max-name-44295841552.json) confirmed
+unique 127-character creation, alias-only collision refusal with retained
+foreign configuration unchanged, and separately GUID-only collision refusal
+with unchanged owner. Exact adapter/route/DNS restoration passed. This fixture
+did not start an SDK/session; it also independently reproduced the old short
+policy's unsafe race on the same original DLL.
+
+The isolated SDK profile now uses policy 2: pad the opaque random alias to the
+full 127 characters, statically assert the Windows header's limit, retain the
+128-bit random alias component and independent requested GUID, and verify the
+complete actual alias/GUID/LUID/index before configuration. Do not truncate the
+physical alias for presentation or substitute another Wintun binary. Diagnostics
+still export no identifiers. The build-policy export returns 2 and remains
+insufficient for ownership/health admission.
+
+The integrated factory test must refuse a separately inserted adapter **after**
+preflight with its retained sample unchanged. An observed rename/accepted handle
+now fails that test. Source preparation/Python guards pass; actual integrated
+factory/native/full SDK checks are pending. Full ownership, SDK network/recovery/
+Stop controls and desktop/release qualification remain open. Existing service
+preflight and ordinary runtime pins/package are unchanged.

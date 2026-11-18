@@ -11,6 +11,7 @@ from traffic_profile import safe_file, verify_inputs, once
 
 ROOT = Path(__file__).resolve().parents[2]
 HEADER = '// MODIFIED BY LiWeTun: private fresh create-only adapter candidate; no ownership qualification.\n'
+WINTUN_SHA256 = 'e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce'
 
 
 def transform(files):
@@ -65,7 +66,7 @@ def transform(files):
     windows = 'platform/windows/src/trusttunnel.cpp'
     edit(windows, 'trusttunnel_t *trusttunnel_start_ex(',
          '// Build policy marker only; never a per-instance ownership/health receipt.\n'
-         'extern "C" __declspec(dllexport) uint32_t liwetun_adapter_creation_policy_v1() noexcept { return 1; }\n\n'
+         'extern "C" __declspec(dllexport) uint32_t liwetun_adapter_creation_policy_v1() noexcept { return 2; }\n\n'
          'trusttunnel_t *trusttunnel_start_ex(')
     if 'WintunOpenAdapter' in result[cpp] or 'uuid_v5' in result[cpp]:
         raise ValueError('adoption_path_remains')
@@ -76,6 +77,9 @@ def prepare(source, output, manifest_file=None):
     manifest_file = manifest_file or ROOT / 'native/sdk/fresh-adapter-inputs.json'
     manifest = json.loads(manifest_file.read_text())
     sdk_commit = manifest['sdk_commit']
+    if (manifest.get('adapter_creation_policy') != 2 or manifest.get('physical_alias_characters') != 127
+            or manifest.get('original_wintun_sha256') != WINTUN_SHA256):
+        raise ValueError('fresh_adapter_policy_dependency_mismatch')
     files = transform(verify_inputs(source, manifest))
     additions = {}
     for name, destination in manifest['added_files'].items():
@@ -97,7 +101,8 @@ def prepare(source, output, manifest_file=None):
     for name, data in written.items():
         (source / name).write_bytes(data)
     digest = lambda data: hashlib.sha256(data).hexdigest()
-    report = dict(sdk_commit=sdk_commit, adapter_creation_policy=1,
+    report = dict(sdk_commit=sdk_commit, adapter_creation_policy=2, physical_alias_characters=127,
+                  required_wintun_sha256=WINTUN_SHA256,
                   manifest_sha256=digest(manifest_file.read_bytes()),
                   patcher_sha256=digest(Path(__file__).read_bytes()), baseline_files=manifest['baseline_files'],
                   written_files={name: digest(data) for name, data in written.items()},

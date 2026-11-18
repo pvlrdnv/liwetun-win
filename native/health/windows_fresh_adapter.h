@@ -4,12 +4,14 @@
 #include <windows.h>
 #include <bcrypt.h>
 #include <iphlpapi.h>
+#include <ipexport.h>
 #include <netioapi.h>
 #include <cstring>
 #include <type_traits>
 #include "fresh_adapter.h"
 
 namespace liwetun::adapter {
+static_assert(MAX_ADAPTER_NAME == kAliasCharacters + 1);
 template<class CreateFn, class CloseFn, class LuidFn> class WindowsOps {
  public:
   using Handle = std::invoke_result_t<CreateFn, LPCWSTR, LPCWSTR, const GUID*>;
@@ -54,7 +56,7 @@ template<class CreateFn, class CloseFn, class LuidFn> class WindowsOps {
     row.InterfaceLuid = luid;
     if (GetIfEntry2(&row) != NO_ERROR || row.InterfaceLuid.Value != luid.Value ||
         row.InterfaceIndex != index || !IsEqualGUID(row.InterfaceGuid, guid) ||
-        wcsnlen_s(row.Alias, IF_MAX_STRING_SIZE + 1) != 40) return false;
+        wcsnlen_s(row.Alias, IF_MAX_STRING_SIZE + 1) != kAliasCharacters) return false;
     std::memcpy(output.identity.guid.data(), &guid, sizeof(guid));
     for (size_t i = 0; i < output.identity.name.size(); ++i) output.identity.name[i] = row.Alias[i];
     output.index = index;

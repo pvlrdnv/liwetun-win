@@ -1,6 +1,36 @@
 # Development checkpoint — 2026-11-18
 
-## Fresh adapter SDK candidate — controls pass, unsafe physical-name race reproduced
+## Fresh adapter policy 2 — maximum-name boundary passes, integrated checks pending
+
+The original signed Wintun supports a useful refusal boundary: a valid physical
+alias of `MAX_ADAPTER_NAME-1` characters fills its duplicate-name suffix buffer.
+[Actual pinned-DLL experiment 44295841552 PASS](evidence/adapter-max-name-44295841552.json)
+on `51ac10a`: unique 127-character creation succeeded; exact alias collision
+with a different GUID, and GUID collision with a different alias, both refused
+without changing the retained fixture. All adapter/route/DNS baselines restored.
+The same run still reproduced the **old short-name policy's unsafe race**; this
+does not retroactively qualify policy 1 or the whole SDK.
+
+Updated only the isolated candidate to policy **2** / `fresh2`: retain independent
+random GUID/alias material, pad its private alias to exactly 127 characters,
+statically check the Windows SDK limit, verify the full actual returned alias,
+and return build-marker policy 2. The strict factory oracle now requires the
+post-preflight inserted adapter to remain unchanged and new Create to refuse;
+the earlier rename/accepted-handle outcome can no longer pass this oracle.
+Both modified header hashes and the required original DLL digest are pinned;
+short-alias/wrong-driver manifests refuse before vendor writes. Full pinned
+preparation and **23 local
+Python profile checks PASS**; integrated native/actual-factory/full SDK checks
+are pending disposable Windows CI. The obsolete policy-1 full SDK build
+44294099414 was requested cancelled; no DLL/network qualification is claimed.
+
+This is a pinned-original-API behavior boundary, not an atomic name reservation
+or permission to use another Wintun version. Original DLL/hash/signature and
+normal runtime/service/package admission stay unchanged. Full SDK configuration,
+recovery, Stop/failure controls, network regressions and separate Windows 10/11
+acceptance remain open. No owner-machine, LikeWeb or production change.
+
+## Fresh adapter policy 1 history — unsafe physical-name race reproduced
 
 Added a separate default-OFF `fresh_adapter` SDK profile, after the privacy,
 aggregate, attached-interface and owned-probe profiles. It removes the SDK's
@@ -22,7 +52,7 @@ A separate read-only Windows binding test calls the actual RNG/interface APIs,
 without calling adapter Create. Native compilation and contracts **PASS** in
 disposable Windows CI [44294099613](evidence/fresh-adapter-contract-44294099613.json)
 on `a9bacdd`; the SDK workflow also passed its
-contract/source-preparation steps and is building the full DLL (44294099414).
+contract/source-preparation steps (44294099414, subsequently superseded).
 No native test result is inferred from WSL preparation.
 
 Prepared a separate CI-only actual-Wintun factory fixture. It retains a foreign
@@ -59,12 +89,12 @@ candidate on the strength of fresh-handle/positive tests. Foreign-adapter contro
 full network regressions, ownership admission and Windows 10/11 acceptance remain
 open. No owner-device, production or LikeWeb changes.
 
-Next independent CI experiment: use the original API's maximum-length physical
+Subsequent independent CI experiment: use the original API's maximum-length physical
 alias, leaving no room for the duplicate-name suffix. The source suggests a
 collision should fail before the foreign rename; actual signed-DLL behavior
-must prove unique creation plus alias-only/GUID-only refusal with retained
-foreign configuration unchanged. This experiment does not change the current
-40-character SDK candidate or its failed race-safety classification.
+proved unique creation plus alias-only/GUID-only refusal with retained foreign
+configuration unchanged (44295841552). See policy 2 above. It does not change
+policy 1's failed race-safety classification.
 
 ## Latest checkpoint — pre-existing-name refusal qualified, full ownership open
 

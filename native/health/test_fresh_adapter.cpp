@@ -63,7 +63,8 @@ int main() {
   });
   for (auto& worker : workers) worker.join();
   for (size_t i = 0; i < results.size(); ++i) {
-    assert(results[i].handle && results[i].authority.identity.name[40] == 0);
+    assert(results[i].handle && results[i].authority.identity.name.back() == 0);
+    for (size_t p = 40; p < kAliasCharacters; ++p) assert(results[i].authority.identity.name[p] == L'x');
     for (size_t j = i + 1; j < results.size(); ++j) {
       assert(results[i].authority.identity.name != results[j].authority.identity.name);
       assert(results[i].authority.identity.guid != results[j].authority.identity.guid);

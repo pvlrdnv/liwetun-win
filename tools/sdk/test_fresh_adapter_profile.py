@@ -17,7 +17,9 @@ class FreshAdapterProfileGuards(unittest.TestCase):
             for name in ['one.h', 'two.h']:
                 (root / name).write_bytes(name.encode())
             digest = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
-            manifest = dict(sdk_commit='synthetic', baseline_files={'baseline': digest(source / 'baseline')},
+            manifest = dict(sdk_commit='synthetic', adapter_creation_policy=2, physical_alias_characters=127,
+                            original_wintun_sha256=profile.WINTUN_SHA256,
+                            baseline_files={'baseline': digest(source / 'baseline')},
                             added_files={'one.h': 'one.h', 'two.h': 'two.h'},
                             added_input_sha256={n: digest(root / n) for n in ['one.h', 'two.h']})
             if mode == 'header_tamper':
@@ -30,6 +32,10 @@ class FreshAdapterProfileGuards(unittest.TestCase):
                 manifest['added_files']['two.h'] = '../escape.h'
             elif mode == 'symlink_output':
                 (source / 'two.h').symlink_to(root / 'two.h')
+            elif mode == 'wrong_driver':
+                manifest['original_wintun_sha256'] = '0' * 64
+            elif mode == 'short_alias':
+                manifest['physical_alias_characters'] = 40
             manifest_file = root / 'manifest.json'
             manifest_file.write_text(json.dumps(manifest))
             before = {p.name: p.read_bytes() for p in source.iterdir()}
@@ -64,6 +70,12 @@ class FreshAdapterProfileGuards(unittest.TestCase):
 
     def test_success_has_closed_unqualified_report(self):
         self.exercise('valid')
+
+    def test_wrong_original_driver_is_rejected_before_vendor_write(self):
+        self.exercise('wrong_driver')
+
+    def test_short_alias_policy_is_rejected_before_vendor_write(self):
+        self.exercise('short_alias')
 
     def test_unknown_anchor_is_rejected(self):
         with self.assertRaises((ValueError, KeyError)):

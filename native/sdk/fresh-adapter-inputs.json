@@ -11,7 +11,10 @@
     "native/health/windows_fresh_adapter.h": "net/src/windows_fresh_adapter.h"
   },
   "added_input_sha256": {
-    "native/health/fresh_adapter.h": "147358ba0b956ad0e76fd49e0887ddb38d473506ee08c7764e07ee1a4665fe84",
-    "native/health/windows_fresh_adapter.h": "9ad884d66fadf206a25757b20c92ae5030889ac639f2ae4bbc630c6d327c9ef0"
-  }
+    "native/health/fresh_adapter.h": "c630ef8653e4f298ed42a62d3f7d23785615405d5bfa221d97ab45e0ef2d2cff",
+    "native/health/windows_fresh_adapter.h": "09d9b2dd8592d83e63c5cdcfaec3516ea6100191b24eaeaea65b18803d70f727"
+  },
+  "adapter_creation_policy": 2,
+  "physical_alias_characters": 127,
+  "original_wintun_sha256": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce"
 }

@@ -5,9 +5,13 @@
 
 // Private SDK creation policy. No names, GUIDs, LUIDs or handles are diagnostics.
 namespace liwetun::adapter {
+// Pinned Wintun 0.14.1 has a 128-WCHAR alias buffer. Saturate the allowed
+// length so its duplicate-name suffix cannot fit before a foreign rename.
+// Requires original-binary collision qualification; never shorten this alias.
+inline constexpr std::size_t kAliasCharacters = 127;
 struct Identity {
   std::array<uint8_t, 16> guid{};
-  std::array<wchar_t, 41> name{};
+  std::array<wchar_t, kAliasCharacters + 1> name{};
 };
 struct Observation {
   Identity identity{};
@@ -40,8 +44,9 @@ template<class Ops> Created<typename Ops::Handle> CreateFresh(Ops& ops) noexcept
     identity.name[8 + i * 2] = digits[random[16 + i] >> 4];
     identity.name[9 + i * 2] = digits[random[16 + i] & 15];
   }
-  // Refuse an observed collision. This is not an atomic reservation and does
-  // not claim protection against a privileged exact-physical-name race.
+  for (std::size_t i = 40; i < kAliasCharacters; ++i) identity.name[i] = L'x';
+  // Refuse observed collisions. The check is not an atomic reservation; the
+  // pinned original API's saturated-name refusal must cover a later collision.
   if (!ops.Vacant(identity)) return {};
   const auto handle = ops.Create(identity);
   if (!handle) return {};

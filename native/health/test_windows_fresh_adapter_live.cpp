@@ -133,7 +133,7 @@ bool Disposable() {
   return true;
 }
 void TestSaturatedName(Create create, Close close, Luid luid) {
-  // Independent experiment, not the current 40-character policy. The original
+  // Independent boundary check, also used by creation policy 2. The original
   // pinned API formats a duplicate-name suffix in MAX_ADAPTER_NAME characters.
   static_assert(MAX_ADAPTER_NAME == 128);
   std::array<uint8_t, 32> bytes{};
@@ -260,9 +260,9 @@ int wmain(int argc, wchar_t** argv) {
       Check(after.has_value());
       alias_changed = after->alias != std::wstring(race.foreign_before.identity.name.data());
       new_handle_accepted = raced.value != nullptr;
-      // Either an actual safe refusal or the known duplicate-alias exposure.
-      // A passing reproduction is never complete ownership qualification.
-      Check((!alias_changed && !new_handle_accepted) || (alias_changed && new_handle_accepted));
+      // Policy 2 must now refuse before any foreign rename. Historical short
+      // policy exposure remains archived, never accepted by this oracle.
+      Check(!alias_changed && !new_handle_accepted);
       raced.Release();
       Check(!new_handle_accepted || Gone(result.authority.luid));
       inserted.Release();
@@ -270,7 +270,7 @@ int wmain(int argc, wchar_t** argv) {
     }
     stage = 9;
     TestSaturatedName(create, close, luid);
-    std::printf("{\"passed\":true,\"foreign_logical_adapter_preserved\":true,\"observed_collision_refused\":true,\"post_create_refusal_cleanup\":true,\"concurrent_created_handles_distinct\":true,\"created_adapters_removed\":true,\"race_control_ran\":true,\"race_foreign_alias_changed\":%s,\"race_new_handle_accepted\":%s,\"saturated_name_unique_create\":true,\"saturated_name_alias_collision_refused_unchanged\":true,\"saturated_name_guid_collision_refused_unchanged\":true,\"factory_only\":true,\"sdk_started\":false,\"session_started\":false,\"privileged_physical_name_race_qualified\":false,\"adapter_ownership_qualified\":false,\"release_ready\":false}\n", alias_changed ? "true" : "false", new_handle_accepted ? "true" : "false");
+    std::printf("{\"passed\":true,\"foreign_logical_adapter_preserved\":true,\"observed_collision_refused\":true,\"post_create_refusal_cleanup\":true,\"concurrent_created_handles_distinct\":true,\"created_adapters_removed\":true,\"race_control_ran\":true,\"policy_race_refused_unchanged\":true,\"race_foreign_alias_changed\":%s,\"race_new_handle_accepted\":%s,\"saturated_name_unique_create\":true,\"saturated_name_alias_collision_refused_unchanged\":true,\"saturated_name_guid_collision_refused_unchanged\":true,\"factory_only\":true,\"sdk_started\":false,\"session_started\":false,\"privileged_physical_name_race_qualified\":false,\"adapter_ownership_qualified\":false,\"release_ready\":false}\n", alias_changed ? "true" : "false", new_handle_accepted ? "true" : "false");
     return 0;
   } catch (...) {
     std::printf("{\"passed\":false,\"stage\":%u,\"factory_only\":true,\"adapter_ownership_qualified\":false,\"release_ready\":false}\n", stage);
