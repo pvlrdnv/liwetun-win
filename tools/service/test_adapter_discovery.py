@@ -13,10 +13,16 @@ class AdapterDiscoveryTests(unittest.TestCase):
     def test_candidate_selection_refuses_missing_ci_or_preceding_profile(self):
         flags = dict(FRESH_ADAPTER='true', GITHUB_ACTIONS='true', SOURCE_PINNED='true',
                      TRAFFIC_METRICS='true', ATTACHED_TUN='true', OWNED_PROBE='true')
-        for missing in ['GITHUB_ACTIONS', 'SOURCE_PINNED', 'TRAFFIC_METRICS', 'ATTACHED_TUN', 'OWNED_PROBE']:
+        for missing in ['GITHUB_ACTIONS', 'SOURCE_PINNED', 'TRAFFIC_METRICS', 'ATTACHED_TUN']:
             incomplete = dict(flags); incomplete.pop(missing)
             with patch.dict('os.environ', incomplete, clear=True), self.assertRaises(ValueError):
                 selector()
+        with patch.dict('os.environ', flags, clear=True):
+            self.assertIn(FRESH_PATTERN, selector())
+
+    def test_fresh_observer_does_not_require_enabling_the_owned_socket_worker(self):
+        flags = dict(FRESH_ADAPTER='true', GITHUB_ACTIONS='true', SOURCE_PINNED='true',
+                     TRAFFIC_METRICS='true', ATTACHED_TUN='true', OWNED_PROBE='false')
         with patch.dict('os.environ', flags, clear=True):
             self.assertIn(FRESH_PATTERN, selector())
 

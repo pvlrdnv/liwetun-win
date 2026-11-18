@@ -11,7 +11,7 @@ def selector():
     if mode == 'true':
         if (os.environ.get('GITHUB_ACTIONS') != 'true'
                 or any(os.environ.get(name) != 'true'
-                       for name in ['SOURCE_PINNED', 'TRAFFIC_METRICS', 'ATTACHED_TUN', 'OWNED_PROBE'])):
-            raise ValueError('fresh_adapter_fixture_requires_pinned_owned_context')
+                       for name in ['SOURCE_PINNED', 'TRAFFIC_METRICS', 'ATTACHED_TUN'])):
+            raise ValueError('fresh_adapter_fixture_requires_pinned_attached_context')
         return "Get-NetAdapter -IncludeHidden | Where-Object { $_.Name -cmatch '" + FRESH_PATTERN + "' }"
     return "Get-NetAdapter -IncludeHidden | Where-Object Name -eq 'LiWeTun'"

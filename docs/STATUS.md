@@ -1,5 +1,29 @@
 # Development checkpoint — 2026-11-18
 
+## Fresh2 focused HTTPS matrix — 15/16 PASS, H3 epoch control open
+
+On `9f27da3`, real fresh2 H2/H3 positives, wrong nonce, untrusted certificate,
+deadline, cancellation, migration and local bypass all passed; H2 actual epoch
+change also passed. **15 of 16 cases PASS**. H3 epoch case **44304621614 FAIL**:
+TLS request was sent, withheld reply timed out, native epoch remained unchanged
+and counters stayed current (497 TX / 1544 RX); no HTTP response or health was
+qualified. Strict epoch-change oracle remains unchanged. Route/DNS/adapter
+restoration passed, without watchdog; no final WFP qualification is claimed for
+that failed case. [All original closed cases](evidence/fresh2-https-matrix-partial.json).
+
+Native bounded-admission/cancellation/clock contracts
+[PASS 44303339937](evidence/probe-admission-44303339937.json); fresh2 positives
+44303799395 H2 / 44303799275 H3 passed with the corrected explicit include and
+current TLS/nonce/path/disarm plus full restoration. Original preflight and
+compile failures remain preserved below. Complete fresh network/ownership,
+service/package, production health and desktop/release admission remain false.
+
+Prepared ordinary fresh2 traffic/fault/IPv6 CI selection independently of the
+owned health worker: retain immutable SDK provenance and held-attachment fence,
+while allowing `OWNED_PROBE=false`. Discovery alone still proves no ownership
+or health. Five selector and nine provenance guard tests PASS locally; actual
+ordinary fresh2 execution is pending. Normal runtime/package selection unchanged.
+
 ## First fresh2 network result — H3 PASS, H2 preflight failure under investigation
 
 On `de79aca`, fresh2 HTTPS **H3 PASS 44300233378**: actual TLS/nonce/path,

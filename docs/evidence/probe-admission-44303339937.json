@@ -1,0 +1,18 @@
+{
+  "source_run": 44303339937,
+  "source_commit": "d34e8f9918413755d4c459658557bfd4b4fbfbba",
+  "report_sha256": "a58eb793a20dead1523cbedbfb43f9861c3278f91aaa48cdde2661eca660f81e",
+  "report": {
+    "bounded_readiness_observation_passed": true,
+    "tunnel_started": false,
+    "actual_sdk_readiness_tested": false,
+    "terminal_faults_not_retried": true,
+    "release_ready": false,
+    "frozen_or_backwards_clock_refused": true,
+    "late_proof_refused": true,
+    "cancel_before_admission_passed": true
+  },
+  "actual_sdk_readiness_qualified": false,
+  "adapter_ownership_qualified": false,
+  "release_ready": false
+}
