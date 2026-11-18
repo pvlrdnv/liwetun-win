@@ -1,6 +1,6 @@
 # Development checkpoint — 2026-11-18
 
-## Problem-device removal reproduced; startup refusal mitigation prepared
+## Problem-device removal reproduced; focused startup refusal PASS
 
 Public standard Windows CI **44353969169** on `53a66ba` completed the original
 Wintun experiment. **Preservation FAIL**: a separately created/retained disabled
@@ -17,9 +17,23 @@ Existing Start and pre-SDK-init refusal checks reuse this predicate. No Wintun
 binary, signature or package pin changes. A batched fixture compares the unsafe
 raw API case with healthy acceptance → disabled-node refusal/no candidate Create
 → unchanged retained disabled state → creator-only restoration/healthy acceptance.
-All workflow YAML and whitespace checks PASS locally. Actual guarded Windows
-compilation/execution is pending. This cannot prevent later foreign state changes
-while global cleanup is queued; full ownership and release gates remain closed.
+All workflow YAML and whitespace checks PASS locally. Actual paired Windows
+compilation/execution **PASS 44355747535** on `7977c05`: raw removal reproduced;
+the guarded path accepted a healthy node, refused its disabled state with **zero
+candidate Create calls**, retained that exact disabled node unchanged for the
+observation window and accepted it again after creator-only restoration. Full
+adapter/route/DNS baselines restored in both cases.
+[Both original reports](evidence/adapter-problem-guard-44355747535.json).
+Signed-service build/IPC/lifecycle regression **44356112662 PASS** on the same
+source: **19 checks**, actual original-Wintun create/close, SDK start/state/Stop,
+service uninstall and unchanged DNS/default routes in bounded no-global-routes
+mode. [Service regression](evidence/problem-guard-service-44356112662.json).
+This does not establish full routing or end-to-end service problem-node refusal.
+This cannot prevent later foreign state changes while global cleanup is queued;
+full ownership and release gates remain closed.
+Prepared an [upstream report draft](UPSTREAM_WINTUN_REPORT_DRAFT.md), not sent to
+any external recipient. Original signed DLL bytes and application license remain
+unchanged; no in-memory patch, global mutex hold or unrelated device repair.
 
 ## Public visibility verified; private CI allocation blocked
 

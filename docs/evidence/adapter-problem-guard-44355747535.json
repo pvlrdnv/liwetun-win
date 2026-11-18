@@ -1,0 +1,65 @@
+{
+  "source_run": 44355747535,
+  "source_commit": "7977c0523856ce573409cab4002d26622e574447",
+  "scope": "disposable_server_2022_original_wintun_raw_removal_and_readonly_problem_node_start_refusal",
+  "reports": {
+    "problem-device": {
+      "sha256": "257d05a2e411192b5bf8a124212ab7ac93909f1285dfd57333bc944cb1d61e0f",
+      "report": {
+        "experiment_completed": true,
+        "routes_baseline_restored": true,
+        "release_ready": false,
+        "foreign_removed_after_candidate_close": true,
+        "adapter_ownership_qualified": false,
+        "problem_disabled_observed": true,
+        "fixture_created_and_retained_device": true,
+        "sdk_started": false,
+        "foreign_removed_before_creator_close": true,
+        "foreign_removed_after_candidate_create": true,
+        "harness_passed": true,
+        "fixture_disabled_own_exact_node": true,
+        "factory_only": true,
+        "source_commit": "7977c0523856ce573409cab4002d26622e574447",
+        "adapter_baseline_restored": true,
+        "candidate_created": true,
+        "original_wintun_sha256": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce",
+        "foreign_preservation_passed": false,
+        "identifiers_exported": false,
+        "dns_baseline_restored": true,
+        "session_started": false,
+        "native_process_completed": true
+      }
+    },
+    "problem-guard": {
+      "sha256": "dbe8bc85fd2e87d805932bf933b0bbf8eb5581dbfd32891294f041e5a188df60",
+      "report": {
+        "problem_node_start_refused": true,
+        "routes_baseline_restored": true,
+        "release_ready": false,
+        "problem_disabled_observed": true,
+        "healthy_node_accepted_again": true,
+        "sdk_started": false,
+        "retained_disabled_node_unchanged": true,
+        "preflight_only": true,
+        "creator_restored_own_node": true,
+        "later_problem_state_race_qualified": false,
+        "healthy_foreign_node_accepted": true,
+        "source_commit": "7977c0523856ce573409cab4002d26622e574447",
+        "adapter_baseline_restored": true,
+        "original_wintun_sha256": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce",
+        "adapter_ownership_qualified": false,
+        "identifiers_exported": false,
+        "dns_baseline_restored": true,
+        "candidate_create_calls": 0,
+        "native_process_completed": true,
+        "passed": true
+      }
+    }
+  },
+  "raw_problem_removal_reproduced": true,
+  "focused_readonly_preflight_refusal_passed": true,
+  "later_problem_state_race_qualified": false,
+  "service_end_to_end_problem_refusal_qualified": false,
+  "adapter_ownership_qualified": false,
+  "release_ready": false
+}

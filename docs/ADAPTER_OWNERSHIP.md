@@ -304,7 +304,11 @@ ownership by itself. No active foreign data session or SDK was tested.
 A read-only service preflight mitigation is prepared, including the software
 enumerator independently of the optional name property and non-present nodes.
 Problem/unknown state and legacy root Wintun refuse Start before SDK creation.
-The new paired control must preserve the disabled retained node with zero gated
-candidate Create calls, while accepting the healthy fixture before/after its
-creator restores it. Execution is pending. Later state changes/queued cleanup
-remain outside this mitigation; no full ownership or runtime admission follows.
+The paired control **PASS 44355747535** on `7977c05`: raw removal reproduced,
+guarded disabled retained node unchanged with zero candidate Create calls,
+healthy fixture accepted before/after creator restoration, all final baselines
+restored. [Both original reports](evidence/adapter-problem-guard-44355747535.json).
+This tests the actual read-only predicate used at Start and before SDK init;
+it does not establish end-to-end service problem-node refusal. Later state
+changes/queued cleanup remain outside this mitigation; no full ownership or
+runtime admission follows. The original signed Wintun bytes stay unchanged.
