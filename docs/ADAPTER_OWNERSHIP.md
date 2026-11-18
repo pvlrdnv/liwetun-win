@@ -250,7 +250,11 @@ IPv4/alias/MTU/metric; private parent snapshots compare DNS and non-link-local
 routes without exporting identifiers. Link-local/multicast OS routes are excluded.
 After Stop, fresh service queries plus SDK-adapter absence and WFP restoration
 must settle before the fixture creator closes its own handle. Final global
-baseline restoration remains required. Windows execution is pending.
+baseline restoration remains required. On `aedf75f`, actual H2 **44315630826** /
+H3 **44315639463 PASS**, including HTTPS through fresh2, both retained observations,
+creator cleanup, complete restoration and no watchdog. Existing visible/renamed
+reserved-name refusal controls also passed with the ordinary SDK.
+[Original reports and hashes](evidence/preserved-adapter-44315630826.json).
 
 This does not exercise active foreign traffic or disabled/problem devices.
 Pinned Wintun global orphan cleanup behavior and general coexistence remain open;

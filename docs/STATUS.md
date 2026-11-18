@@ -1,6 +1,6 @@
 # Development checkpoint — 2026-11-18
 
-## Retained foreign adapter during SDK traffic — implementation pending CI
+## Retained foreign adapter during SDK traffic — focused H2/H3 PASS
 
 Added a default-OFF fresh2 HTTPS control. A separate signed fixture retains its
 own creation handle while the SDK starts, transfers traffic and stops. Private
@@ -9,8 +9,14 @@ IPv4, alias, MTU and metric. After Stop, two fresh queries must also observe the
 SDK adapter absent and WFP baseline restored before the fixture creator closes
 its own handle. No adapter identifiers or configuration leave parent memory.
 Local **78 fixture tests PASS**, workflow YAML and whitespace checks PASS.
-Actual Windows H2/H3 verification is pending. This is a healthy retained fixture,
-not active foreign traffic, disabled-device or complete coexistence qualification.
+Actual Windows H2 **44315630826** / H3 **44315639463 PASS** on `aedf75f`:
+authenticated HTTPS response, retained markers/DNS/non-link-local routes unchanged
+while active and after SDK teardown, creator-only fixture removal, complete
+route/DNS/adapter/WFP restoration and no watchdog. Existing visible-name refusal
+**44315681351** / renamed internal-name refusal **44315688262 PASS** with the
+unchanged ordinary SDK. [Four original report sets](evidence/preserved-adapter-44315630826.json).
+This is a healthy retained fixture, not active foreign traffic, disabled-device
+or complete coexistence qualification.
 Normal runtime/package and all release/ownership gates remain unchanged.
 
 ## Shutdown comparison — epoch invalidation observed, repeatability still open
