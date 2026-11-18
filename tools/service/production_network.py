@@ -508,7 +508,7 @@ def main():
         raise RuntimeError('invalid_adapter_owner_audit')
     if preserved_adapter and (os.environ.get('FRESH_ADAPTER') != 'true' or ownership_audit
             or family != 'ipv4' or traffic_pattern != 'normal'
-            or termination not in ['stop', 'lease-death', 'service-crash']
+            or termination not in ['stop', 'lease-death', 'service-crash', 'endpoint-restart']
             or (owned_probe and owned_probe_mode != 'https')):
         raise RuntimeError('invalid_preserved_adapter_fixture')
     synthetic_ipv6 = family == 'synthetic-ipv6'
@@ -929,11 +929,20 @@ def main():
         if termination == 'endpoint-restart':
             if not traffic_ok:
                 raise RuntimeError('pre_recovery_traffic_failed')
+            if preserved_adapter:
+                from preserved_adapter_fixture import observe
+                result['foreign_before_endpoint_restart_observation'] = {}
+                result['foreign_preserved_before_endpoint_restart'] = observe(
+                    foreign_owner, foreign_configuration, ps, result['foreign_before_endpoint_restart_observation'])
             stage = 'owned_endpoint_restart'
             restarted = endpoint.command('restart')
             result['endpoint_restart'] = restarted
             if restarted != {'restarted': True, 'outage_seconds': 2}:
                 raise RuntimeError('endpoint_restart_failed')
+            if preserved_adapter:
+                result['foreign_after_endpoint_restart_observation'] = {}
+                result['foreign_preserved_after_endpoint_restart'] = observe(
+                    foreign_owner, foreign_configuration, ps, result['foreign_after_endpoint_restart_observation'])
             # Existing authenticated GUI lease and SDK instance remain alive.
             # Re-read TUN addresses on every observation; no Start/reconnect RPC.
             attempts = []

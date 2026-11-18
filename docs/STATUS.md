@@ -1,5 +1,15 @@
 # Development checkpoint — 2026-11-18
 
+## Retained fixture during endpoint recovery — pending Windows execution
+
+Extended the default-OFF preserved-adapter control to ordinary IPv4 endpoint
+restart. The retained foreign fixture is sampled immediately before and after
+the owned two-second endpoint outage, again after real HTTPS/DNS recovery without
+a new Start, and after SDK teardown. Existing transfer/recovery and final global
+restoration requirements remain unchanged. This is discrete observation, not
+continuous foreign traffic monitoring. H2/H3 Windows execution is pending;
+IPv6, disabled-device, active competing tunnel and release gates remain open.
+
 ## Retained foreign adapter during SDK traffic — focused H2/H3 PASS
 
 Added a default-OFF fresh2 HTTPS control. A separate signed fixture retains its
