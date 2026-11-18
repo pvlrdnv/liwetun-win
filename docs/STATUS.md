@@ -19,8 +19,19 @@ Full pristine-source preparation through all five profiles **PASS locally**;
 report checks. Native tests cover RNG/collision/create/observe refusal, identity
 mismatch, exact failure cleanup, stale authority and isolated concurrent attempts.
 A separate read-only Windows binding test calls the actual RNG/interface APIs,
-without calling adapter Create. Native compilation and full SDK build are pending
-disposable Windows CI; no native test result is inferred from WSL preparation.
+without calling adapter Create. Native compilation and contracts **PASS** in
+disposable Windows CI 44294099613 on `a9bacdd`; the SDK workflow also passed its
+contract/source-preparation steps and is building the full DLL (44294099414).
+No native test result is inferred from WSL preparation.
+
+Prepared a separate CI-only actual-Wintun factory fixture. It retains a foreign
+logical-name adapter, requires preservation during fresh creation/owner-only
+teardown, forces an observed physical-name/GUID collision, rejects after actual
+Create to test cleanup, and runs four concurrent create attempts. It starts no
+SDK/session and configures no IP/DNS/routes. Actual execution is pending. The
+workflow verifies the original Wintun archive/DLL digest and trusted signature,
+captures only closed facts, and independently compares adapter/route/DNS baselines.
+This factory test cannot substitute for SDK configuration/recovery/network tests.
 
 The vacancy check is not an atomic reservation. Original Wintun's duplicate-alias
 rename behavior means an equal-privilege race on the exact random physical alias

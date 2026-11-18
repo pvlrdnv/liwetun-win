@@ -1,0 +1,78 @@
+name: Windows isolated adapter factory
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  factory:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: x64
+      - name: Stage and verify original signed Wintun on disposable runner
+        run: |
+          New-Item -ItemType Directory -Force build/factory-runtime,build/factory-evidence | Out-Null
+          $lock = Get-Content native/sdk/inputs.json -Raw | ConvertFrom-Json
+          Invoke-WebRequest $lock.wintun.url -OutFile build/wintun.zip
+          if ((Get-FileHash build/wintun.zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne $lock.wintun.sha256) { throw 'Wintun archive digest mismatch' }
+          Expand-Archive build/wintun.zip build/wintun
+          Copy-Item build/wintun/wintun/bin/amd64/wintun.dll build/factory-runtime/wintun.dll
+          $driver = Get-Item build/factory-runtime/wintun.dll
+          if ((Get-FileHash $driver.FullName -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce') { throw 'Original Wintun DLL digest mismatch' }
+          if ((Get-AuthenticodeSignature $driver.FullName).Status -ne 'Valid') { throw 'Original Wintun signature not trusted' }
+      - name: Compile isolated factory fixture
+        run: |
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_WIN32_WINNT=0x0A00 native/health/test_windows_fresh_adapter_live.cpp native/service/adapter_admission.cpp /Fobuild/factory-runtime/ /Febuild/factory-runtime/factory.exe /link bcrypt.lib iphlpapi.lib ws2_32.lib setupapi.lib
+          if ($LASTEXITCODE -ne 0) { throw 'Isolated adapter factory build failed' }
+      - name: Verify actual creation, retained foreign adapter and owner-only teardown
+        run: |
+          function Snapshot {
+            return @{
+              adapters=(Get-NetAdapter -IncludeHidden | Sort-Object InterfaceGuid | Select-Object InterfaceGuid,Name,InterfaceDescription | ConvertTo-Json -Compress)
+              routes=(Get-NetRoute | Sort-Object InterfaceIndex,DestinationPrefix,NextHop,RouteMetric | Select-Object InterfaceIndex,DestinationPrefix,NextHop,RouteMetric | ConvertTo-Json -Compress)
+              dns=(Get-DnsClientServerAddress | Sort-Object InterfaceIndex,AddressFamily | Select-Object InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Depth 4 -Compress)
+            }
+          }
+          $before = Snapshot
+          $dll = (Get-Item build/factory-runtime/wintun.dll).FullName
+          $child = Start-Process build/factory-runtime/factory.exe -ArgumentList ('"' + $dll + '"') -PassThru -NoNewWindow -RedirectStandardOutput build/factory-native-private.txt -RedirectStandardError build/factory-error-private.txt
+          $finished = $child.WaitForExit(180000)
+          if (-not $finished) { $child.Kill(); $child.WaitForExit() }
+          $child.Refresh()
+          $native = $null
+          try { $native = Get-Content build/factory-native-private.txt -Raw | ConvertFrom-Json -ErrorAction Stop } catch { }
+          $after = Snapshot
+          $report = @{
+            source_commit='${{ github.sha }}'; native_process_completed=$finished; passed=$false
+            original_wintun_sha256='e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce'
+            factory_only=$true; sdk_started=$false; session_started=$false
+            adapter_baseline_restored=($after.adapters -eq $before.adapters)
+            routes_baseline_restored=($after.routes -eq $before.routes)
+            dns_baseline_restored=($after.dns -eq $before.dns)
+            privileged_physical_name_race_qualified=$false; adapter_ownership_qualified=$false; release_ready=$false
+          }
+          $facts = @('foreign_logical_adapter_preserved','observed_collision_refused','post_create_refusal_cleanup','concurrent_created_handles_distinct','created_adapters_removed')
+          $all = $finished -and $child.ExitCode -eq 0 -and $native.passed -ceq $true
+          foreach ($name in $facts) {
+            $report[$name] = $null -ne $native -and $native.$name -ceq $true
+            $all = $all -and $report[$name]
+          }
+          if ($null -ne $native -and $native.stage -is [long] -and $native.stage -ge 0 -and $native.stage -le 7) { $report.failure_stage = $native.stage }
+          $report.passed = $all -and $report.adapter_baseline_restored -and $report.routes_baseline_restored -and $report.dns_baseline_restored
+          $report | ConvertTo-Json | Set-Content build/factory-evidence/factory.json
+          if (-not $report.passed) { throw 'Actual factory qualification failed; see closed receipt' }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: adapter-factory-safe-evidence
+          path: build/factory-evidence/
+          retention-days: 14
+          if-no-files-found: warn
