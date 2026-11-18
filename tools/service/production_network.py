@@ -1000,9 +1000,9 @@ def main():
         if preserved_adapter:
             stage = 'foreign_adapter_preservation_after_start_attempt'
             from preserved_adapter_fixture import observe
-            result['foreign_active_observation'] = {}
-            result['foreign_preserved_while_active'] = observe(foreign_owner, foreign_configuration, ps,
-                                                              result['foreign_active_observation'])
+            result['foreign_start_attempt_observation'] = {}
+            result['foreign_preserved_after_start_attempt'] = observe(foreign_owner, foreign_configuration, ps,
+                                                                    result['foreign_start_attempt_observation'])
         stage = 'terminate_and_restore'
         # No stdin EOF/graceful Stop in this fault case: Child.close without a
         # command kills exactly its owned process. The service must detect loss
