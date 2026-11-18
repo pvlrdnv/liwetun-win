@@ -172,3 +172,35 @@ non-atomic: original Wintun may rename a duplicate visible alias during Create.
 An equal-privilege actor racing the exact random physical alias is not excluded
 by a later handle-identity check. This limitation remains an open ownership gate;
 do not reclassify random naming or a build marker as complete race protection.
+
+Actual original-Wintun factory controls passed on disposable Server 2022
+[44294660967](evidence/adapter-factory-44294660967.json), without SDK/session
+startup: retained foreign logical-name adapter preserved, observed collision
+refused, post-create refusal cleaned up and four concurrent created identities
+distinct, with exact final adapter/route/DNS restoration.
+
+The extended [44295089296](evidence/adapter-factory-race-44295089296.json) separately
+passed alias-only and GUID-only observed-collision refusals, then reproduced the
+remaining unsafe window. The helper inserts its own second adapter with the
+exact physical alias but a different GUID **after** the real vacancy check and
+before invoking original Wintun Create. Original Wintun renames that retained
+foreign adapter; the newly returned handle still matches the candidate's expected
+identity and is accepted. No session/IP/DNS/route configuration is needed to
+reproduce this side effect. Both created handles are closed by their exact
+owners; full adapter/route/DNS baseline restoration passed.
+
+The fixture suite PASS records successful controls and reproduction, while
+**creation-race safety FAILS**. The published
+[0.14.1 adapter source](https://github.com/WireGuard/wintun/blob/0.14.1/api/adapter.c)
+shows this duplicate-name handling inside `NciSetAdapterName`; the binary result
+above is independent actual evidence for the pinned signed DLL. No source/binary
+equivalence beyond those observed facts is assumed.
+
+Adding another check immediately before Create just moves the unreserved window.
+A process-local/global client mutex cannot serialize an unrelated adapter owner.
+Detecting/repairing a rename afterward still permits the forbidden foreign
+mutation and would require further unauthorized writes. Do not bypass signature
+checks, patch the original DLL in memory/on disk or declare a random name an
+atomic reservation. Keep this candidate outside normal runtime/service/package
+admission while the create boundary is redesigned or an appropriate supported
+API is qualified. No upstream issue/message has been sent on the owner's behalf.

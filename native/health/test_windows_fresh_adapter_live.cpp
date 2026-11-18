@@ -1,6 +1,7 @@
 // Disposable CI factory test only. Never linked into GUI/service/SDK.
 #include "windows_fresh_adapter.h"
 #include "../service/adapter_admission.h"
+#include <ipexport.h>
 #include <algorithm>
 #include <cstdio>
 #include <optional>
@@ -131,6 +132,42 @@ bool Disposable() {
   for (DWORD i = 0; i < size; ++i) if (run[i] < L'0' || run[i] > L'9') return false;
   return true;
 }
+void TestSaturatedName(Create create, Close close, Luid luid) {
+  // Independent experiment, not the current 40-character policy. The original
+  // pinned API formats a duplicate-name suffix in MAX_ADAPTER_NAME characters.
+  static_assert(MAX_ADAPTER_NAME == 128);
+  std::array<uint8_t, 32> bytes{};
+  Check(BCryptGenRandom(nullptr, bytes.data(), static_cast<ULONG>(bytes.size()),
+      BCRYPT_USE_SYSTEM_PREFERRED_RNG) == 0);
+  std::wstring name(MAX_ADAPTER_NAME - 1, L'x');
+  constexpr wchar_t hex[] = L"0123456789abcdef";
+  name.replace(0, 8, L"LiWeTun-");
+  for (size_t i = 0; i < 16; ++i) {
+    name[8 + i * 2] = hex[bytes[16 + i] >> 4];
+    name[9 + i * 2] = hex[bytes[16 + i] & 15];
+  }
+  GUID guid{};
+  std::memcpy(&guid, bytes.data(), sizeof(guid));
+  Adapter foreign{create(name.c_str(), L"LiWeTun.CI.MaxName", &guid), close};
+  Check(foreign.value != nullptr); // maximum-length unique creation must work
+  NET_LUID retained{}; luid(foreign.value, &retained);
+  Check(retained.Value != 0);
+  const auto before = AwaitSample(retained);
+  Check(before.has_value() && before->alias == name);
+  GUID different = guid; different.Data1 ^= 1;
+  {
+    Adapter duplicate{create(name.c_str(), L"LiWeTun.CI.MaxName", &different), close};
+    Check(!duplicate.value && Read(retained) == before);
+  }
+  // Separate GUID collision with a different valid maximum-length alias.
+  name.back() = L'y';
+  {
+    Adapter duplicate{create(name.c_str(), L"LiWeTun.CI.MaxName", &guid), close};
+    Check(!duplicate.value && Read(retained) == before);
+  }
+  foreign.Release();
+  Check(Gone(retained.Value));
+}
 }
 
 int wmain(int argc, wchar_t** argv) {
@@ -231,7 +268,9 @@ int wmain(int argc, wchar_t** argv) {
       inserted.Release();
       Check(Gone(original.Value));
     }
-    std::printf("{\"passed\":true,\"foreign_logical_adapter_preserved\":true,\"observed_collision_refused\":true,\"post_create_refusal_cleanup\":true,\"concurrent_created_handles_distinct\":true,\"created_adapters_removed\":true,\"race_control_ran\":true,\"race_foreign_alias_changed\":%s,\"race_new_handle_accepted\":%s,\"factory_only\":true,\"sdk_started\":false,\"session_started\":false,\"privileged_physical_name_race_qualified\":false,\"adapter_ownership_qualified\":false,\"release_ready\":false}\n", alias_changed ? "true" : "false", new_handle_accepted ? "true" : "false");
+    stage = 9;
+    TestSaturatedName(create, close, luid);
+    std::printf("{\"passed\":true,\"foreign_logical_adapter_preserved\":true,\"observed_collision_refused\":true,\"post_create_refusal_cleanup\":true,\"concurrent_created_handles_distinct\":true,\"created_adapters_removed\":true,\"race_control_ran\":true,\"race_foreign_alias_changed\":%s,\"race_new_handle_accepted\":%s,\"saturated_name_unique_create\":true,\"saturated_name_alias_collision_refused_unchanged\":true,\"saturated_name_guid_collision_refused_unchanged\":true,\"factory_only\":true,\"sdk_started\":false,\"session_started\":false,\"privileged_physical_name_race_qualified\":false,\"adapter_ownership_qualified\":false,\"release_ready\":false}\n", alias_changed ? "true" : "false", new_handle_accepted ? "true" : "false");
     return 0;
   } catch (...) {
     std::printf("{\"passed\":false,\"stage\":%u,\"factory_only\":true,\"adapter_ownership_qualified\":false,\"release_ready\":false}\n", stage);

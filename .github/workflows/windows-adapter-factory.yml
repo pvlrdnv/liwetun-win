@@ -59,7 +59,7 @@ jobs:
             dns_baseline_restored=($after.dns -eq $before.dns)
             privileged_physical_name_race_qualified=$false; adapter_ownership_qualified=$false; release_ready=$false
           }
-          $facts = @('foreign_logical_adapter_preserved','observed_collision_refused','post_create_refusal_cleanup','concurrent_created_handles_distinct','created_adapters_removed','race_control_ran')
+          $facts = @('foreign_logical_adapter_preserved','observed_collision_refused','post_create_refusal_cleanup','concurrent_created_handles_distinct','created_adapters_removed','race_control_ran','saturated_name_unique_create','saturated_name_alias_collision_refused_unchanged','saturated_name_guid_collision_refused_unchanged')
           $all = $finished -and $child.ExitCode -eq 0 -and $native.passed -ceq $true
           foreach ($name in $facts) {
             $report[$name] = $null -ne $native -and $native.$name -ceq $true
@@ -70,7 +70,7 @@ jobs:
             if ($null -ne $native -and $native.$name -is [bool]) { $report[$name] = $native.$name }
             $all = $all -and $null -ne $report[$name]
           }
-          if ($null -ne $native -and $native.stage -is [long] -and $native.stage -ge 0 -and $native.stage -le 8) { $report.failure_stage = $native.stage }
+          if ($null -ne $native -and $native.stage -is [long] -and $native.stage -ge 0 -and $native.stage -le 9) { $report.failure_stage = $native.stage }
           $report.passed = $all -and $report.adapter_baseline_restored -and $report.routes_baseline_restored -and $report.dns_baseline_restored
           $report | ConvertTo-Json | Set-Content build/factory-evidence/factory.json
           if (-not $report.passed) { throw 'Actual factory qualification failed; see closed receipt' }

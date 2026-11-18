@@ -1,6 +1,6 @@
 # Development checkpoint — 2026-11-18
 
-## Fresh adapter SDK candidate — factory controls pass, full build pending
+## Fresh adapter SDK candidate — controls pass, unsafe physical-name race reproduced
 
 Added a separate default-OFF `fresh_adapter` SDK profile, after the privacy,
 aggregate, attached-interface and owned-probe profiles. It removes the SDK's
@@ -40,16 +40,31 @@ Extended the fixture to isolate alias-only and GUID-only observed collisions,
 and to inject a separate retained adapter after the vacancy check, immediately
 before original Wintun Create. Its closed result distinguishes safe refusal
 from actual foreign-alias rename plus accepted new handle. This is an explicit
-equal-privilege race reproduction control, not an assertion of race safety;
-actual extended Windows execution is pending. All injected adapters belong only
-to this disposable fixture, never to an existing machine owner.
+equal-privilege race reproduction control, not an assertion of race safety.
+Actual extended run **44295089296** on `556271d` reproduced foreign-alias rename
+and acceptance of a new handle despite that foreign mutation. The suite's PASS
+means its controls/reproduction completed; **creation-race safety FAIL** and no
+ownership/service/package admission. Independent alias-only/GUID-only refusals,
+failure cleanup and concurrent creation also passed; exact adapter/route/DNS
+restoration passed. All injected adapters belonged only to the disposable fixture,
+never to an existing machine owner. [Closed reproduction receipt](evidence/adapter-factory-race-44295089296.json).
 
 The vacancy check is not an atomic reservation. Original Wintun's duplicate-alias
 rename behavior means an equal-privilege race on the exact random physical alias
-still requires explicit qualification/design; random identity alone is not a
-complete race-safety claim. Foreign-adapter controls, recovery/failure/Stop cases,
+now has a concrete failed safety control; random identity alone is not a
+complete race-safety claim. The original signed API can mutate another alias
+inside Create before our returned-handle verification. A second precheck or a
+later check cannot undo or prevent that inner side effect; do not promote this
+candidate on the strength of fresh-handle/positive tests. Foreign-adapter controls, recovery/failure/Stop cases,
 full network regressions, ownership admission and Windows 10/11 acceptance remain
 open. No owner-device, production or LikeWeb changes.
+
+Next independent CI experiment: use the original API's maximum-length physical
+alias, leaving no room for the duplicate-name suffix. The source suggests a
+collision should fail before the foreign rename; actual signed-DLL behavior
+must prove unique creation plus alias-only/GUID-only refusal with retained
+foreign configuration unchanged. This experiment does not change the current
+40-character SDK candidate or its failed race-safety classification.
 
 ## Latest checkpoint — pre-existing-name refusal qualified, full ownership open
 
