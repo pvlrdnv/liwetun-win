@@ -37,6 +37,23 @@ no installer or network experiment ran in these failed attempts. The refusal
 reply now also preserves the readiness already established before the guard.
 No desktop traffic success is claimed.
 
+Actual retry **44382051192 PASS** on `2a23009`: Windows release compilation,
+analyze, **234 Dart + 8 Rust + 6 actual desktop channel tests**. The real channel
+returns the embedded synthetic Unicode name and endpoint fields; UI/report
+privacy checks pass. [GUI evidence](evidence/owner-feedback-ui-44382051192.json).
+Signed service **44382054804 PASS** on the same source: **20 groups**, actual
+read-only initial refusal with code10/state0/core unknown, retained disabled
+fixture unchanged, creator-only cleanup, no-global-routes SDK start/stop and full
+adapter/route/DNS restoration. [Service evidence](evidence/owner-feedback-service-44382054804.json).
+Owner package **44383033456 PASS**: **11 package + 14 installer groups**, full
+cleanup/network restoration, production-mode service with all test flags OFF,
+new GUI and previously qualified aggregate SDK. Downloaded ZIP matches GitHub's
+artifact digest; exact four-file contents, installer/CER hashes and public
+certificate subject/issuer/expiry/code-signing EKU independently checked without
+local trust changes. [Package evidence](evidence/owner-feedback-package-44383033456.json);
+[0.1.1 download and replacement steps](OWNER_TEST_BUILD_44383033456.md).
+No actual owner connection success or desktop qualification is inferred.
+
 ## Owner-test package delivered — 44364045177 PASS
 
 Owner explicitly approved trusting a dedicated test publisher on the separate

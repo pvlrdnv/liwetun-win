@@ -1,0 +1,596 @@
+{
+  "source_run": 44383033456,
+  "source_commit": "2a230093c602f2f1df6ae3154d735b66a46c0b90",
+  "scope": "owner_feedback_fix_test_package_not_desktop_or_release_qualification",
+  "reports": {
+    "qualification": {
+      "sha256": "bcfaf484dee03a4603d9e7bfebe8bde0c8d2deb0ee2327b495b2e26c0fd96754",
+      "report": {
+        "network_unchanged": true,
+        "checks": [
+          "original_microsoft_app_local_crt_staged",
+          "native_and_engine_notice_bytes_verified_not_legal_approval",
+          "all_native_payload_images_are_x64",
+          "gui_sdk_and_notice_inputs_verified",
+          "common_ci_signer_only_for_owned_components",
+          "original_wintun_bytes_preserved",
+          "actual_signed_gui_queries_production_service",
+          "medium_integrity_without_enabled_admin_group",
+          "owner_can_read_service_identity_but_not_write_process_or_duplicate_token",
+          "no_tunnel_start_or_network_configuration_change",
+          "fresh_installer_rollback_medium_query_and_uninstall"
+        ],
+        "release_ready": false,
+        "stage": "installer_qualification",
+        "cleanup_passed": true,
+        "passed": true,
+        "installer_tested": true
+      }
+    },
+    "installer-qualification": {
+      "sha256": "8c234a83eaa6b3fa60bff8f2fa32065c7a9246b6eedf1aa5bb210fe03ce12692",
+      "report": {
+        "cleanup_passed": true,
+        "before_fixture_cleanup": {
+          "directory": false,
+          "registration": false,
+          "shortcut": false
+        },
+        "invocations": [
+          {
+            "exit_code": 21,
+            "stage": "preexisting_directory_denial"
+          },
+          {
+            "exit_code": 25,
+            "stage": "preexisting_setup_mutex_denial"
+          },
+          {
+            "exit_code": 22,
+            "stage": "preexisting_service_denial"
+          },
+          {
+            "exit_code": 23,
+            "stage": "preexisting_registration_denial"
+          },
+          {
+            "exit_code": 23,
+            "stage": "preexisting_registration_denial"
+          },
+          {
+            "exit_code": 31,
+            "stage": "invalid_owner_rollback"
+          },
+          {
+            "exit_code": 0,
+            "stage": "fresh_install"
+          },
+          {
+            "exit_code": 21,
+            "stage": "fresh_install"
+          },
+          {
+            "exit_code": 43,
+            "stage": "open_medium_gui_denies_uninstall"
+          },
+          {
+            "exit_code": 41,
+            "stage": "uninstall_preserves_unknown_file"
+          },
+          {
+            "exit_code": 0,
+            "stage": "uninstall_preserves_unknown_file"
+          },
+          {
+            "exit_code": 0,
+            "stage": "normal_uninstaller_bootstrap"
+          },
+          {
+            "exit_code": 0,
+            "stage": "normal_uninstaller_bootstrap"
+          }
+        ],
+        "tunnel_started": false,
+        "release_ready": false,
+        "signing": "dedicated_owner_test_certificate",
+        "passed": true,
+        "checks": [
+          "pinned_compiler_and_signed_installer",
+          "preexisting_directory_preserved",
+          "preexisting_setup_mutex_denied",
+          "preexisting_service_preserved_without_starting",
+          "preexisting_registration_and_shortcut_preserved",
+          "invalid_owner_rolls_back_fresh_files_and_service",
+          "fresh_install_preserves_payload_and_signed_uninstaller",
+          "duplicate_install_denied",
+          "installed_gui_queries_production_service_at_medium_integrity",
+          "visible_medium_gui_blocks_uninstall_before_mutations",
+          "visible_medium_gui_closes_and_releases_presence",
+          "unknown_file_preserved_with_retry_uninstaller",
+          "uninstall_retry_after_service_removal",
+          "normal_uninstaller_bootstrap_and_removal"
+        ],
+        "desktop_owner_selection_tested": false,
+        "stage": "normal_uninstaller_bootstrap"
+      }
+    },
+    "installer-digest": {
+      "sha256": "272c40274a654374bb0f4e7cb4c4a4f330eb1beb9d561a0e699e7ed44cf6b6b0",
+      "report": {
+        "source_commit": "2a230093c602f2f1df6ae3154d735b66a46c0b90",
+        "signing": "dedicated_owner_test_certificate",
+        "release_ready": false,
+        "installer_sha256": "c84bc4bf0ed01033d40233110360c07f277ca0ea0131c3db76bc26a811532867"
+      }
+    },
+    "owner-test-manifest": {
+      "sha256": "8e70e48ed15d317730e08cc62daaeca6a7020393e980f68df295450a28ae72b6",
+      "report": {
+        "connection_profiles_included": false,
+        "private_key_exported": false,
+        "version": "0.1.1+2",
+        "owner_desktop_acceptance_passed": false,
+        "network_test_modes_enabled": false,
+        "certificate_sha1": "01F84C7F96A6F50112BBE43C43CE48153C11F4D0",
+        "certificate_file": "LiWeTun-Owner-Test.cer",
+        "installer_file": "LiWeTun-0.1.1-owner-test.exe",
+        "service_source": "2a230093c602f2f1df6ae3154d735b66a46c0b90",
+        "source_run": "44383033456",
+        "sdk_source_run": 44038398682,
+        "certificate_not_before_utc": "2026-11-18T19:33:43Z",
+        "certificate_not_after_utc": "2026-12-18T19:43:42Z",
+        "qualification_passed": true,
+        "publisher": "CN=LiWeTun Owner Test 44383033456",
+        "release_ready": false,
+        "installer_sha256": "c84bc4bf0ed01033d40233110360c07f277ca0ea0131c3db76bc26a811532867",
+        "kind": "dedicated_owner_test",
+        "windows_10_qualified": false,
+        "windows_11_qualified": false,
+        "gui_source": "2a230093c602f2f1df6ae3154d735b66a46c0b90",
+        "certificate_sha256": "981bf88101b206d88e418453c5a708bc3ab1aeb56ba2ab3905dc8268718909c5",
+        "certificate_eku": "1.3.6.1.5.5.7.3.3"
+      }
+    },
+    "installer-visible-gui": {
+      "sha256": "9206456d0c1816116c8f0a853f5f1a62a648d6e7d78458343ef8a3aee66177ff",
+      "report": {
+        "passed": true,
+        "medium_integrity": true,
+        "admin_group_enabled": false,
+        "gui_window_visible": true,
+        "closed_gracefully": true
+      }
+    },
+    "medium-integrity": {
+      "sha256": "f57492a40d152ea2dd8f1978f6bf4a34e78f87ebc5e39cd58f87374110d8194e",
+      "report": {
+        "passed": true,
+        "medium_integrity": true,
+        "admin_group_enabled": false,
+        "service_metadata_read_only": true
+      }
+    },
+    "installer-medium-integrity": {
+      "sha256": "f57492a40d152ea2dd8f1978f6bf4a34e78f87ebc5e39cd58f87374110d8194e",
+      "report": {
+        "passed": true,
+        "medium_integrity": true,
+        "admin_group_enabled": false,
+        "service_metadata_read_only": true
+      }
+    },
+    "payload-manifest": {
+      "sha256": "f1d090c3feaca2ca98244bb91cf234e14034e8189fbe56b309fd0ca3e4df898d",
+      "report": {
+        "owned_socket_ci_probe_enabled": false,
+        "files": [
+          {
+            "file": "concrt140.dll",
+            "sha256": "2405355f0a58067b258f8df33c327e3a3d716eaac5a3a5aebb757842d85bd376"
+          },
+          {
+            "file": "file_selector_windows_plugin.dll",
+            "sha256": "358e22fae977fcd04b12aebb447ed4b9fb902a179e8d49baa12c8e501b90d712"
+          },
+          {
+            "file": "flutter_windows.dll",
+            "sha256": "de5a8e030e34f0323a15f4e8c9b88e95559657c1eb01265272a78a932f90177e"
+          },
+          {
+            "file": "liwetun_service.exe",
+            "sha256": "10a04206237b7e6cecead79800110a8ee91e38fc07262b51c5ba610fd1f1ff66"
+          },
+          {
+            "file": "liwetun.exe",
+            "sha256": "e8a14a14d1ed0c204458ad99ed0dca8bdeaa42f6a3b79300e536346e83096307"
+          },
+          {
+            "file": "msvcp140_1.dll",
+            "sha256": "bfad5aef4c63a669e3c140655cdfdf395b6c979b400a447bd5dcb65ed8826c3d"
+          },
+          {
+            "file": "msvcp140_2.dll",
+            "sha256": "3ea06f0ee098b4823cb79599df3780e7f23cce52c19aac31d2a0d47efe33a5e9"
+          },
+          {
+            "file": "msvcp140_atomic_wait.dll",
+            "sha256": "640b2aefced484d0368eea5bdd06addd0658a3a70a49256e560d6923b404a479"
+          },
+          {
+            "file": "msvcp140_codecvt_ids.dll",
+            "sha256": "f2069a52880ec885ee7f0511186100eb7fada0411a2b4948fafea7735b878a18"
+          },
+          {
+            "file": "msvcp140.dll",
+            "sha256": "0f885b509a685d2bbfa652fed26b5fb31d88fbdab0a978c641d1c7b8aa460aa9"
+          },
+          {
+            "file": "native_assets.json",
+            "sha256": "9548a31e4a048135c1d94f919328bfb62ae2c7bb3cab96557c7941daa97776cb"
+          },
+          {
+            "file": "trusttunnel.dll",
+            "sha256": "24e7875b0b561d93cf34bb0392b4543f9017fb77425a52e4ed69a67bfa4e4f8c"
+          },
+          {
+            "file": "vccorlib140.dll",
+            "sha256": "19839407c3fdbc824e5bce189bf68ddf8097f12ec28b757797ffa0415c144ddd"
+          },
+          {
+            "file": "vcruntime140_1.dll",
+            "sha256": "1f2d41c4aa5db0bc33ebf7b66d72943a817d7ce6cbe880502a9403823633093f"
+          },
+          {
+            "file": "vcruntime140_threads.dll",
+            "sha256": "219915cf20822f34d5e7c1fdd4e21ae7f3396881096c51036225fb8f84b47afa"
+          },
+          {
+            "file": "vcruntime140.dll",
+            "sha256": "d5e4d9a3e835fa679450145d6a7d94e36573a509317111904d9b3712c30d9066"
+          },
+          {
+            "file": "wintun.dll",
+            "sha256": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce"
+          },
+          {
+            "file": "data/app.so",
+            "sha256": "a606fbd0741f7cdb5e468247a4ec095425aa80f9b46c5caae8f251555572d0ac"
+          },
+          {
+            "file": "data/icudtl.dat",
+            "sha256": "c12537022ef818991a7bfed41a76d8d6ae962ffbc0e6511ac762a5d0845e7f7c"
+          },
+          {
+            "file": "data/flutter_assets/AssetManifest.bin",
+            "sha256": "f566cc6fccc657365c0197accf3a7d6f80f85209ff666ff774f4dcbc524aa842"
+          },
+          {
+            "file": "data/flutter_assets/FontManifest.json",
+            "sha256": "28b1eb2b3d2e1ad60b8c8b0f9100b1ccbf492f7fa97f5bebb51ea97e73926e7d"
+          },
+          {
+            "file": "data/flutter_assets/NativeAssetsManifest.json",
+            "sha256": "9548a31e4a048135c1d94f919328bfb62ae2c7bb3cab96557c7941daa97776cb"
+          },
+          {
+            "file": "data/flutter_assets/NOTICES.Z",
+            "sha256": "62b0d2f107eaaa84363ce6f8192ecf14fc1143fe150e0783ba9bbd4b943af06d"
+          },
+          {
+            "file": "data/flutter_assets/fonts/MaterialIcons-Regular.otf",
+            "sha256": "d9865b671a09d683d13a863089d8825e0f61a37696ce5d7d448bc8023aa62453"
+          },
+          {
+            "file": "data/flutter_assets/shaders/ink_sparkle.frag",
+            "sha256": "e5e61d50c9549bc35382bbbd1c9548d46c4fb9ddf40c3a698415ac7e005516c8"
+          },
+          {
+            "file": "data/flutter_assets/shaders/stretch_effect.frag",
+            "sha256": "3707b8a75ae51668d7bcf4fe72a7b6ac95055555a8afc1723da74ff5eded1378"
+          },
+          {
+            "file": "notices/NSIS-COPYING.txt",
+            "sha256": "388357c1215ff403c5ebde3a5ecd273e68f8b79a579996775245d1ee65442aba"
+          },
+          {
+            "file": "notices/rust/inventory.json",
+            "sha256": "64be2d5b4bbf317e188486f97d0290c56b94a0aa40be99dc4635b34f0efc4e78"
+          },
+          {
+            "file": "notices/rust/README.md",
+            "sha256": "7aceaedbd2e9722cd836a134354f552f00ff6b1884e8fde5c638d7910d72a9bc"
+          },
+          {
+            "file": "notices/rust/base64-0.21.7/00.txt",
+            "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+          },
+          {
+            "file": "notices/rust/base64-0.21.7/01.txt",
+            "sha256": "0dd882e53de11566d50f8e8e2d5a651bcf3fabee4987d70f306233cf39094ba7"
+          },
+          {
+            "file": "notices/rust/hex-0.4.3/00.txt",
+            "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+          },
+          {
+            "file": "notices/rust/hex-0.4.3/01.txt",
+            "sha256": "f7bdb3426d045cd50efd4953026e3eb5a83d0199f458a075602611b9344da5b9"
+          },
+          {
+            "file": "notices/rust/proc-macro2-1.0.107/00.txt",
+            "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+          },
+          {
+            "file": "notices/rust/proc-macro2-1.0.107/01.txt",
+            "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+          },
+          {
+            "file": "notices/rust/quote-1.0.47/00.txt",
+            "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+          },
+          {
+            "file": "notices/rust/quote-1.0.47/01.txt",
+            "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+          },
+          {
+            "file": "notices/rust/rustls-pemfile-1.0.4/00.txt",
+            "sha256": "c5dae4585d8520d1bc3d435dc5dd813be63046ebccc3c4eb866044eff304f0f0"
+          },
+          {
+            "file": "notices/rust/rustls-pemfile-1.0.4/01.txt",
+            "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2"
+          },
+          {
+            "file": "notices/rust/rustls-pemfile-1.0.4/02.txt",
+            "sha256": "7cfafc877eccc46c0e346ccbaa5c51bb6b894d2b818e617d970211e232785ad4"
+          },
+          {
+            "file": "notices/rust/rustls-pemfile-1.0.4/03.txt",
+            "sha256": "709e3175b4212f7b13aa93971c9f62ff8c69ec45ad8c6532a7e0c41d7a7d6f8c"
+          },
+          {
+            "file": "notices/rust/syn-2.0.119/00.txt",
+            "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+          },
+          {
+            "file": "notices/rust/syn-2.0.119/01.txt",
+            "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+          },
+          {
+            "file": "notices/rust/thiserror-1.0.69/00.txt",
+            "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+          },
+          {
+            "file": "notices/rust/thiserror-1.0.69/01.txt",
+            "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+          },
+          {
+            "file": "notices/rust/thiserror-impl-1.0.69/00.txt",
+            "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+          },
+          {
+            "file": "notices/rust/thiserror-impl-1.0.69/01.txt",
+            "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+          },
+          {
+            "file": "notices/rust/trusttunnel-deeplink-0.1.0/00.txt",
+            "sha256": "cd994f29faba128fa963ccab364cdee0b51cdb399f98432c4bb6c7a6d017d3df"
+          },
+          {
+            "file": "notices/rust/unicode-ident-1.0.27/00.txt",
+            "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a"
+          },
+          {
+            "file": "notices/rust/unicode-ident-1.0.27/01.txt",
+            "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3"
+          },
+          {
+            "file": "notices/rust/unicode-ident-1.0.27/02.txt",
+            "sha256": "f7db81051789b729fea528a63ec4c938fdcb93d9d61d97dc8cc2e9df6d47f2a1"
+          },
+          {
+            "file": "notices/sdk/CANDIDATE_SOURCE_RECEIPT.json",
+            "sha256": "1faeaad6e0935e44e8063257ab6ff67602857d865ecfeec71faba4363eb07f53"
+          },
+          {
+            "file": "notices/sdk/inventory.json",
+            "sha256": "a9dde23eac2996122ac5a45f25830e7c64280d27e17a3f7e8142ecb0ad2ea98a"
+          },
+          {
+            "file": "notices/sdk/MODIFICATIONS.md",
+            "sha256": "885e058f6987f29f4b2fb85629688b633f7db0f9db997c6fc80dc22590cf0c39"
+          },
+          {
+            "file": "notices/sdk/README.md",
+            "sha256": "a4483c0f2edbff9c2246f2e96d1218724431c819117f52333aa498a362041b35"
+          },
+          {
+            "file": "notices/sdk/SOURCE_PINS.json",
+            "sha256": "cf9d5d299aeae007c9314b4235d8a45ad52076de46da5e5150e952d3d05cd474"
+          },
+          {
+            "file": "notices/sdk/TRAFFIC_PROFILE_INPUTS.json",
+            "sha256": "40d21c0edd085dc7bae109ae97f9bc0ef0d338e42e83c8e712c872383bd88686"
+          },
+          {
+            "file": "notices/sdk/TRAFFIC_RUNTIME_INPUT.json",
+            "sha256": "5d36e96d1698a9a2bda2ccc141a65ab54071ef8e43911b30ef23c1bb55e4e6e2"
+          },
+          {
+            "file": "notices/sdk/components/trusttunnel_sdk/LICENSE.txt",
+            "sha256": "cb054bf99c1720adf58023342446d08d44b620068073463622bcaadc004cd335"
+          },
+          {
+            "file": "notices/sdk/components/wintun/LICENSE.txt",
+            "sha256": "183adac21e7d96c508c8fd34d394b7b6708bc81564ad1bad61ab66143a008cd2"
+          },
+          {
+            "file": "notices/sdk/packaged/001/000.txt",
+            "sha256": "aa324fbe633a96546bebca975fbbab65caa175894bd00cfa13d7335e7363400c"
+          },
+          {
+            "file": "notices/sdk/packaged/005/000.txt",
+            "sha256": "6d20216ae022fbeed23916f48508fd807ece3d8464992330643b0e64e5c0c24b"
+          },
+          {
+            "file": "notices/sdk/packaged/008/000.txt",
+            "sha256": "cf451c612ef409b7692b51aa74eeb2b8df1ec9be38e6f7f72b8740f489ca1387"
+          },
+          {
+            "file": "notices/sdk/packaged/010/000.txt",
+            "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94"
+          },
+          {
+            "file": "notices/sdk/packaged/011/000.txt",
+            "sha256": "07580f2a3b35709ce703d523f447b242f6dfec7582a8c0df102c7fa2849375f8"
+          },
+          {
+            "file": "notices/sdk/packaged/012/000.txt",
+            "sha256": "ebca854e0134cd256d673627c20499f42577eb74bacf08b9f25b626a73c91277"
+          },
+          {
+            "file": "notices/sdk/packaged/017/000.txt",
+            "sha256": "9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138"
+          },
+          {
+            "file": "notices/sdk/packaged/019/000.txt",
+            "sha256": "508d4676d4083e874df706f302d9d42e5e7f9aed3f5a7ea614dc6d2b2252a22f"
+          },
+          {
+            "file": "notices/sdk/packaged/019/001.txt",
+            "sha256": "af0d7d2cef91fc243cf4ad98570b03d1f26f5e0227cad0f5f4a7376e2feb3160"
+          },
+          {
+            "file": "notices/sdk/packaged/020/000.txt",
+            "sha256": "1fdeb38075c36e6c6f14c7c625a6e3b1bc111f08da58c0b7ae85084906eadd8e"
+          },
+          {
+            "file": "notices/sdk/packaged/022/000.txt",
+            "sha256": "46a65cffd1ea955132d95a8dd921640714a8d6b537d2e4e482d31145ae95b603"
+          },
+          {
+            "file": "notices/sdk/packaged/022/001.txt",
+            "sha256": "074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff"
+          },
+          {
+            "file": "notices/sdk/packaged/022/002.txt",
+            "sha256": "5a93d5831e1297ab10fe643e1a631e83be392896da14ee2951285a79012df69d"
+          },
+          {
+            "file": "notices/sdk/packaged/022/003.txt",
+            "sha256": "b6a8bf63ae2c95b0aa256ee774680d7bd18f21f457da75466f7610b3b16acc4e"
+          },
+          {
+            "file": "notices/sdk/packaged/022/004.txt",
+            "sha256": "b85dcd3e453d05982552c52b5fc9e0bdd6d23c6f8e844b984a88af32570b0cc0"
+          },
+          {
+            "file": "notices/sdk/packaged/023/000.txt",
+            "sha256": "9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138"
+          },
+          {
+            "file": "notices/sdk/packaged/024/000.txt",
+            "sha256": "79e6ba8b687cb54786207342b9b6fcee0ac10218453ed9009b84d949b2233cc0"
+          },
+          {
+            "file": "notices/sdk/packaged/025/000.txt",
+            "sha256": "529bc3900a9571e49db285b0df432397e70b881cc3bf48de6667ae74ff4b06d8"
+          },
+          {
+            "file": "notices/sdk/packaged/026/000.txt",
+            "sha256": "cd71bb78391bd288dfcce9b381e3bd847eaa18ecff0fe93aff33510e21c4b65d"
+          },
+          {
+            "file": "notices/sdk/packaged/027/000.txt",
+            "sha256": "9702de7e4117a8e2b20dafab11ffda58c198aede066406496bef670d40a22138"
+          },
+          {
+            "file": "notices/sdk/sources/detours/LICENSE.txt",
+            "sha256": "b301808b732cfaa60df2b4b422d78cd97d2a15058b207e7e33f0535ba5170dd6"
+          },
+          {
+            "file": "notices/sdk/sources/dns-libs/00.txt",
+            "sha256": "f576132490344857ff2cff83c4559e0765b5a7c7bcd66aa9ed47659a1b843a84"
+          },
+          {
+            "file": "notices/sdk/sources/dns-libs/01.txt",
+            "sha256": "8fb15ebdb19eb669e1d37fcd8e57a44c477fcc0e93a9ab0d181760965f94d5ed"
+          },
+          {
+            "file": "notices/sdk/sources/klib/LICENSE.txt",
+            "sha256": "1f56e6ecc3595dfc8b1b919d5cef257aecedd7117ee3c0a8019586b56518e941"
+          },
+          {
+            "file": "notices/sdk/sources/ldns/LICENSE.txt",
+            "sha256": "9e0b1505c358d1a7c79555ee8bd1acbe2985dbc74dd81f3697cebf2161e922e6"
+          },
+          {
+            "file": "notices/sdk/sources/libevent/LICENSE.txt",
+            "sha256": "ff02effc9b331edcdac387d198691bfa3e575e7d244ad10cb826aa51ef085670"
+          },
+          {
+            "file": "notices/sdk/sources/libsodium/LICENSE.txt",
+            "sha256": "dea1855c9809f3faf22aa4a1fba20ec8af5a5587f23115012e5b98279cedc4af"
+          },
+          {
+            "file": "notices/sdk/sources/native_libs_common/00.txt",
+            "sha256": "f576132490344857ff2cff83c4559e0765b5a7c7bcd66aa9ed47659a1b843a84"
+          },
+          {
+            "file": "notices/sdk/sources/nghttp2/LICENSE.txt",
+            "sha256": "6b94f3abc1aabd0c72a7c7d92a77f79dda7c8a0cb3df839a97890b4116a2de2a"
+          },
+          {
+            "file": "notices/sdk/sources/nghttp3/LICENSE.txt",
+            "sha256": "58cc3fc8c6d6cb2485ab35eb5918e849b5bf1e56522974e106d7a39a88d61dcd"
+          },
+          {
+            "file": "notices/sdk/sources/ngtcp2/00.txt",
+            "sha256": "542dd526d2ea23565f0571cc68df6f05ed11248a90ff0f32de19d8ba589db513"
+          },
+          {
+            "file": "notices/sdk/sources/openssl/LICENSE.txt",
+            "sha256": "827c8d8fc207c2392794eef9e00fe246f9f61fdcc132556c275be3dd8c3cd97f"
+          },
+          {
+            "file": "notices/sdk/sources/pcre2/00.txt",
+            "sha256": "9c9488256e3612ec5ea40fd12abe7ec55a58f23bd36e6f465116c2b3cbffba02"
+          },
+          {
+            "file": "notices/sdk/sources/pcre2/01.txt",
+            "sha256": "99272c55f3dcfa07a8a7e15a5c1a33096e4727de74241d65fa049fccfdd59507"
+          },
+          {
+            "file": "notices/sdk/sources/tldregistry/00.txt",
+            "sha256": "f576132490344857ff2cff83c4559e0765b5a7c7bcd66aa9ed47659a1b843a84"
+          },
+          {
+            "file": "notices/sdk/sources/tldregistry/01.txt",
+            "sha256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b"
+          }
+        ],
+        "service_source": "2a230093c602f2f1df6ae3154d735b66a46c0b90",
+        "attachment_context_ci_guard_enabled": false,
+        "tunnel_started": false,
+        "owned_migration_ci_enabled": false,
+        "signing": "dedicated_owner_test_certificate",
+        "sdk_source_run": 44038398682,
+        "owned_bypass_ci_enabled": false,
+        "release_ready": false,
+        "owned_https_ci_enabled": false,
+        "gui_source": "2a230093c602f2f1df6ae3154d735b66a46c0b90",
+        "network_test_modes_enabled": false
+      }
+    }
+  },
+  "handoff_artifact_id": 14463584630,
+  "handoff_zip_sha256": "ff4fadac61743906cc86935a32187bec0e68254cf5159287fa9d88c7e2ba046f",
+  "handoff_zip_size_bytes": 18672497,
+  "handoff_exact_four_files_verified": true,
+  "installer_and_certificate_digests_independently_verified": true,
+  "public_certificate_subject_dates_eku_independently_checked": true,
+  "owner_connection_failure_diagnosed": false,
+  "windows_10_qualified": false,
+  "windows_11_qualified": false,
+  "release_ready": false
+}

@@ -86,4 +86,6 @@ error is returned. Display controls/bidi overrides are replaced with spaces;
 UTF-8 truncation retains complete code points. Embedded names replace numbered
 fallbacks for direct profiles; subscription labels retain precedence. These fields
 must never enter typed journal events or support reports. Synthetic native and
-widget/export tests cover this boundary; Windows execution is pending.
+widget/export tests cover this boundary. Windows run 44382051192 passed 8 Rust,
+234 Dart and 6 actual desktop channel tests, including the embedded synthetic
+Unicode name and endpoint fields. Desktop owner acceptance remains pending.
