@@ -508,7 +508,7 @@ def main():
         raise RuntimeError('invalid_adapter_owner_audit')
     if preserved_adapter and (os.environ.get('FRESH_ADAPTER') != 'true' or ownership_audit
             or family != 'ipv4' or traffic_pattern != 'normal'
-            or termination not in ['stop', 'lease-death']
+            or termination not in ['stop', 'lease-death', 'service-crash']
             or (owned_probe and owned_probe_mode != 'https')):
         raise RuntimeError('invalid_preserved_adapter_fixture')
     synthetic_ipv6 = family == 'synthetic-ipv6'
@@ -1038,14 +1038,19 @@ def main():
         session = None
         if preserved_adapter:
             stage = 'foreign_adapter_preservation_after_sdk_attachment_and_wfp_teardown'
-            from preserved_adapter_fixture import wait_stopped, observe, close_owned_fixture
+            from preserved_adapter_fixture import wait_stopped, wait_crashed_resources, observe, close_owned_fixture
             def own_resources_gone():
                 if not adapter_absent():
                     return False
-                state = owned_wfp(client)
+                state = wfp_watch.command('query') if wfp_watch else owned_wfp(client)
+                if wfp_watch and (state.get('passed') is not True or state.get('retained_process_alive') is not False):
+                    return False
                 return (state['sdk_sessions'] == wfp_before['sdk_sessions']
                         and state['sdk_dynamic_sessions'] == wfp_before['sdk_dynamic_sessions'])
-            wait_stopped(client, own_resources_gone)
+            if termination == 'service-crash':
+                wait_crashed_resources(own_resources_gone)
+            else:
+                wait_stopped(client, own_resources_gone)
             result['foreign_after_stop_observation'] = {}
             result['foreign_preserved_after_sdk_stop'] = observe(foreign_owner, foreign_configuration, ps,
                                                                  result['foreign_after_stop_observation'])

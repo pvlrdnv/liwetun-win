@@ -84,3 +84,15 @@ def close_owned_fixture(owner):
         raise RuntimeError('adapter_owner_fixture_cleanup_failed')
     owner.close()
     return cleanup
+
+
+def wait_crashed_resources(settled):
+    # The service no longer exists: use its pre-retained process/WFP observer,
+    # not a new service admission or fabricated idle response.
+    stable=0
+    for _ in range(40):
+        stable=stable+1 if settled() is True else 0
+        if stable==2:
+            return
+        time.sleep(.1)
+    raise RuntimeError('foreign_adapter_stop_not_confirmed')

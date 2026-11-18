@@ -2,7 +2,7 @@ import json
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
-from preserved_adapter_fixture import capture, observe, wait_stopped, close_owned_fixture
+from preserved_adapter_fixture import capture, observe, wait_stopped, close_owned_fixture, wait_crashed_resources
 
 
 def sample():
@@ -66,6 +66,14 @@ class PreservedAdapterTests(unittest.TestCase):
                               process=SimpleNamespace(wait=lambda **_:0),close=lambda:commands.append('reap'))
         close_owned_fixture(owner)
         self.assertEqual(commands,['close','reap'])
+
+    def test_crash_teardown_requires_two_consecutive_literal_observations(self):
+        with patch('preserved_adapter_fixture.time.sleep'):
+            observations=iter([False,True,False,True,True])
+            wait_crashed_resources(lambda:next(observations))
+            for unknown in [False,None,1]:
+                with self.assertRaises(RuntimeError):
+                    wait_crashed_resources(lambda:unknown)
 
 
 if __name__=='__main__': unittest.main()

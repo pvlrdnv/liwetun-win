@@ -33,6 +33,13 @@ The service-crash/endpoint-restart/IPv6 combinations remain refused by this
 fixture's input guard. These six preservation cases and two refusal regressions
 do not qualify full adapter ownership, an active competing tunnel or desktop use.
 
+Prepared an additional default-OFF preserved-fixture service-crash case. It uses
+the already retained trusted service process/WFP observer, requires process death,
+SDK-adapter absence and WFP baseline in two consecutive observations before
+creator cleanup; no post-crash idle service response is fabricated. Six focused
+local preservation tests PASS. Actual H2/H3 crash execution is pending; recovery
+and IPv6 preservation remain excluded.
+
 ## Shutdown comparison — epoch invalidation observed, repeatability still open
 
 On `85566d3`, the new shutdown endpoint passed fresh2 H3 positive 44310802734
