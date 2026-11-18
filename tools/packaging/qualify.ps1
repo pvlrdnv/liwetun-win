@@ -1,7 +1,8 @@
-param([switch]$Installer)
+param([switch]$Installer, [switch]$OwnerTest)
 # Disposable CI only. Production-mode binaries, read-only IPC; no tunnel start.
 $ErrorActionPreference = 'Stop'
 if ($env:GITHUB_ACTIONS -ne 'true' -or $env:GITHUB_RUN_ID -notmatch '^[0-9]{1,20}$') { throw 'Disposable GitHub runner required' }
+if ($OwnerTest -and !$Installer) { throw 'Owner test requires qualified installer' }
 $root = Join-Path $env:ProgramFiles ('LiWeTun-Package-CI-' + $env:GITHUB_RUN_ID)
 $payload = 'build/package-payload'
 $evidence = 'build/package-evidence'
@@ -143,7 +144,9 @@ try {
     $checks.Add('all_native_payload_images_are_x64')
     $checks.Add('gui_sdk_and_notice_inputs_verified')
     $stage = 'ci_signing'
-    $certificate = New-SelfSignedCertificate -Type CodeSigningCert -Subject ('CN=LiWeTun-Package-CI-' + $env:GITHUB_RUN_ID) -CertStoreLocation Cert:\LocalMachine\My -KeyExportPolicy NonExportable -NotAfter ([DateTime]::UtcNow.AddDays(1))
+    $subject = if ($OwnerTest) { 'CN=LiWeTun Owner Test ' + $env:GITHUB_RUN_ID } else { 'CN=LiWeTun-Package-CI-' + $env:GITHUB_RUN_ID }
+    $validDays = if ($OwnerTest) { 30 } else { 1 }
+    $certificate = New-SelfSignedCertificate -Type CodeSigningCert -Subject $subject -CertStoreLocation Cert:\LocalMachine\My -KeyAlgorithm RSA -KeyLength 3072 -HashAlgorithm SHA256 -KeyExportPolicy NonExportable -NotAfter ([DateTime]::UtcNow.AddDays($validDays))
     $store = [Security.Cryptography.X509Certificates.X509Store]::new('Root','LocalMachine')
     $store.Open('ReadWrite')
     try { $store.Add([Security.Cryptography.X509Certificates.X509Certificate2]::new($certificate.Export('Cert'))) } finally { $store.Close() }
@@ -200,7 +203,8 @@ try {
     $files = @(Get-ChildItem $payload -File -Recurse | ForEach-Object {
         @{file=[IO.Path]::GetRelativePath($payloadRoot,$_.FullName).Replace('\','/'); sha256=(Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}
     })
-    @{gui_source=$provenance.source_commit; sdk_source_run=$pin.source_run; service_source=$env:GITHUB_SHA; signing='ephemeral_ci_only'; release_ready=$false; network_test_modes_enabled=$false; attachment_context_ci_guard_enabled=$false; owned_socket_ci_probe_enabled=$false; owned_migration_ci_enabled=$false; owned_bypass_ci_enabled=$false; owned_https_ci_enabled=$false; tunnel_started=$false; files=$files} |
+    $signingKind = if ($OwnerTest) { 'dedicated_owner_test_certificate' } else { 'ephemeral_ci_only' }
+    @{gui_source=$provenance.source_commit; sdk_source_run=$pin.source_run; service_source=$env:GITHUB_SHA; signing=$signingKind; release_ready=$false; network_test_modes_enabled=$false; attachment_context_ci_guard_enabled=$false; owned_socket_ci_probe_enabled=$false; owned_migration_ci_enabled=$false; owned_bypass_ci_enabled=$false; owned_https_ci_enabled=$false; tunnel_started=$false; files=$files} |
         ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $evidence 'payload-manifest.json')
     if ($Installer) {
         $stage = 'installer_qualification'
@@ -209,7 +213,7 @@ try {
         $installed = $false
         Remove-Item $root -Recurse -Force
         $created = $false
-        & (Join-Path $PSScriptRoot 'installer-test.ps1') -CertificateThumbprint $certificate.Thumbprint
+        & (Join-Path $PSScriptRoot 'installer-test.ps1') -CertificateThumbprint $certificate.Thumbprint -OwnerTest:$OwnerTest
         $installerPassed = $true
         $checks.Add('fresh_installer_rollback_medium_query_and_uninstall')
     }
@@ -234,4 +238,8 @@ try {
     @{passed=($passed -and $cleanup -and $restored); stage=$stage; checks=$checks.ToArray(); cleanup_passed=$cleanup; network_unchanged=$restored; release_ready=$false; installer_tested=$installerPassed} |
         ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $evidence 'qualification.json')
     if (!$cleanup -or !$restored) { throw 'Payload fixture cleanup or network restoration failed' }
+}
+if ($OwnerTest) {
+    if (!$passed -or !$cleanup -or !$restored -or !$installerPassed) { throw 'Owner handoff requires completed qualification and cleanup' }
+    & (Join-Path $PSScriptRoot 'export-owner-test.ps1') -Certificate $certificate
 }

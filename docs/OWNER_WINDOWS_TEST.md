@@ -1,16 +1,28 @@
-# Prepared Windows owner-test scenario — package not available yet
+# Windows owner-test scenario — dedicated test signing approved
 
 This document prepares future acceptance on the owner's separate Windows 10 PC.
 It is not an instruction to install the current workspace build. The corporate
 development PC remains excluded. Windows 11 repeats this acceptance separately
 when a suitable environment is available.
 
+On 2026-11-18 the owner explicitly approved trusting a dedicated test certificate
+on that separate PC to start manual testing. The opt-in owner_test package mode
+uses a distinct 30-day code-signing-only publisher and exports only its public
+certificate after installer qualification and CI cleanup pass. The private key
+stays nonexportable on the disposable builder. The generic one-day CI publisher
+is not delivered. See [handoff instruction source](../tools/packaging/OWNER_TEST_README_RU.txt).
+Fingerprint/hash verification must use values delivered separately from the
+archive. Uninstall the app before removing its exact test certificate and before
+certificate expiry. No development/corporate PC trust-store changes are allowed.
+The package is currently being prepared; it is not a stable public release.
+
 ## Delivery gates
 
 Provide a signed installer with a verified release manifest, documented signer,
 version/digests and uninstall path. The actual GUI/service/runtime must satisfy
-the existing signature admission checks. No imported temporary CI certificates,
-signature bypass, developer toolchain or developer remote access is required.
+the existing signature admission checks. The owner-test exception above permits
+only its dedicated public test certificate; signature bypass, developer toolchain
+or developer remote access is not required.
 Distribution notices, normal routing/DNS/IPv6 cleanup and installer rollback
 must be qualified before giving the owner a package that changes the network.
 Test credentials/endpoint are separate synthetic fixtures. A live LikeWeb node

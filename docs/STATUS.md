@@ -1,5 +1,21 @@
 # Development checkpoint — 2026-11-18
 
+## Owner-test package — dedicated certificate authorized, build pending
+
+Owner explicitly approved trusting a dedicated test publisher on the separate
+Windows 10 PC. Added default-OFF owner_test packaging mode, requiring the full
+installer qualification. A distinct 30-day RSA/SHA256 code-signing certificate
+is generated nonexportably on the disposable builder; original Wintun/CRT
+signatures and native signature admission stay unchanged. Only the public CER,
+qualified signed installer, manifest and Russian verification/install/uninstall/
+exact-certificate-removal instructions may enter the handoff. No profiles or
+signing keys are exported. Artifact upload requires success after CI cleanup.
+Existing qualified GUI 44073703263 and aggregate SDK 44038398682 are reused with
+the current service startup mitigation. No full GUI/SDK rebuild or network matrix.
+All workflow YAML/whitespace checks PASS locally; actual owner-test installer
+qualification and delivery are pending. Desktop acceptance and public release
+remain unqualified; corporate/development PCs remain excluded.
+
 ## Problem-device removal reproduced; focused startup refusal PASS
 
 Public standard Windows CI **44353969169** on `53a66ba` completed the original

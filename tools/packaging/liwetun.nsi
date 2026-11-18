@@ -7,7 +7,11 @@ Unicode true
 !include x64.nsh
 !include "${DELETE_INCLUDE}"
 
+!ifdef OWNER_TEST
+Name "LiWeTun — тестовая сборка"
+!else
 Name "LiWeTun"
+!endif
 OutFile "${OUTPUT_EXE}"
 InstallDir "$PROGRAMFILES64\LiWeTun"
 RequestExecutionLevel admin

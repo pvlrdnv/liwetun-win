@@ -26,4 +26,9 @@ is not desktop acceptance. The owner's development device has a corporate tunnel
 keep it operating; do not install a LiWeTun service/driver, alter trust stores,
 firewall, DNS or routes on that device. Use disposable CI for network experiments.
 Manual owner acceptance will use a separate Windows 10 PC and a prepared signed
-package/report workflow, without a development toolchain or temporary CI roots.
+package/report workflow, without a development toolchain. On 2026-11-18 the owner
+explicitly approved trusting a dedicated owner-test code-signing certificate on
+that separate PC. Export only its public certificate; keep the private signing
+key nonexportable on the disposable builder. Do not reuse the generic temporary
+CI publisher. Supply fingerprint verification, expiry and exact trust-removal
+instructions. Corporate/development-device trust stores remain excluded.

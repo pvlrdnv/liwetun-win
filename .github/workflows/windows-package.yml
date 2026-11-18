@@ -19,6 +19,11 @@ on:
         required: false
         type: boolean
         default: false
+      owner_test:
+        description: Export a qualified installer with a dedicated 30-day owner-test public certificate (requires qualify_installer)
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -30,6 +35,7 @@ jobs:
     env:
       SOURCE_PINNED: ${{ inputs.source_pins }}
       TRAFFIC_METRICS: ${{ inputs.traffic_metrics }}
+      OWNER_TEST: ${{ inputs.owner_test }}
     defaults:
       run:
         shell: pwsh
@@ -48,6 +54,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GUI_RUN_ID: ${{ inputs.gui_run_id }}
         run: |
+          if ($env:OWNER_TEST -eq 'true' -and '${{ inputs.qualify_installer }}' -ne 'true') { throw 'Owner test requires installer qualification' }
           if ($env:GUI_RUN_ID -notmatch '^[0-9]{1,20}$') { throw 'Invalid GUI run ID' }
           $gui = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:GUI_RUN_ID" | ConvertFrom-Json
           if ($LASTEXITCODE -ne 0 -or $gui.name -ne 'Windows native import check' -or $gui.conclusion -ne 'success') { throw 'GUI run not qualified' }
@@ -95,7 +102,8 @@ jobs:
         env:
           QUALIFY_INSTALLER: ${{ inputs.qualify_installer }}
         run: |
-          if ($env:QUALIFY_INSTALLER -eq 'true') { ./tools/packaging/qualify.ps1 -Installer }
+          if ($env:OWNER_TEST -eq 'true') { ./tools/packaging/qualify.ps1 -Installer -OwnerTest }
+          elseif ($env:QUALIFY_INSTALLER -eq 'true') { ./tools/packaging/qualify.ps1 -Installer }
           else { ./tools/packaging/qualify.ps1 }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
@@ -104,3 +112,10 @@ jobs:
           path: build/package-evidence/
           retention-days: 14
           if-no-files-found: warn
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: success() && inputs.owner_test
+        with:
+          name: liwetun-owner-test-${{ github.run_id }}
+          path: build/owner-test-handoff/
+          retention-days: 7
+          if-no-files-found: error

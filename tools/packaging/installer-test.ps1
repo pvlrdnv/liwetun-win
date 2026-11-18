@@ -1,5 +1,6 @@
-param([Parameter(Mandatory)][string]$CertificateThumbprint)
+param([Parameter(Mandatory)][string]$CertificateThumbprint, [switch]$OwnerTest)
 $ErrorActionPreference = 'Stop'
+$signingKind = if ($OwnerTest) { 'dedicated_owner_test_certificate' } else { 'ephemeral_ci_only' }
 if ($env:GITHUB_ACTIONS -ne 'true' -or $CertificateThumbprint -cnotmatch '^[0-9A-Fa-f]{40}$') { throw 'Disposable signed CI required' }
 $root = Join-Path $env:ProgramFiles 'LiWeTun'
 $registry = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\LiWeTun'
@@ -61,10 +62,12 @@ try {
     $lines.Add('!macroend')
     $include = Join-Path $output 'payload-files.nsh'
     $lines | Set-Content -Encoding utf8 $include
-    $installer = Join-Path $output 'LiWeTun-0.1.0-preview-ci-only.exe'
+    $filename = if ($OwnerTest) { 'LiWeTun-0.1.0-owner-test.exe' } else { 'LiWeTun-0.1.0-preview-ci-only.exe' }
+    $installer = Join-Path $output $filename
     $compiler = Join-Path $env:LIWETUN_NSIS_ROOT 'makensis.exe'
     $icon = (Resolve-Path windows/runner/resources/app_icon.ico).Path
-    & $compiler /NOCONFIG /WX /V2 "/DPAYLOAD=$payload" "/DDELETE_INCLUDE=$include" "/DOUTPUT_EXE=$installer" "/DICON_FILE=$icon" "/DSIGN_THUMBPRINT=$CertificateThumbprint" tools/packaging/liwetun.nsi
+    $ownerArgs = if ($OwnerTest) { @('/DOWNER_TEST=1') } else { @() }
+    & $compiler /NOCONFIG /WX /V2 "/DPAYLOAD=$payload" "/DDELETE_INCLUDE=$include" "/DOUTPUT_EXE=$installer" "/DICON_FILE=$icon" "/DSIGN_THUMBPRINT=$CertificateThumbprint" @ownerArgs tools/packaging/liwetun.nsi
     if ($LASTEXITCODE -ne 0) { throw 'Pinned installer compile failed' }
     signtool sign /q /fd SHA256 /sm /s My /sha1 $CertificateThumbprint $installer
     if ($LASTEXITCODE -ne 0) { throw 'Installer CI signature failed' }
@@ -211,7 +214,7 @@ try {
     VerifyAbsent
     $checks.Add('normal_uninstaller_bootstrap_and_removal')
     $passed = $true
-    @{installer_sha256=(Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant(); source_commit=$env:GITHUB_SHA; signing='ephemeral_ci_only'; release_ready=$false} |
+    @{installer_sha256=(Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant(); source_commit=$env:GITHUB_SHA; signing=$signingKind; release_ready=$false} |
         ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $evidence 'installer-digest.json')
 } finally {
     $beforeCleanup = @{directory=[bool](Test-Path $root); registration=[bool](Test-Path $registry); shortcut=[bool](Test-Path $shortcut)}
@@ -235,7 +238,7 @@ try {
         if (Test-Path $shortcut) { Remove-Item $shortcut }
         VerifyAbsent
     } catch { $cleanup = $false }
-    @{passed=($passed -and $cleanup); stage=$stage; checks=$checks.ToArray(); invocations=$invocations.ToArray(); before_fixture_cleanup=$beforeCleanup; cleanup_passed=$cleanup; signing='ephemeral_ci_only'; tunnel_started=$false; desktop_owner_selection_tested=$false; release_ready=$false} |
+    @{passed=($passed -and $cleanup); stage=$stage; checks=$checks.ToArray(); invocations=$invocations.ToArray(); before_fixture_cleanup=$beforeCleanup; cleanup_passed=$cleanup; signing=$signingKind; tunnel_started=$false; desktop_owner_selection_tested=$false; release_ready=$false} |
         ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $evidence 'installer-qualification.json')
     if (!$cleanup) { throw 'Installer fixture cleanup failed' }
 }
