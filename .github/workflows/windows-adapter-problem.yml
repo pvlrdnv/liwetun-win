@@ -1,0 +1,89 @@
+name: Windows isolated problem-device experiment
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  problem-device:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: x64
+      - name: Verify original signed Wintun on disposable runner
+        run: |
+          New-Item -ItemType Directory -Force build/problem-runtime,build/problem-evidence | Out-Null
+          $lock = Get-Content native/sdk/inputs.json -Raw | ConvertFrom-Json
+          Invoke-WebRequest $lock.wintun.url -OutFile build/problem-wintun.zip
+          if ((Get-FileHash build/problem-wintun.zip -Algorithm SHA256).Hash.ToLowerInvariant() -ne $lock.wintun.sha256) { throw 'Wintun archive digest mismatch' }
+          Expand-Archive build/problem-wintun.zip build/problem-wintun
+          Copy-Item build/problem-wintun/wintun/bin/amd64/wintun.dll build/problem-runtime/wintun.dll
+          $driver = Get-Item build/problem-runtime/wintun.dll
+          if ((Get-FileHash $driver.FullName -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce') { throw 'Original Wintun DLL digest mismatch' }
+          if ((Get-AuthenticodeSignature $driver.FullName).Status -ne 'Valid') { throw 'Original Wintun signature not trusted' }
+      - name: Compile exact-created-device experiment
+        run: |
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_WIN32_WINNT=0x0A00 native/health/test_windows_adapter_problem.cpp /Fobuild/problem-runtime/ /Febuild/problem-runtime/problem.exe /link bcrypt.lib iphlpapi.lib ws2_32.lib setupapi.lib cfgmgr32.lib uuid.lib ole32.lib advapi32.lib
+          if ($LASTEXITCODE -ne 0) { throw 'Problem-device fixture build failed' }
+      - name: Observe lifecycle only; experiment success is not preservation qualification
+        run: |
+          function Snapshot {
+            return @{
+              adapters=(Get-NetAdapter -IncludeHidden | Sort-Object InterfaceGuid | Select-Object InterfaceGuid,Name,InterfaceDescription | ConvertTo-Json -Compress)
+              routes=(Get-NetRoute | Sort-Object InterfaceIndex,DestinationPrefix,NextHop,RouteMetric | Select-Object InterfaceIndex,DestinationPrefix,NextHop,RouteMetric | ConvertTo-Json -Compress)
+              dns=(Get-DnsClientServerAddress | Sort-Object InterfaceIndex,AddressFamily | Select-Object InterfaceIndex,AddressFamily,ServerAddresses | ConvertTo-Json -Depth 4 -Compress)
+            }
+          }
+          $before = Snapshot
+          $dll = (Get-Item build/problem-runtime/wintun.dll).FullName
+          $child = Start-Process build/problem-runtime/problem.exe -ArgumentList ('"' + $dll + '"') -PassThru -NoNewWindow -RedirectStandardOutput build/problem-native-private.txt -RedirectStandardError build/problem-error-private.txt
+          $finished = $child.WaitForExit(180000)
+          if (-not $finished) { $child.Kill(); $child.WaitForExit() }
+          $child.Refresh()
+          $native = $null
+          try { $native = Get-Content build/problem-native-private.txt -Raw | ConvertFrom-Json -ErrorAction Stop } catch { }
+          $after = Snapshot
+          for ($attempt=0; $attempt -lt 40 -and ($after.adapters -ne $before.adapters -or $after.routes -ne $before.routes -or $after.dns -ne $before.dns); $attempt++) {
+            Start-Sleep -Milliseconds 250
+            $after = Snapshot
+          }
+          $report = @{
+            source_commit='${{ github.sha }}'; native_process_completed=$finished; harness_passed=$false
+            experiment_completed=$false; foreign_preservation_passed=$null
+            original_wintun_sha256='e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce'
+            factory_only=$true; sdk_started=$false; session_started=$false
+            adapter_baseline_restored=($after.adapters -eq $before.adapters)
+            routes_baseline_restored=($after.routes -eq $before.routes)
+            dns_baseline_restored=($after.dns -eq $before.dns)
+            identifiers_exported=$false; adapter_ownership_qualified=$false; release_ready=$false
+          }
+          $all = $finished -and $child.ExitCode -eq 0 -and $native.experiment_completed -ceq $true
+          foreach ($name in @('fixture_created_and_retained_device','fixture_disabled_own_exact_node','problem_disabled_observed','candidate_created')) {
+            $report[$name] = $null -ne $native -and $native.$name -ceq $true
+            $all = $all -and $report[$name]
+          }
+          foreach ($name in @('foreign_removed_after_candidate_create','foreign_removed_after_candidate_close','foreign_removed_before_creator_close','foreign_preservation_passed')) {
+            $report[$name] = $null
+            if ($null -ne $native -and $native.$name -is [bool]) { $report[$name] = $native.$name }
+            $all = $all -and $null -ne $report[$name]
+          }
+          $all = $all -and ($report.foreign_removed_before_creator_close -ceq ($report.foreign_removed_after_candidate_create -or $report.foreign_removed_after_candidate_close)) -and ($report.foreign_preservation_passed -ceq (-not $report.foreign_removed_before_creator_close))
+          $report.experiment_completed = $all
+          if ($null -ne $native -and $native.stage -is [long] -and $native.stage -ge 0 -and $native.stage -le 5) { $report.failure_stage = $native.stage }
+          $report.harness_passed = $all -and $report.adapter_baseline_restored -and $report.routes_baseline_restored -and $report.dns_baseline_restored
+          $report | ConvertTo-Json | Set-Content build/problem-evidence/problem-device.json
+          if (-not $report.harness_passed) { throw 'Experiment did not complete cleanly; see closed receipt' }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: adapter-problem-safe-evidence
+          path: build/problem-evidence/
+          retention-days: 14
+          if-no-files-found: warn

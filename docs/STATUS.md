@@ -1,5 +1,20 @@
 # Development checkpoint — 2026-11-18
 
+## Problem-device lifecycle — isolated experiment pending
+
+Source audit of original Wintun 0.14.1 confirms global cleanup skips healthy
+nodes but attempts removal of problem nodes, queued by Create/Close. A new
+standalone disposable CI executable creates and verifies its own exact adapter,
+retains its creation handle, locates only that GUID's PnP node and disables it.
+After observing the disabled problem state, it creates/closes a separate policy-2
+adapter and observes whether the retained node disappeared before creator close.
+Only that fixture-created node may be re-enabled if it survives. No SDK/service,
+session, external device selector or exported identifiers. Parent snapshots stay
+private and final adapter/route/DNS baselines are required. Experiment completion
+and actual preservation have separate fields; a green harness cannot qualify
+ownership if foreign preservation fails. YAML/whitespace checks PASS locally;
+actual Windows compilation and outcome are pending. No owner-device changes.
+
 ## Current focused fresh2 HTTPS matrix — 16/16 PASS
 
 On `472fa45`, the exact eight-mode set passed on **both H2 and H3**: positive
