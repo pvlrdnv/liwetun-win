@@ -12,7 +12,7 @@ fn main() {
         ("SYNTHETIC_TT_SERVICE_LOCAL", Protocol::Http2, false),
     ] {
         let config = DeepLinkConfig::builder()
-            .name("Тестовый сервер".into())
+            .name(Some("Тестовый сервер".into()))
             .hostname("node.example.invalid".into())
             .addresses(vec![if key == "SYNTHETIC_TT_SERVICE_LOCAL" {
                 "127.0.0.1:9".into()

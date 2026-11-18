@@ -30,7 +30,12 @@ LOCAL: analyze PASS; full Dart suite **227 PASS / 6 platform skips**, followed b
 **22 focused PASS** after stronger actual widget/metadata privacy checks. Python
 service fixtures **95 PASS**. Rust formatting PASS using pinned 1.95.0 in /tmp.
 No local C/C++ linker frontend is available; Rust/native compilation and updated
-Windows/package qualification are pending. No desktop traffic success is claimed.
+Windows/package qualification are pending. Initial Windows attempts
+44381710626 / 44381714626 stopped during synthetic-fixture compilation: the
+pinned builder's optional name requires `Some(String)`. Corrected the fixture;
+no installer or network experiment ran in these failed attempts. The refusal
+reply now also preserves the readiness already established before the guard.
+No desktop traffic success is claimed.
 
 ## Owner-test package delivered — 44364045177 PASS
 

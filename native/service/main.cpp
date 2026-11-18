@@ -147,6 +147,8 @@ void WINAPI Main(DWORD, LPWSTR*) {
             if (leased && !SameLease(actor, lease)) reply.code = Code::Busy;
             else if (request.command == Command::Start) {
               reply.code = backend.Start(std::move(payload));
+              // This refusal happens only after SDK readiness was established.
+              if (reply.code == Code::AdapterPreflightRejected) reply.runtime_ready = 1;
               if (reply.code == Code::Ok) {
                 lease = std::move(actor); leased = true; lease_closing = false; lease_session = lease.session;
               }
