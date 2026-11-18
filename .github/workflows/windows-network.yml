@@ -84,6 +84,11 @@ on:
         required: false
         default: false
         type: boolean
+      endpoint_shutdown_trace:
+        description: Closed shutdown counters from a separately pinned diagnostic endpoint (requires endpoint_shutdown)
+        required: false
+        default: false
+        type: boolean
       diagnostic_only:
         description: H2 diagnostic only (never a complete qualification)
         required: false
@@ -163,6 +168,7 @@ jobs:
       LIWETUN_ENDPOINT_FIXTURE_RUN: ${{ inputs.endpoint_fixture_run }}
       LIWETUN_ENDPOINT_STREAM_CLOSE: ${{ inputs.endpoint_stream_close }}
       LIWETUN_ENDPOINT_SHUTDOWN: ${{ inputs.endpoint_shutdown }}
+      LIWETUN_ENDPOINT_SHUTDOWN_TRACE: ${{ inputs.endpoint_shutdown_trace }}
       LIWETUN_PRODUCTION_PROBE: ${{ inputs.production_probe }}
       LIWETUN_PRODUCTION_TRANSPORT: ${{ inputs.production_transport }}
       LIWETUN_PRODUCTION_TERMINATION: ${{ inputs.production_termination }}
@@ -188,6 +194,7 @@ jobs:
           if ($env:OWNED_PROBE -eq 'true' -and ($env:ATTACHED_TUN -ne 'true' -or $env:LIWETUN_PRODUCTION_PROFILE -ne 'valid' -or $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4' -or $env:LIWETUN_PRODUCTION_TERMINATION -ne 'stop' -or $env:LIWETUN_TRAFFIC_PATTERN -ne 'normal')) { throw 'Owned probe requires its focused IPv4 Stop/normal fixture' }
           if ($env:FRESH_ADAPTER -eq 'true' -and ($env:ATTACHED_TUN -ne 'true' -or $env:TRAFFIC_METRICS -ne 'true' -or $env:SOURCE_PINNED -ne 'true' -or $env:LIWETUN_ADAPTER_OWNERSHIP_AUDIT -eq 'true')) { throw 'Fresh adapter requires its pinned attachment fence and separate factory ownership audit' }
           if ($env:LIWETUN_PRESERVED_ADAPTER -eq 'true' -and ($env:FRESH_ADAPTER -ne 'true' -or $env:LIWETUN_ADAPTER_OWNERSHIP_AUDIT -eq 'true' -or $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4' -or $env:LIWETUN_TRAFFIC_PATTERN -ne 'normal' -or $env:LIWETUN_PRODUCTION_TERMINATION -notin @('stop','lease-death','service-crash','endpoint-restart') -or ($env:OWNED_PROBE -eq 'true' -and $env:LIWETUN_OWNED_PROBE_MODE -ne 'https'))) { throw 'Preserved-adapter control requires explicit fresh2 IPv4 Stop/lease/crash/recovery context' }
+          if ($env:LIWETUN_ENDPOINT_SHUTDOWN_TRACE -eq 'true' -and $env:LIWETUN_ENDPOINT_SHUTDOWN -ne 'true') { throw 'Shutdown trace requires explicit completion candidate' }
           if ($env:FRESH_ADAPTER -eq 'true') {
             python -m unittest discover -s tools/sdk -p 'test_fresh_runtime.py'
             if ($LASTEXITCODE -ne 0) { throw 'Fresh adapter runtime guard contracts failed' }
@@ -282,7 +289,7 @@ jobs:
           } else { throw 'Unpinned endpoint version' }
           if ($env:LIWETUN_ENDPOINT_FIXTURE_RUN) {
             if ($env:LIWETUN_ENDPOINT_FIXTURE_RUN -notmatch '^[0-9]{1,20}$' -or $env:LIWETUN_ENDPOINT_VERSION -ne 'v1.1.0' -or $env:LIWETUN_PRODUCTION_PROBE -ne 'true') { throw 'Invalid diagnostic endpoint request' }
-            $receiptPath = if ($env:LIWETUN_ENDPOINT_SHUTDOWN -eq 'true') { 'tools/service/endpoint-runtime-shutdown.json' } elseif ($env:LIWETUN_ENDPOINT_STREAM_CLOSE -eq 'true') { 'tools/service/endpoint-runtime-close.json' } else { 'tools/service/endpoint-runtime.json' }
+            $receiptPath = if ($env:LIWETUN_ENDPOINT_SHUTDOWN_TRACE -eq 'true') { 'tools/service/endpoint-runtime-trace.json' } elseif ($env:LIWETUN_ENDPOINT_SHUTDOWN -eq 'true') { 'tools/service/endpoint-runtime-shutdown.json' } elseif ($env:LIWETUN_ENDPOINT_STREAM_CLOSE -eq 'true') { 'tools/service/endpoint-runtime-close.json' } else { 'tools/service/endpoint-runtime.json' }
             $receipt = Get-Content $receiptPath -Raw | ConvertFrom-Json
             $sourcePin = Get-Content tools/service/endpoint-source.json -Raw | ConvertFrom-Json
             if ($env:LIWETUN_ENDPOINT_FIXTURE_RUN -ne [string]$receipt.source_run) { throw 'Unreviewed diagnostic endpoint run' }
@@ -305,6 +312,14 @@ jobs:
               $shutdownDigest = (Get-FileHash tools/service/endpoint-shutdown-inputs.json -Algorithm SHA256).Hash.ToLowerInvariant()
               if ($receipt.endpoint_shutdown_manifest_sha256 -ne $shutdownDigest -or $provenance.endpoint_shutdown_manifest_sha256 -ne $shutdownDigest -or $receipt.endpoint_shutdown_source_sha256 -ne $shutdownPin.output_sha256 -or $provenance.endpoint_shutdown_source_sha256 -ne $shutdownPin.output_sha256 -or $receipt.endpoint_shutdown_fix -ne $true -or $provenance.endpoint_shutdown_fix -ne $true -or $receipt.release_ready -ne $false) { throw 'Endpoint shutdown-completion provenance mismatch' }
             } elseif ($provenance.endpoint_shutdown_fix -eq $true) { throw 'Endpoint shutdown candidate requires explicit opt-in' }
+            if ($env:LIWETUN_ENDPOINT_SHUTDOWN_TRACE -eq 'true') {
+              $tracePin = Get-Content tools/service/endpoint-trace-inputs.json -Raw | ConvertFrom-Json
+              $traceDigest = (Get-FileHash tools/service/endpoint-trace-inputs.json -Algorithm SHA256).Hash.ToLowerInvariant()
+              if ($receipt.endpoint_shutdown_trace -ne $true -or $provenance.endpoint_shutdown_trace -ne $true -or $receipt.endpoint_trace_manifest_sha256 -ne $traceDigest -or $provenance.endpoint_trace_manifest_sha256 -ne $traceDigest -or @($receipt.endpoint_trace_source_hashes.PSObject.Properties).Count -ne 3 -or @($provenance.endpoint_trace_source_hashes.PSObject.Properties).Count -ne 3) { throw 'Endpoint trace provenance mismatch' }
+              foreach ($entry in $tracePin.files.PSObject.Properties) {
+                if ($receipt.endpoint_trace_source_hashes.($entry.Name) -ne $entry.Value.output_sha256 -or $provenance.endpoint_trace_source_hashes.($entry.Name) -ne $entry.Value.output_sha256) { throw 'Endpoint trace source mismatch' }
+              }
+            } elseif ($provenance.endpoint_shutdown_trace -eq $true) { throw 'Endpoint shutdown trace requires explicit opt-in' }
           } else {
             Invoke-WebRequest "https://github.com/TrustTunnel/TrustTunnel/releases/download/${env:LIWETUN_ENDPOINT_VERSION}/trusttunnel-${env:LIWETUN_ENDPOINT_VERSION}-linux-x86_64.tar.gz" -OutFile build/endpoint.tar.gz
             if ((Get-FileHash build/endpoint.tar.gz -Algorithm SHA256).Hash.ToLowerInvariant() -ne $endpointDigest) { throw 'Endpoint digest mismatch' }

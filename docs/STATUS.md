@@ -1,13 +1,16 @@
 # Development checkpoint — 2026-11-18
 
-## Retained fixture during endpoint recovery — pending Windows execution
+## Retained fixture during endpoint recovery — H2/H3 PASS
 
 Extended the default-OFF preserved-adapter control to ordinary IPv4 endpoint
 restart. The retained foreign fixture is sampled immediately before and after
 the owned two-second endpoint outage, again after real HTTPS/DNS recovery without
 a new Start, and after SDK teardown. Existing transfer/recovery and final global
 restoration requirements remain unchanged. This is discrete observation, not
-continuous foreign traffic monitoring. H2/H3 Windows execution is pending;
+continuous foreign traffic monitoring. Actual H2 **44318736372** / H3 **44318744005
+PASS** on `a7e17f7`: real HTTPS/DNS recovered without a new Start, all four foreign
+observations unchanged, creator-only removal and full global/WFP restoration
+without watchdog. [Original reports](evidence/preserved-recovery-44318736372.json).
 IPv6, disabled-device, active competing tunnel and release gates remain open.
 
 Prepared a separate default-OFF endpoint shutdown trace build, chained after
@@ -15,9 +18,17 @@ the existing completion profile. Eight process-total counters record QUIC close
 attempt/accept/error, final flush result and UDP send/drop/error counts; no packet
 contents, addresses or free-form output. A fixed bounded JSON file is written
 on normal exit. Successful send/flush is not delivery or client invalidation.
-Five new guard tests and actual pinned-source preparation/receipt-chain checks
-PASS locally. Compilation and real shutdown observation are pending. Existing
-endpoint runtime pins are unchanged; this adds no claimed H3 epoch fix.
+UDP counters cover the instrumented QUIC send helper, excluding direct handshake
+control sends; they cannot attribute individual packets to a close call.
+Five new profile guards, four closed-observation/restart tests, **88 full service-fixture
+tests**, and actual pinned-source preparation/receipt-chain checks PASS locally.
+Actual compilation + two authenticated TLS/UDP flows **PASS 44319325630** on
+`c3a2626`. Run identity, original archive/patch, all three profile manifests/final
+source hashes and actual binary verified. [Build receipt](evidence/endpoint-trace-build-44319325630.json).
+Separate endpoint-runtime-trace.json pins binary
+`70f30dcf9407f6a46a379bbe3f6b085fc1361141d5213d5c4128a90678b91b13`;
+all prior endpoint runtime pins stay unchanged. Windows shutdown observations
+are pending; this adds no claimed H3 epoch fix or release admission.
 
 ## Retained foreign adapter during SDK traffic — focused H2/H3 PASS
 

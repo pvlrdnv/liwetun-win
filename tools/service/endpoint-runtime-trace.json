@@ -1,0 +1,28 @@
+{
+  "source_run": "44319325630",
+  "workflow_commit": "c3a262670592b3cb28bec5d1ea6d8efa4af8f53f",
+  "source_commit": "fab5b8353a19332f935fa30869307d37d4a898d1",
+  "patch_sha256": "2d63ccf32860e6c0263722456cbf6b7fc20a5647ceb4c9cac1a6ebbc85ee6baf",
+  "source_archive_sha256": "24be5fd781329445d9341d53f8159a3f7dfbfd8cd5d45cdbe3ee63447c68360d",
+  "binary_sha256": "70f30dcf9407f6a46a379bbe3f6b085fc1361141d5213d5c4128a90678b91b13",
+  "diagnostic_source_fix": true,
+  "release_ready": false,
+  "endpoint_close_fix": true,
+  "endpoint_close_manifest_sha256": "b28f5d58abfc0071cea3f33f5b29e1b7dcc88935cc531adbb0dc5a6ef9e376b8",
+  "endpoint_close_source_sha256": "4f65a1e6a41649bbea876147fc743d77da6e2dccbef9729c2401706f314d52b2",
+  "endpoint_shutdown_fix": true,
+  "endpoint_shutdown_manifest_sha256": "ee88d295d9b46167f77cba7043b39ef90367579ee47298f67146c09d19ccdd6b",
+  "endpoint_shutdown_source_sha256": "93f161c6678a557d58801122fbf9ebba3d16bffdf3bf143abf0eb689cb7c1ee9",
+  "endpoint_shutdown_trace": true,
+  "endpoint_trace_manifest_sha256": "545efaeabb30766f30626ba32e4bb92255831bbb7b25d8d2adee900892a8c3d9",
+  "endpoint_trace_source_hashes": {
+    "lib/src/lib.rs": "bb2c80eac833b863a42f03c53d13031c39ca3b97d05db2f51e1317048959a6fe",
+    "lib/src/quic_multiplexer.rs": "f5b2abec4bdd3bf511b0048345382655de749313597105561a7cbf4d68c1a5a7",
+    "endpoint/src/main.rs": "73220523f4a7f738d96399a47c477bf655ab89afae9f62408a8721fefe4ccae5"
+  },
+  "qualification_scope": "linux_diagnostic_endpoint_build_two_h2_tls_udp_flows_only_shutdown_observation_pending",
+  "qualification_receipt": "docs/evidence/endpoint-trace-build-44319325630.json",
+  "shutdown_observation_qualified": false,
+  "h3_epoch_change_qualified": false,
+  "production_admitted": false
+}

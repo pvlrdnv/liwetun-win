@@ -267,7 +267,12 @@ in two consecutive observations before creator cleanup. Actual H2 **44317597838*
 H3 **44317606215 PASS** on `dce5e20`: ordinary HTTPS/DNS, unchanged foreign
 configuration across owned-service death, creator-only fixture removal and full
 restoration, without watchdog. [Original reports](evidence/preserved-crash-44317597838.json).
-The fixture still rejects endpoint-restart and IPv6 preservation combinations.
+Endpoint recovery extension **PASS** on `a7e17f7`: H2 **44318736372** / H3
+**44318744005**, real ordinary HTTPS/DNS recovered without new Start, four discrete
+foreign observations unchanged, creator-only cleanup and full global/WFP
+restoration without watchdog. [Original reports](evidence/preserved-recovery-44318736372.json).
+The fixture still rejects IPv6 preservation combinations. These observations
+do not establish continuous preservation during the outage.
 
 This does not exercise active foreign traffic or disabled/problem devices.
 Pinned Wintun global orphan cleanup behavior and general coexistence remain open;

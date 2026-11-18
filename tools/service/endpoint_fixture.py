@@ -141,9 +141,13 @@ def main():
     tx_sink = None
     owned_probe = False
     owned_probe_mode = 'echo'
+    shutdown_trace = False
     owned_sink = None
     if (directory / 'forwarder-inputs.json').exists():
         inputs = json.loads((directory / 'forwarder-inputs.json').read_text())
+        shutdown_trace = inputs.get('endpoint_shutdown_trace', False)
+        if type(shutdown_trace) is not bool:
+            raise RuntimeError('invalid_endpoint_shutdown_trace')
         origin = ipaddress.IPv4Address(inputs['origin'])
         dns = ipaddress.IPv4Address(inputs['dns_host'])
         tx_only = inputs.get('tx_only', False)
@@ -204,6 +208,8 @@ def main():
         echo_worker = threading.Thread(target=echo_server, args=(stop, counters, echo_socket), daemon=True)
         echo_worker.start()
     def launch_endpoint():
+        if shutdown_trace:
+            (directory / 'liwetun-ci-shutdown.json').unlink(missing_ok=True)
         child = subprocess.Popen([str(args.binary.resolve()), 'vpn.toml', 'hosts.toml', '--jobs', '2'],
                                  cwd=directory, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         try:
@@ -256,12 +262,18 @@ def main():
                 graceful = command.strip() == 'restart-graceful'
                 gracefully_ended = stop_endpoint(endpoint, graceful=graceful)
                 ended = endpoint.poll() is not None
+                shutdown_observation = None
+                if graceful and shutdown_trace:
+                    from endpoint_trace_fixture import read
+                    shutdown_observation = read(directory)
                 # A real bounded outage of this owned diagnostic endpoint only.
                 time.sleep(2)
                 endpoint = launch_endpoint()
                 observation = {'restarted': ended and endpoint.poll() is None, 'outage_seconds': 2}
                 if graceful:
                     observation['graceful_shutdown'] = gracefully_ended
+                    if shutdown_trace:
+                        observation['shutdown_observation'] = shutdown_observation
                 print(json.dumps(observation), flush=True)
             else:
                 break

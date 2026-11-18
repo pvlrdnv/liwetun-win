@@ -243,9 +243,9 @@ def restart_during_owned_request(endpoint, report_path):
     else:
         raise RuntimeError('owned_probe_not_waiting')
     restarted = endpoint.command('restart-graceful')
-    if restarted != {'restarted': True, 'outage_seconds': 2, 'graceful_shutdown': True}:
-        raise RuntimeError('endpoint_restart_failed')
-    return restarted
+    trace = os.environ.get('LIWETUN_ENDPOINT_SHUTDOWN_TRACE') == 'true'
+    from endpoint_trace_fixture import validate_restart
+    return validate_restart(restarted, trace)
 
 
 def owned_bypass_receiver(tls_directory=None):
@@ -536,6 +536,7 @@ def main():
               'endpoint_diagnostic_source_fix': bool(os.environ.get('LIWETUN_ENDPOINT_FIXTURE_RUN')),
               'endpoint_reader_wakeup_candidate': os.environ.get('LIWETUN_ENDPOINT_STREAM_CLOSE') == 'true',
               'endpoint_shutdown_completion_candidate': os.environ.get('LIWETUN_ENDPOINT_SHUTDOWN') == 'true',
+              'endpoint_shutdown_trace_enabled': os.environ.get('LIWETUN_ENDPOINT_SHUTDOWN_TRACE') == 'true',
               'full_matrix_qualified': False, 'release_ready': False}
     if ownership_audit:
         result.update(mode='preexisting_adapter_name_refusal',
@@ -579,7 +580,8 @@ def main():
         (directory / 'forwarder-inputs.json').write_text(json.dumps({
             'origin': origin, 'dns_host': str(dns_host), 'physical_index': physical['index'],
             'synthetic_ipv6': synthetic_ipv6, 'tx_only': traffic_pattern == 'tx-only',
-            'owned_probe': owned_probe, 'owned_probe_mode': owned_probe_mode}))
+            'owned_probe': owned_probe, 'owned_probe_mode': owned_probe_mode,
+            'endpoint_shutdown_trace': os.environ.get('LIWETUN_ENDPOINT_SHUTDOWN_TRACE') == 'true'}))
         wsl = ['wsl.exe', '-d', distro, '--']
         def linux(path):
             return subprocess.check_output(wsl + ['wslpath', '-u', path.as_posix()],
