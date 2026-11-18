@@ -506,8 +506,10 @@ def main():
         raise RuntimeError('invalid_owned_probe_mode')
     if ownership_audit and (profile != 'valid' or family != 'ipv4' or termination != 'stop' or traffic_pattern != 'normal'):
         raise RuntimeError('invalid_adapter_owner_audit')
-    if preserved_adapter and (os.environ.get('FRESH_ADAPTER') != 'true' or not owned_probe
-            or owned_probe_mode != 'https' or ownership_audit):
+    if preserved_adapter and (os.environ.get('FRESH_ADAPTER') != 'true' or ownership_audit
+            or family != 'ipv4' or traffic_pattern != 'normal'
+            or termination not in ['stop', 'lease-death']
+            or (owned_probe and owned_probe_mode != 'https')):
         raise RuntimeError('invalid_preserved_adapter_fixture')
     synthetic_ipv6 = family == 'synthetic-ipv6'
     report = ROOT / 'build/service-evidence/production-network.json'
@@ -996,7 +998,7 @@ def main():
             if traffic_watch.receive() != 'ready':
                 raise RuntimeError('aggregate_traffic_watcher_not_ready')
         if preserved_adapter:
-            stage = 'foreign_adapter_preservation_while_sdk_active'
+            stage = 'foreign_adapter_preservation_after_start_attempt'
             from preserved_adapter_fixture import observe
             result['foreign_active_observation'] = {}
             result['foreign_preserved_while_active'] = observe(foreign_owner, foreign_configuration, ps,

@@ -19,6 +19,12 @@ This is a healthy retained fixture, not active foreign traffic, disabled-device
 or complete coexistence qualification.
 Normal runtime/package and all release/ownership gates remain unchanged.
 
+Extended the same default-OFF retained fixture to ordinary IPv4 Stop/lease
+and wrong-CA/auth refusal. Ordinary variants keep the owned health worker OFF;
+their transfer/refusal oracles remain unchanged. Windows execution of these
+additional cases is pending; the service-crash/endpoint-restart/IPv6 combinations
+remain refused by this fixture's input guard.
+
 ## Shutdown comparison — epoch invalidation observed, repeatability still open
 
 On `85566d3`, the new shutdown endpoint passed fresh2 H3 positive 44310802734
