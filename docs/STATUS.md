@@ -36,6 +36,10 @@ Normal observer selection is preserved. **64 local synthetic service-fixture
 tests PASS** (loopback sockets only, rerun outside the socket-blocking sandbox),
 including four explicit candidate/discovery boundary checks. Actual SDK network
 execution is still pending; no ordinary runtime pin or installer change.
+A separate read-only Windows check now exercises the actual PowerShell/.NET
+pattern and both clean-host observer paths without starting SDK/driver/session;
+its execution is pending. The network workflow's fresh-runtime option is being
+prepared locally and will stay uncommitted until the SDK binary receipt exists.
 
 This is a pinned-original-API behavior boundary, not an atomic name reservation
 or permission to use another Wintun version. Original DLL/hash/signature and

@@ -20,6 +20,7 @@ import struct
 import subprocess
 import threading
 import time
+from adapter_discovery import selector as adapter_selector
 
 ROOT = Path(__file__).resolve().parents[2]
 INIT_STAGE = 'arguments'
@@ -58,8 +59,8 @@ def service_cpu():
 
 
 def tun():
-    return ps("""
-    $adapter = @(Get-NetAdapter -IncludeHidden | Where-Object Name -eq 'LiWeTun')
+    # Discovery only; native held-handle/current-epoch proof remains independent.
+    return ps("    $adapter = @(" + adapter_selector() + ")\n" + """
     if ($adapter.Count -eq 0) { 'null'; exit }
     if ($adapter.Count -ne 1) { throw 'Ambiguous task adapter' }
     $index = $adapter[0].ifIndex
@@ -232,10 +233,7 @@ def dns_probe(info):
 def adapter_absent():
     # Do not dereference an interface index while that interface is being
     # removed. The detailed tun() observation is for an active adapter only.
-    return ps("""
-    (@(Get-NetAdapter -IncludeHidden | Where-Object Name -eq 'LiWeTun').Count -eq 0) |
-      ConvertTo-Json -Compress
-    """) is True
+    return ps("(@(" + adapter_selector() + ").Count -eq 0) | ConvertTo-Json -Compress") is True
 
 
 def wait_clean(baseline, observation=None):
