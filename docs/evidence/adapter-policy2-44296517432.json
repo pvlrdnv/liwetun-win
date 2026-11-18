@@ -1,0 +1,59 @@
+{
+  "source_commit": "ba80aa9fb11c2ad86d171960a3fd66c36381b7b3",
+  "adapter_creation_policy": 2,
+  "qualification_scope": "disposable_server_2022_actual_original_wintun_factory_controls_only_not_sdk_configuration",
+  "reports": {
+    "44296517432": {
+      "report_sha256": "863802b0cba22cc07e838b5e4428c745a4518bc2797f5c0cd6009b6d363a3b09",
+      "report": {
+        "saturated_name_alias_collision_refused_unchanged": true,
+        "source_commit": "ba80aa9fb11c2ad86d171960a3fd66c36381b7b3",
+        "race_control_ran": true,
+        "original_wintun_sha256": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce",
+        "saturated_name_guid_collision_refused_unchanged": true,
+        "saturated_name_unique_create": true,
+        "post_create_refusal_cleanup": true,
+        "adapter_ownership_qualified": false,
+        "adapter_baseline_restored": true,
+        "concurrent_created_handles_distinct": true,
+        "routes_baseline_restored": true,
+        "release_ready": false,
+        "passed": true,
+        "native_process_completed": true,
+        "sdk_started": false,
+        "session_started": false,
+        "policy_race_refused_unchanged": true,
+        "race_foreign_alias_changed": false,
+        "foreign_logical_adapter_preserved": true,
+        "dns_baseline_restored": true,
+        "observed_collision_refused": true,
+        "race_new_handle_accepted": false,
+        "privileged_physical_name_race_qualified": false,
+        "created_adapters_removed": true,
+        "factory_only": true
+      }
+    },
+    "44296517752": {
+      "report_sha256": "c35bd99e483c0e3d3135e0fcbbdbcae9e5a2b220206d575e58ffeb328f3baee4",
+      "report": {
+        "policy_contract_passed": true,
+        "source_guards_passed": true,
+        "release_ready": false,
+        "tunnel_started": false,
+        "adapter_ownership_qualified": false,
+        "windows_read_only_binding_passed": true,
+        "source_commit": "ba80aa9fb11c2ad86d171960a3fd66c36381b7b3",
+        "network_configuration_changed": false
+      }
+    }
+  },
+  "focused_factory_race_control_passed": true,
+  "sdk_configuration_qualified": false,
+  "adapter_ownership_qualified": false,
+  "network_requalified": false,
+  "service_admitted": false,
+  "package_admitted": false,
+  "windows_10_qualified": false,
+  "windows_11_qualified": false,
+  "release_ready": false
+}

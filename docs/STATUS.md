@@ -1,6 +1,6 @@
 # Development checkpoint — 2026-11-18
 
-## Fresh adapter policy 2 — maximum-name boundary passes, integrated checks pending
+## Fresh adapter policy 2 — actual factory race control PASS, SDK build pending
 
 The original signed Wintun supports a useful refusal boundary: a valid physical
 alias of `MAX_ADAPTER_NAME-1` characters fills its duplicate-name suffix buffer.
@@ -19,10 +19,23 @@ post-preflight inserted adapter to remain unchanged and new Create to refuse;
 the earlier rename/accepted-handle outcome can no longer pass this oracle.
 Both modified header hashes and the required original DLL digest are pinned;
 short-alias/wrong-driver manifests refuse before vendor writes. Full pinned
-preparation and **23 local
-Python profile checks PASS**; integrated native/actual-factory/full SDK checks
-are pending disposable Windows CI. The obsolete policy-1 full SDK build
-44294099414 was requested cancelled; no DLL/network qualification is claimed.
+preparation and **23 local Python profile checks PASS**. Integrated native
+contracts **PASS 44296517752**; actual factory controls **PASS 44296517432**, both
+on `ba80aa9`. The exact post-preflight insertion now refuses with **no foreign
+alias change and no new handle accepted**. Retained logical owner, alias-only/
+GUID-only collisions, post-create refusal cleanup, four concurrent creations and
+exact adapter/route/DNS restoration also pass. [Closed native/factory reports](evidence/adapter-policy2-44296517432.json).
+Full SDK DLL/ABI build **44296517605** is still in progress. Obsolete policy-1
+build 44294099414 completed **cancelled**; no policy-1 DLL/network qualification.
+
+Prepared CI observer support for the private 127-character alias and a separate
+default-OFF fresh-runtime selection, pending the successful SDK binary/hash
+receipt. Discovery is read-only and never grants ownership/path proof; ambiguous
+matches refuse, and native held-handle/current-epoch checks remain required.
+Normal observer selection is preserved. **64 local synthetic service-fixture
+tests PASS** (loopback sockets only, rerun outside the socket-blocking sandbox),
+including four explicit candidate/discovery boundary checks. Actual SDK network
+execution is still pending; no ordinary runtime pin or installer change.
 
 This is a pinned-original-API behavior boundary, not an atomic name reservation
 or permission to use another Wintun version. Original DLL/hash/signature and

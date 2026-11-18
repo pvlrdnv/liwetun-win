@@ -230,7 +230,10 @@ insufficient for ownership/health admission.
 
 The integrated factory test must refuse a separately inserted adapter **after**
 preflight with its retained sample unchanged. An observed rename/accepted handle
-now fails that test. Source preparation/Python guards pass; actual integrated
-factory/native/full SDK checks are pending. Full ownership, SDK network/recovery/
+now fails that test. Source preparation/Python guards pass. [Actual integrated
+factory/native checks PASS](evidence/adapter-policy2-44296517432.json) on `ba80aa9`:
+the exact post-preflight insertion is refused, retained alias unchanged, new
+handle absent, and full adapter/route/DNS restoration verified. Full SDK
+compilation/ABI and configuration checks are pending. Full ownership, SDK network/recovery/
 Stop controls and desktop/release qualification remain open. Existing service
 preflight and ordinary runtime pins/package are unchanged.
