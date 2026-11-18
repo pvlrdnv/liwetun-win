@@ -1,5 +1,22 @@
 # Development checkpoint — 2026-11-18
 
+## First fresh2 network result — H3 PASS, H2 preflight failure under investigation
+
+On `de79aca`, fresh2 HTTPS **H3 PASS 44300233378**: actual TLS/nonce/path,
+current epoch, exact 497 TX / 1703 RX, disarm and full route/DNS/adapter/WFP
+restoration. H2 **44300233744 FAIL** before socket creation/arming (path stage 1,
+zero receiver connections/wire bytes). Route/DNS/adapter restoration passed,
+watchdog did not intervene; no completed final WFP receipt is claimed for H2.
+[Both original reports](evidence/fresh2-first-network-44300233378.json). The old
+TLS value 6 is a default placeholder here, not an observed credential failure.
+No root cause or H2 qualification is inferred from H3 success.
+
+Added CI HTTPS receipt schema 2: explicit closed preflight outcome and null TLS
+when not attempted. Validators reject fabricated TLS/HTTP/wire/success facts
+after a preflight refusal. This adds no public IPC/GUI capability or SDK change;
+normal package flags remain OFF. **67 local synthetic fixture tests PASS**.
+Actual typed H2 reproduction and all fresh runtime admission remain pending.
+
 ## Fresh adapter policy 2 — factory and SDK build PASS, network checks pending
 
 The original signed Wintun supports a useful refusal boundary: a valid physical

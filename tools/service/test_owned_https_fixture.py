@@ -20,13 +20,40 @@ def reports():
                 disarmed=True, cancelled=False, receive_cancelled=False, receive_timed_out=False,
                 snapshot_flags=15, tx_bytes=1000, rx_bytes=3000, qualified=True,
                 proves_dns=False, proves_https=False, proves_internet=False, identifiers_exported=False, release_ready=False)
-    tls = dict(schema_version=1, tls_result=0, http_result=1, handshake_verified=True, request_sent=True,
+    tls = dict(schema_version=2, initialization_result=13, tls_result=0, http_result=1, handshake_verified=True, request_sent=True,
                response_verified=True, wire_tx=900, wire_rx=2900, qualified=True,
                proves_dns=False, proves_internet=False, release_ready=False)
     return path, tls
 
 
 class OwnedHttpsReportTests(unittest.TestCase):
+    def test_preflight_refusal_keeps_unattempted_tls_unknown(self):
+        path, tls = reports()
+        path.update(stage=1, connected=False, nonexclusive_rejected=False, arm_accepted=False,
+                    echo_verified=False, same_instance_epoch=False, disarmed=False,
+                    snapshot_flags=1, tx_bytes=None, rx_bytes=None, qualified=False)
+        tls.update(initialization_result=5, tls_result=None, http_result=None,
+                   handshake_verified=False, request_sent=False, response_verified=False,
+                   wire_tx=0, wire_rx=0, qualified=False)
+        validate_https_report(tls, path)
+        for changes in [dict(tls_result=6), dict(request_sent=True), dict(wire_tx=1),
+                        dict(initialization_result=13), dict(http_result=1)]:
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                validate_https_report(dict(tls, **changes), path)
+
+    def test_attempted_tls_requires_successful_current_preflight(self):
+        path, tls = reports()
+        for issue in [0, 1, 5, 9, 12, True, 14]:
+            with self.subTest(issue=issue), self.assertRaises(ValueError):
+                validate_https_report(dict(tls, initialization_result=issue), path)
+
+    def test_null_tls_result_cannot_qualify_an_actual_exchange(self):
+        path, tls = reports()
+        with self.assertRaises(ValueError):
+            validate_https_report(dict(tls, tls_result=None), path)
+        with self.assertRaises(ValueError):
+            validate_https_report(dict(tls, schema_version=1), path)
+
     def test_owned_tls_listener_requires_explicit_disposable_windows(self):
         with patch.dict('os.environ', {'GITHUB_ACTIONS': 'false'}):
             with self.assertRaises(ValueError):

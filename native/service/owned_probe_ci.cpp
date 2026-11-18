@@ -38,8 +38,14 @@ template <typename F> struct Cleanup {
   F action;
   ~Cleanup() { try { action(); } catch (...) {} }
 };
+enum class InitializationResult : uint32_t {
+  Unknown, WinsockUnavailable, Cancelled, CoreUnavailable, InstanceUnavailable,
+  StateNotReady, TrafficUnavailable, TrafficNotReady, AttachmentUnavailable,
+  AttachmentNotReady, EpochMismatch, EntropyUnavailable, EmptyToken, Passed
+};
 struct Result {
   uint32_t stage = 1;
+  InitializationResult initialization_result = InitializationResult::Unknown;
   uint32_t socket_failure = 0; // Closed CI stages only; never OS text/address/identifier.
   bool connected = false, nonexclusive_rejected = false, armed = false;
   bool echoed = false, same_epoch = false, disarmed = false, cancelled = false, qualified = false;
@@ -48,7 +54,7 @@ struct Result {
   bool state_epoch_changed = false;
   probe::Snapshot sample;
 #ifdef LIWETUN_TEST_OWNED_HTTPS
-  health::TlsResult tls = health::TlsResult::CredentialsUnavailable;
+  std::optional<health::TlsResult> tls; // No invented TLS failure before an attempt.
   std::optional<health::HttpResult> http;
   bool handshake_verified = false, request_sent = false;
   uint64_t wire_tx = 0, wire_rx = 0;
@@ -241,12 +247,13 @@ IoResult ExchangeHttps(SOCKET socket, uint64_t token, ULONGLONG deadline,
 bool WriteHttpsResult(const std::wstring& base, const Result& result) {
   const auto boolean = [](bool value) { return value ? "true" : "false"; };
   const std::string http = result.http ? std::to_string(static_cast<uint32_t>(*result.http)) : "null";
+  const std::string tls = result.tls ? std::to_string(static_cast<uint32_t>(*result.tls)) : "null";
   char output[1024]{};
   const int length = std::snprintf(output, sizeof(output),
-      "{\"schema_version\":1,\"tls_result\":%u,\"http_result\":%s,\"handshake_verified\":%s,"
+      "{\"schema_version\":2,\"initialization_result\":%u,\"tls_result\":%s,\"http_result\":%s,\"handshake_verified\":%s,"
       "\"request_sent\":%s,\"response_verified\":%s,\"wire_tx\":%llu,\"wire_rx\":%llu,"
       "\"qualified\":%s,\"proves_dns\":false,\"proves_internet\":false,\"release_ready\":false}\n",
-      static_cast<uint32_t>(result.tls), http.c_str(), boolean(result.handshake_verified),
+      static_cast<uint32_t>(result.initialization_result), tls.c_str(), http.c_str(), boolean(result.handshake_verified),
       boolean(result.request_sent), boolean(result.echoed),
       static_cast<unsigned long long>(result.wire_tx), static_cast<unsigned long long>(result.wire_rx), boolean(result.qualified));
   if (length <= 0 || static_cast<size_t>(length) >= sizeof(output)) return false;
@@ -279,24 +286,31 @@ void Backend::RunOwnedProbe() noexcept {
   Result result;
   uint64_t instance = 0, epoch = 0;
   try {
+    const auto refuse = [&result](InitializationResult issue) { result.initialization_result = issue; throw 1; };
     Winsock winsock;
-    if (!winsock.ready) throw 1;
+    if (!winsock.ready) refuse(InitializationResult::WinsockUnavailable);
     health::AttachedTun attachment;
     {
       std::lock_guard lock(core_mutex_);
-      if (owned_cancel_ || !observed_core_ || !instance_ || state_ != State::TunnelReady) throw 1;
+      if (owned_cancel_) refuse(InitializationResult::Cancelled);
+      if (!observed_core_) refuse(InitializationResult::CoreUnavailable);
+      if (!instance_) refuse(InitializationResult::InstanceUnavailable);
+      if (state_ != State::TunnelReady) refuse(InitializationResult::StateNotReady);
       traffic::Snapshot counter;
-      if (traffic_read_(observed_core_, sizeof(counter), &counter) != 1 || !traffic::Valid(counter) || counter.flags != 3 ||
-          attachment_read_(observed_core_, sizeof(attachment), &attachment) != 1 || attachment.flags != 3 ||
-          attachment.epoch != counter.epoch) throw 1;
+      if (traffic_read_(observed_core_, sizeof(counter), &counter) != 1 || !traffic::Valid(counter)) refuse(InitializationResult::TrafficUnavailable);
+      if (counter.flags != 3) refuse(InitializationResult::TrafficNotReady);
+      if (attachment_read_(observed_core_, sizeof(attachment), &attachment) != 1) refuse(InitializationResult::AttachmentUnavailable);
+      if (attachment.flags != 3) refuse(InitializationResult::AttachmentNotReady);
+      if (attachment.epoch != counter.epoch) refuse(InitializationResult::EpochMismatch);
       instance = instance_; epoch = counter.epoch;
     }
     probe::Request request;
     request.epoch = epoch;
-    if (BCryptGenRandom(nullptr, reinterpret_cast<BYTE*>(&request.token), sizeof(request.token), BCRYPT_USE_SYSTEM_PREFERRED_RNG) < 0) throw 1;
+    if (BCryptGenRandom(nullptr, reinterpret_cast<BYTE*>(&request.token), sizeof(request.token), BCRYPT_USE_SYSTEM_PREFERRED_RNG) < 0) refuse(InitializationResult::EntropyUnavailable);
     request.token &= probe::kMaximum;
-    if (!request.token) throw 1;
+    if (!request.token) refuse(InitializationResult::EmptyToken);
     const auto deadline = GetTickCount64() + 4000;
+    result.initialization_result = InitializationResult::Passed;
     result.stage = 2;
     {
       auto ordinary = Connect(attachment, false, deadline, owned_cancel_, result.socket_failure);

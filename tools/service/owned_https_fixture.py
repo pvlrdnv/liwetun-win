@@ -153,14 +153,23 @@ def validate_https_report(value, path):
     validate_report(path)
     booleans = {'handshake_verified', 'request_sent', 'response_verified', 'qualified',
                 'proves_dns', 'proves_internet', 'release_ready'}
-    if not isinstance(value, dict) or set(value) != booleans | {'schema_version', 'tls_result', 'http_result', 'wire_tx', 'wire_rx'}:
+    if not isinstance(value, dict) or set(value) != booleans | {'schema_version', 'initialization_result', 'tls_result', 'http_result', 'wire_tx', 'wire_rx'}:
         raise ValueError('invalid_owned_https_report')
-    if (type(value['schema_version']) is not int or value['schema_version'] != 1
-            or type(value['tls_result']) is not int or not 0 <= value['tls_result'] <= 15
+    if (type(value['schema_version']) is not int or value['schema_version'] != 2
+            or type(value['initialization_result']) is not int or not 0 <= value['initialization_result'] <= 13
+            or (value['tls_result'] is not None and (type(value['tls_result']) is not int or not 0 <= value['tls_result'] <= 15))
             or any(type(value[k]) is not bool for k in booleans)
             or any(type(value[k]) is not int or not 0 <= value[k] <= 262144 for k in ['wire_tx', 'wire_rx'])
             or (value['http_result'] is not None and (type(value['http_result']) is not int or not 0 <= value['http_result'] <= 7))
             or any(value[k] for k in ['proves_dns', 'proves_internet', 'release_ready'])):
+        raise ValueError('invalid_owned_https_report')
+    if value['tls_result'] is None and (path['stage'] >= 6 or value['http_result'] is not None
+            or any(value[k] for k in ['handshake_verified', 'request_sent', 'response_verified', 'qualified', 'wire_tx', 'wire_rx'])):
+        raise ValueError('invalid_owned_https_report')
+    if value['initialization_result'] != 13 and (path['stage'] != 1 or value['tls_result'] is not None
+            or any(path[k] for k in ['connected','nonexclusive_rejected','arm_accepted','echo_verified','qualified'])):
+        raise ValueError('invalid_owned_https_report')
+    if value['initialization_result'] == 13 and path['stage'] < 2:
         raise ValueError('invalid_owned_https_report')
     if value['response_verified'] != path['echo_verified'] or value['qualified'] != path['qualified']:
         raise ValueError('invalid_owned_https_report')

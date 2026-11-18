@@ -130,3 +130,17 @@ diagnostic reader-wakeup fixture; SDK recovery bypass selection remains unproved
 independent DNS correlation, periodic freshness, public IPC/UI admission, trusted
 distribution and separate desktop acceptance remain open. The focused SDK
 manifest records CI qualification only and remains excluded from normal packages.
+
+CI HTTPS receipt schema 2 adds a closed `initialization_result` and nullable
+`tls_result`. An unattempted TLS exchange must remain null with zero wire bytes
+and no request/verification/qualification claims. It must not inherit the old
+schema-1 default CredentialsUnavailable value merely because startup exited
+before creating a socket. Original historical reports retain their actual schema.
+
+Initialization outcomes: 0 unknown; 1 Winsock unavailable; 2 cancelled; 3 core
+unavailable; 4 instance unavailable; 5 service state not ready; 6 traffic read
+unavailable; 7 traffic not ready; 8 attachment read unavailable; 9 attachment not
+ready; 10 epoch mismatch; 11 entropy unavailable; 12 empty token; 13 passed.
+Only passed preflight may accompany attempted TLS. No OS message, address,
+identifier or secret is added. This observation change does not make a failed
+startup healthy or establish its cause without a matching typed result.
