@@ -1,0 +1,30 @@
+{
+  "source_run": 44294660967,
+  "source_commit": "7a0478ee7bbef2c6207b5c3d1e79ba52823910f1",
+  "report_sha256": "eae83a62dbb8bc968749f6068e001a68b1b368c65627d7da8fc6597c41002356",
+  "report": {
+    "original_wintun_sha256": "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce",
+    "concurrent_created_handles_distinct": true,
+    "adapter_baseline_restored": true,
+    "sdk_started": false,
+    "post_create_refusal_cleanup": true,
+    "native_process_completed": true,
+    "observed_collision_refused": true,
+    "passed": true,
+    "privileged_physical_name_race_qualified": false,
+    "routes_baseline_restored": true,
+    "created_adapters_removed": true,
+    "adapter_ownership_qualified": false,
+    "source_commit": "7a0478ee7bbef2c6207b5c3d1e79ba52823910f1",
+    "session_started": false,
+    "factory_only": true,
+    "dns_baseline_restored": true,
+    "release_ready": false,
+    "foreign_logical_adapter_preserved": true
+  },
+  "full_sdk_started": false,
+  "collision_during_create_tested": false,
+  "adapter_ownership_qualified": false,
+  "network_requalified": false,
+  "release_ready": false
+}

@@ -101,6 +101,28 @@ struct InjectedOps {
   }
   void Close(Handle handle) noexcept { ++closes; os.Close(handle); }
 };
+struct RaceOps {
+  using Handle = void*;
+  Ops& os;
+  Adapter& inserted;
+  Observation foreign_before{};
+  bool inserted_observed = false;
+  bool Random(std::array<uint8_t, 32>& output) noexcept { return os.Random(output); }
+  bool Vacant(const Identity& identity) noexcept { return os.Vacant(identity); }
+  Handle Create(const Identity& identity) noexcept {
+    // CI-only equal-privilege injection after the real vacancy check. The
+    // retained fixture belongs to this helper, never to another host process.
+    Identity different = identity;
+    different.guid[0] ^= 1;
+    inserted.value = os.Create(different);
+    if (!inserted.value) return nullptr;
+    inserted_observed = os.Observe(inserted.value, foreign_before);
+    if (!inserted_observed) return nullptr;
+    return os.Create(identity);
+  }
+  bool Observe(Handle handle, Observation& output) noexcept { return os.Observe(handle, output); }
+  void Close(Handle handle) noexcept { os.Close(handle); }
+};
 bool Disposable() {
   wchar_t enabled[8]{}, run[21]{};
   if (GetEnvironmentVariableW(L"GITHUB_ACTIONS", enabled, 8) != 4 || std::wstring(enabled) != L"true") return false;
@@ -151,6 +173,11 @@ int wmain(int argc, wchar_t** argv) {
     Check(os.Observe(occupied.value, occupied_before));
     collision.capture_only = false;
     Check(!CreateFresh(collision).handle && collision.creates == 0 && collision.closes == 0);
+    collision.random[0] ^= 1; // alias-only collision: requested GUID differs
+    Check(!CreateFresh(collision).handle && collision.creates == 0 && collision.closes == 0);
+    collision.random[0] ^= 1;
+    collision.random[16] ^= 1; // GUID-only collision: requested alias differs
+    Check(!CreateFresh(collision).handle && collision.creates == 0 && collision.closes == 0);
     Observation occupied_after{};
     Check(os.Observe(occupied.value, occupied_after) && Matches(occupied_after, occupied_before));
     occupied.Release();
@@ -183,7 +210,28 @@ int wmain(int argc, wchar_t** argv) {
     stage = 7;
     foreign.Release();
     Check(Gone(retained.Value) && liwetun::ReservedAdapterNamesAbsent());
-    std::puts("{\"passed\":true,\"foreign_logical_adapter_preserved\":true,\"observed_collision_refused\":true,\"post_create_refusal_cleanup\":true,\"concurrent_created_handles_distinct\":true,\"created_adapters_removed\":true,\"factory_only\":true,\"sdk_started\":false,\"session_started\":false,\"privileged_physical_name_race_qualified\":false,\"adapter_ownership_qualified\":false,\"release_ready\":false}");
+    stage = 8;
+    bool alias_changed = false, new_handle_accepted = false;
+    {
+      Adapter inserted{nullptr, close};
+      RaceOps race{os, inserted};
+      const auto result = CreateFresh(race);
+      Adapter raced{result.handle, close};
+      Check(race.inserted_observed);
+      NET_LUID original{}; original.Value = race.foreign_before.luid;
+      const auto after = Read(original);
+      Check(after.has_value());
+      alias_changed = after->alias != std::wstring(race.foreign_before.identity.name.data());
+      new_handle_accepted = raced.value != nullptr;
+      // Either an actual safe refusal or the known duplicate-alias exposure.
+      // A passing reproduction is never complete ownership qualification.
+      Check((!alias_changed && !new_handle_accepted) || (alias_changed && new_handle_accepted));
+      raced.Release();
+      Check(!new_handle_accepted || Gone(result.authority.luid));
+      inserted.Release();
+      Check(Gone(original.Value));
+    }
+    std::printf("{\"passed\":true,\"foreign_logical_adapter_preserved\":true,\"observed_collision_refused\":true,\"post_create_refusal_cleanup\":true,\"concurrent_created_handles_distinct\":true,\"created_adapters_removed\":true,\"race_control_ran\":true,\"race_foreign_alias_changed\":%s,\"race_new_handle_accepted\":%s,\"factory_only\":true,\"sdk_started\":false,\"session_started\":false,\"privileged_physical_name_race_qualified\":false,\"adapter_ownership_qualified\":false,\"release_ready\":false}\n", alias_changed ? "true" : "false", new_handle_accepted ? "true" : "false");
     return 0;
   } catch (...) {
     std::printf("{\"passed\":false,\"stage\":%u,\"factory_only\":true,\"adapter_ownership_qualified\":false,\"release_ready\":false}\n", stage);
