@@ -24,6 +24,27 @@ while allowing `OWNED_PROBE=false`. Discovery alone still proves no ownership
 or health. Five selector and nine provenance guard tests PASS locally; actual
 ordinary fresh2 execution is pending. Normal runtime/package selection unchanged.
 
+Ordinary fresh2 **H2/H3 PASS 44306720310 / 44306720853** on `8b6035e`, owned health
+worker OFF: unbound normal-TLS HTTPS and exact synthetic DNS both selected TUN
+sources; one marked DNS question/reply and exactly 82 selected transport bytes,
+plus full route/DNS/adapter/WFP restoration without watchdog intervention.
+[Closed ordinary receipts](evidence/fresh2-ordinary-44306720853.json). Native test
+attachment fence remains ON; this is not all-test-flags-OFF installer/desktop
+acceptance. Fault/recovery/IPv6 controls remain separate work.
+
+H3 epoch fixture source audit found a plausible shutdown race: endpoint main's
+outer select can return when its listener finishes on SIGINT, then call exit(0)
+before the separate shutdown-completion future drains active connection guards.
+Exit code 0 alone therefore does not establish delivery of QUIC close frames.
+Prepared a separate default-OFF diagnostic-only main.rs profile: after the outer
+select, keep the runtime alive while waiting for completion, bounded to 2 seconds;
+timeout exits nonzero. All previous endpoint hashes/receipts stay unchanged.
+Pinned pristine-source transformation and **five atomic profile checks PASS**
+locally; Rust compilation, endpoint controls and actual H3 epoch comparison are
+pending. This is a fixture hypothesis, not a proven client/production-server fix.
+All **73 local synthetic service-fixture tests PASS** (loopback only), plus
+Python/JSON/YAML/diff checks. No owner-device or LikeWeb changes.
+
 ## First fresh2 network result — H3 PASS, H2 preflight failure under investigation
 
 On `de79aca`, fresh2 HTTPS **H3 PASS 44300233378**: actual TLS/nonce/path,

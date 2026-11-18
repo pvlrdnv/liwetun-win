@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "scope": "disposable_endpoint_shutdown_completion_candidate_only",
+  "file": "endpoint/src/main.rs",
+  "input_sha256": "1bf81bf57068770af67136826ae28c1129c1c9a918650c392894eb02f5144458",
+  "output_sha256": "93f161c6678a557d58801122fbf9ebba3d16bffdf3bf143abf0eb689cb7c1ee9",
+  "requires_profile": "endpoint_reader_wakeup_candidate",
+  "production_admitted": false,
+  "release_ready": false
+}

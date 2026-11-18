@@ -60,3 +60,24 @@ as fixed. [CI source notice](../third_party/endpoint/README.md).
 No application SDK, production endpoint or owner-machine configuration is
 modified by this work. Successful fixture repair alone will not qualify
 ordinary Windows DNS, IPv6, crash recovery, Windows 10/11 desktops or release.
+## Separate shutdown-completion candidate
+
+Fresh2 H3 epoch control [44304621614](evidence/fresh2-https-44304621614.json)
+timed out with unchanged SDK epoch after the fixture reported graceful exit.
+No stale proof/HTTP response was qualified. This does not establish the cause
+of the missing state transition; the original failed result stays preserved.
+
+Pinned endpoint `endpoint/src/main.rs` selects between listener completion and
+the SIGINT task, which submits shutdown and waits for completion guards. The
+listener can finish on the same shutdown notification and win that outer select,
+followed immediately by `std::process::exit(0)`. Active connection shutdown may
+therefore be cut short. This is a source hypothesis to test against the exact
+original diagnostic binary behavior, not a production change.
+
+The separate opt-in `shutdown_completion_fix` requires both existing diagnostic
+profiles. It retains an independent shutdown handle and waits for its completion
+after the original select has released all competing futures. Waiting is bounded
+to two seconds; timeout exits nonzero. Input/output hashes and anchors are pinned
+in `tools/service/endpoint-shutdown-inputs.json`. Existing UDP/reader candidate
+binary pins remain immutable. Build success alone cannot qualify QUIC shutdown
+or SDK epoch invalidation; actual controlled Windows comparisons remain required.
