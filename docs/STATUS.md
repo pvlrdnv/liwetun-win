@@ -33,6 +33,14 @@ or started before consistent current ready observations. Native policy tests
 and actual live regressions for this change are pending Windows CI; this does
 not establish the cause of the earlier unclassified stage-1 result.
 
+Native synthetic admission policy **PASS 44303339937** on `d34e8f9` (including
+cancel-before-admission, late success, frozen/backwards clock and terminal
+refusal). The two live runs 44303340250 / 44303339614 failed service compilation
+before SDK download/start: missing explicit `attached_tun_validate.h` include.
+Added that include; [closed compile receipt](evidence/probe-admission-compile-44303340250.json).
+Live admission/network qualification remains pending; no TUN experiment occurred
+in those failed builds.
+
 ## Fresh adapter policy 2 — factory and SDK build PASS, network checks pending
 
 The original signed Wintun supports a useful refusal boundary: a valid physical

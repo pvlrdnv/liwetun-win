@@ -1,0 +1,18 @@
+{
+  "source_commit": "d34e8f9918413755d4c459658557bfd4b4fbfbba",
+  "source_runs": [
+    44303340250,
+    44303339614
+  ],
+  "outcome": "native_service_compile_failure_missing_explicit_attachment_validation_header",
+  "compiler_codes": [
+    "C2039",
+    "C3861"
+  ],
+  "failed_step": 5,
+  "sdk_downloaded": false,
+  "sdk_started": false,
+  "driver_fixture_started": false,
+  "network_qualification": false,
+  "release_ready": false
+}

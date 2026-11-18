@@ -3,6 +3,7 @@
 #include <ws2tcpip.h>
 #include "backend.h"
 #include "../health/probe_admission.h"
+#include "../health/attached_tun_validate.h"
 #include <algorithm>
 #include <array>
 #include <bcrypt.h>
