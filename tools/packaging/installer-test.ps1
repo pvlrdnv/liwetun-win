@@ -66,8 +66,11 @@ try {
     $installer = Join-Path $output $filename
     $compiler = Join-Path $env:LIWETUN_NSIS_ROOT 'makensis.exe'
     $icon = (Resolve-Path windows/runner/resources/app_icon.ico).Path
-    $ownerArgs = if ($OwnerTest) { @('/DOWNER_TEST=1') } else { @() }
-    & $compiler /NOCONFIG /WX /V2 "/DPAYLOAD=$payload" "/DDELETE_INCLUDE=$include" "/DOUTPUT_EXE=$installer" "/DICON_FILE=$icon" "/DSIGN_THUMBPRINT=$CertificateThumbprint" @ownerArgs tools/packaging/liwetun.nsi
+    [string[]]$compilerArgs = @('/NOCONFIG','/WX','/V2',"/DPAYLOAD=$payload","/DDELETE_INCLUDE=$include","/DOUTPUT_EXE=$installer","/DICON_FILE=$icon","/DSIGN_THUMBPRINT=$CertificateThumbprint")
+    if ($OwnerTest) { $compilerArgs += '/DOWNER_TEST=1' }
+    $compilerArgs += 'tools/packaging/liwetun.nsi'
+    @{argument_count=$compilerArgs.Count; owner_test=[bool]$OwnerTest; compiler_args_policy='single_typed_array'; release_ready=$false} | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $evidence 'nsis-invocation.json')
+    & $compiler @compilerArgs
     if ($LASTEXITCODE -ne 0) { throw 'Pinned installer compile failed' }
     signtool sign /q /fd SHA256 /sm /s My /sha1 $CertificateThumbprint $installer
     if ($LASTEXITCODE -ne 0) { throw 'Installer CI signature failed' }
