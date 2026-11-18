@@ -256,6 +256,14 @@ creator cleanup, complete restoration and no watchdog. Existing visible/renamed
 reserved-name refusal controls also passed with the ordinary SDK.
 [Original reports and hashes](evidence/preserved-adapter-44315630826.json).
 
+Ordinary worker-OFF extensions **PASS** on `b3ef4b1`: H2 wrong CA 44316702438,
+wrong auth 44316710617, lease death 44316718816, ordinary H3 HTTPS/DNS and Stop
+44316727886. All retained observations and creator cleanup passed, with full
+global/WFP restoration and no watchdog. Both refusals sent no endpoint payload
+and left no SDK adapter. [Original reports](evidence/preserved-faults-44316702438.json).
+The fixture rejects service-crash, endpoint-restart and IPv6 combinations;
+those preservation cases have not been qualified.
+
 This does not exercise active foreign traffic or disabled/problem devices.
 Pinned Wintun global orphan cleanup behavior and general coexistence remain open;
 the control cannot promote full ownership or package admission.

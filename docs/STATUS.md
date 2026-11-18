@@ -21,9 +21,17 @@ Normal runtime/package and all release/ownership gates remain unchanged.
 
 Extended the same default-OFF retained fixture to ordinary IPv4 Stop/lease
 and wrong-CA/auth refusal. Ordinary variants keep the owned health worker OFF;
-their transfer/refusal oracles remain unchanged. Windows execution of these
-additional cases is pending; the service-crash/endpoint-restart/IPv6 combinations
-remain refused by this fixture's input guard.
+their transfer/refusal oracles remain unchanged. On `b3ef4b1`, all four added
+Windows cases **PASS**: H2 wrong CA **44316702438**, wrong auth **44316710617**,
+lease death **44316718816**, ordinary H3 HTTPS/DNS + Stop **44316727886**.
+Both refusals observed terminal error, no endpoint payload and no SDK adapter;
+lease death forced only the owned client process. Retained markers/DNS/non-link-local
+routes stayed unchanged before and after SDK teardown in every case, with
+creator-only fixture removal, full global/WFP restoration and no watchdog.
+[Four original report sets](evidence/preserved-faults-44316702438.json).
+The service-crash/endpoint-restart/IPv6 combinations remain refused by this
+fixture's input guard. These six preservation cases and two refusal regressions
+do not qualify full adapter ownership, an active competing tunnel or desktop use.
 
 ## Shutdown comparison — epoch invalidation observed, repeatability still open
 
