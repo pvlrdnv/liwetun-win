@@ -63,7 +63,9 @@ remain additional gates.
 ## Reproduction fixture
 
 The explicit `adapter_ownership_audit` network workflow mode uses the currently
-pinned aggregate SDK, with all seven service test flags OFF, on disposable CI.
+pinned aggregate SDK with the existing NO_GLOBAL_ROUTES test mode ON and the
+other service test flags OFF, on disposable CI. No global SDK routes or system
+DNS changes are needed for this focused reproduction.
 Its separate signed test client verifies the original Wintun hash, refuses any
 existing task alias, creates one fixture adapter and retains its creation handle.
 Before SDK start it verifies no non-link-local IPv4 and known fixture MTU/metric.
@@ -79,3 +81,8 @@ This helper is not linked into the installed GUI or service, exposes no new
 service IPC operation, and refuses to run outside the explicit disposable CI
 environment. Global network/WFP restoration after removal is independently
 required. Real Windows compilation/reproduction is pending.
+
+The first normal-routing attempt 44252986740 had no completed receipt and a
+cancellation request; its outcome/cleanup are unqualified. Bounded-mode retries
+include closed numeric parent/native checkpoints. They do not export OS errors,
+addresses or adapter identity and cannot establish release readiness.

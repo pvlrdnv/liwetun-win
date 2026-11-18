@@ -45,6 +45,16 @@ ordinary package flags, runtime pins, GUI and service commands are unchanged.
 compilation and actual reproduction are pending. No local driver/service,
 network, trust or LikeWeb changes.
 
+The first normal-routing audit 44252986740 (`0878ef7`) remained in the network
+step without a completed receipt; cancellation was requested. It is inconclusive,
+not a reproduced ownership result or a qualified cleanup. The exact cause is
+unknown. The focused audit now uses the existing **NO_GLOBAL_ROUTES=ON** mode:
+no global SDK routes or system DNS changes are needed to observe IPv4/MTU/metric
+interference. Other service test flags remain OFF; normal package guards/pins
+remain unchanged. Closed numeric native/parent checkpoints are added to retain
+the last reached operation on interruption, without raw logs or identifiers.
+Windows bounded-mode compilation/reproduction is pending.
+
 ## Health development record
 
 Next negative prerequisite: `owned_probe_mode=wrong-nonce` now returns an exact

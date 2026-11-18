@@ -4,6 +4,16 @@ import subprocess
 import time
 
 
+def checkpoint(directory, stage):
+    if type(stage) is not int or not 1 <= stage <= 13:
+        raise ValueError('invalid_adapter_owner_stage')
+    target = directory / 'adapter-owner-progress.json'
+    temporary = target.with_suffix('.tmp')
+    temporary.write_text(json.dumps(dict(schema_version=1, stage=stage, adapter_ownership_qualified=False,
+                                         release_ready=False)) + '\n')
+    temporary.replace(target)
+
+
 FIELDS = {'available', 'alias_unchanged', 'ipv4_changed', 'mtu_changed', 'metric_changed',
           'fixture_marker_present', 'nonlink_ipv4_count'}
 
@@ -52,8 +62,12 @@ def interference(value):
             and value['nonlink_ipv4_count'] > 0)
 
 
-def observe_reproduction(session, owner, client, diagnostic):
+def observe_reproduction(session, owner, client, diagnostic, progress_directory=None):
     """Require actual changes on the retained fixture adapter; process state alone is insufficient."""
+    def progress(stage):
+        if progress_directory is not None:
+            checkpoint(progress_directory, stage)
+    progress(4)
     started = time.monotonic()
     active = None
     while time.monotonic() - started < 12:
@@ -69,11 +83,13 @@ def observe_reproduction(session, owner, client, diagnostic):
         raise RuntimeError('adapter_interference_not_reproduced')
     if type(state.get('code')) is not int or state['code'] != 0 or type(state.get('state')) is not int or state['state'] != 2 or not interference(active):
         raise RuntimeError('adapter_interference_not_reproduced')
+    progress(5)
     stopped = session.command('stop')
     if type(stopped.get('code')) is not int or stopped['code'] != 0:
         raise RuntimeError('adapter_owner_stop_failed')
     # The network-session child exits after Stop. Query via a fresh trusted
     # client, requiring SDK teardown before releasing the fixture's own handle.
+    progress(6)
     for _ in range(20):
         process = subprocess.run([str(client), '--query'], capture_output=True, text=True, timeout=10)
         if process.returncode or len(process.stdout) > 2048:
@@ -84,6 +100,7 @@ def observe_reproduction(session, owner, client, diagnostic):
         time.sleep(.05)
     else:
         raise RuntimeError('adapter_owner_stop_failed')
+    progress(7)
     after = validate_sample(owner.command('sample'))
     diagnostic['after_stop'] = after
     if not after['available'] or not after['alias_unchanged']:

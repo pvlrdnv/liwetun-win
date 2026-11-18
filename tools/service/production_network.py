@@ -527,7 +527,9 @@ def main():
               'full_matrix_qualified': False, 'release_ready': False}
     if ownership_audit:
         result.update(mode='retained_fixture_adapter_interference_reproduction',
-                      internet_delivery_tested=False, https_health_qualified=False, dns_health_qualified=False)
+                      internet_delivery_tested=False, https_health_qualified=False, dns_health_qualified=False,
+                      routing_test_modes_enabled=True, network_test_modes_enabled=True,
+                      no_global_routes_or_dns_test_mode=True)
     if synthetic_ipv6:
         result.update(mode='single_production_synthetic_ipv6_nat64',
                       ipv6_fixture_exit_translates_to_ipv4=True,
@@ -620,6 +622,8 @@ def main():
         before = totals()
         if ownership_audit:
             stage = 'retained_fixture_adapter'
+            from adapter_ownership_fixture import checkpoint
+            checkpoint(report.parent, 1)
             foreign_owner = Child([str(client), '--adapter-owner-fixture'])
             ready = json.loads(foreign_owner.receive())
             from adapter_ownership_fixture import pristine, validate_ready
@@ -629,8 +633,11 @@ def main():
                 raise RuntimeError('adapter_owner_fixture_not_ready')
             result['adapter_owner_fixture_ready'] = ready
             result['adapter_owner_fixture_baseline'] = baseline_adapter
+            checkpoint(report.parent, 2)
         stage = 'production_session'
         profile_file = protocol if profile == 'valid' else profile
+        if ownership_audit:
+            checkpoint(report.parent, 3)
         session = Child([str(client), '--network-session', str(directory / (profile_file + '.uri'))])
         if json.loads(session.receive())['code'] not in [0, 6]:
             raise RuntimeError('service_start_rejected')
@@ -642,9 +649,10 @@ def main():
             from adapter_ownership_fixture import observe_reproduction
             result['adapter_ownership_observation'] = {}
             result['adapter_ownership_audit'] = observe_reproduction(session, foreign_owner, client,
-                                                                    result['adapter_ownership_observation'])
+                                                                    result['adapter_ownership_observation'], report.parent)
             session.close()
             session = None
+            checkpoint(report.parent, 8)
             removed = foreign_owner.command('close')
             from adapter_ownership_fixture import validate_cleanup
             validate_cleanup(removed)
@@ -654,6 +662,7 @@ def main():
                 raise RuntimeError('adapter_owner_fixture_cleanup_failed')
             foreign_owner.close()
             foreign_owner = None
+            checkpoint(report.parent, 9)
         elif cancel_probe:
             stage = 'cancel_owned_request_during_receive'
             result['owned_probe_cancellation'] = cancel_owned_request(
@@ -1002,6 +1011,8 @@ def main():
                           and watched.get('tunnel_started_by_watcher') is False
                           and watched.get('inactive_after_active', 0) > 0)
         result['passed'] = traffic_ok and restored and wfp_restored
+        if ownership_audit:
+            checkpoint(report.parent, 10)
     except Exception as error:
         result['failed_stage'] = stage
         result['error_type'] = type(error).__name__
@@ -1068,11 +1079,15 @@ def main():
                 wfp_watch.close('quit')
             result['routes_dns_adapter_restored'] = wait_clean(baseline)
             result['passed'] = result['passed'] and result['routes_dns_adapter_restored']
+            if ownership_audit:
+                checkpoint(report.parent, 11)
         except Exception:
             result['passed'] = False
             result['cleanup_failed'] = True
             result.setdefault('failed_stage', 'fixture_cleanup')
         finally:
+            if ownership_audit:
+                checkpoint(report.parent, 12 if result['passed'] else 13)
             if owned_probe_mode in HTTPS_MODES:
                 try:
                     result['owned_https_fixture_roots_removed'] = https_roots.close() if https_roots else False

@@ -6,7 +6,7 @@ if ($Network -and !$Sdk) { throw 'Network qualification requires actual SDK' }
 if ($ProductionLifecycle -and (!$Sdk -or $Network)) { throw 'Production lifecycle requires SDK and excludes bounded network mode' }
 if ($ProductionTraffic -and (!$Network -or $ProductionLifecycle)) { throw 'Production traffic requires its own live endpoint fixture' }
 $cache = Get-Content (Join-Path (Split-Path $Build -Parent) 'CMakeCache.txt')
-$expectedNoGlobal = if (!$Network -and !$ProductionLifecycle) { 'ON' } else { 'OFF' }
+$expectedNoGlobal = if ((!$Network -and !$ProductionLifecycle) -or $env:LIWETUN_ADAPTER_OWNERSHIP_AUDIT -eq 'true') { 'ON' } else { 'OFF' }
 $expectedTun = if ($Network -and !$ProductionTraffic) { 'ON' } else { 'OFF' }
 if ($cache -notcontains ('LIWETUN_TEST_NO_GLOBAL_ROUTES:BOOL=' + $expectedNoGlobal) -or $cache -notcontains ('LIWETUN_TEST_TUN_NETWORK:BOOL=' + $expectedTun)) { throw 'Service compilation mode mismatch' }
 $expectedAttachment = if ($env:ATTACHED_TUN -eq 'true') { 'ON' } else { 'OFF' }
@@ -219,6 +219,10 @@ try {
     $result | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 build/service-evidence/qualification.json
 } finally {
     try {
+        if ($env:LIWETUN_ADAPTER_OWNERSHIP_AUDIT -eq 'true' -and (Test-Path (Join-Path $root 'adapter-owner-native-stages.jsonl'))) {
+            New-Item -ItemType Directory -Force build/service-evidence | Out-Null
+            Copy-Item (Join-Path $root 'adapter-owner-native-stages.jsonl') build/service-evidence/adapter-owner-native-stages.jsonl
+        }
         if ($env:OWNED_PROBE -eq 'true' -and (Test-Path (Join-Path $root 'owned-probe-context.json'))) {
             New-Item -ItemType Directory -Force build/service-evidence | Out-Null
             Copy-Item (Join-Path $root 'owned-probe-context.json') build/service-evidence/owned-probe-context.json

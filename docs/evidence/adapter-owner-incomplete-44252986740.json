@@ -1,0 +1,11 @@
+{
+  "source_run": 44252986740,
+  "source_commit": "0878ef7fa3f892698777e2f381992738686b8fae",
+  "scope": "first_normal_routing_retained_fixture_adapter_audit",
+  "cancel_requested": true,
+  "completed_reproduction_receipt": false,
+  "qualification_passed": false,
+  "network_restoration_qualified": false,
+  "adapter_ownership_qualified": false,
+  "release_ready": false
+}

@@ -4,6 +4,7 @@
 #include "security.h"
 #include <iphlpapi.h>
 #include <algorithm>
+#include <cstdio>
 #include <iostream>
 #include <optional>
 #include <utility>
@@ -88,6 +89,14 @@ bool DriverDigest(const liwetun::Image& image) {
       0x03,0xde,0x8c,0x11,0x84,0x81,0xf6,0x83,0x64,0x3c,0xac,0xc3,0x22,0x0d,0xaf,0xce};
   return actual == expected;
 }
+void Stage(HANDLE file, unsigned stage) {
+  char line[48]{};
+  const int size = std::snprintf(line, sizeof(line), "{\"stage\":%u}\n", stage);
+  DWORD written = 0;
+  if (size > 0 && static_cast<size_t>(size) < sizeof(line)) {
+    if (WriteFile(file, line, static_cast<DWORD>(size), &written, nullptr)) FlushFileBuffers(file);
+  }
+}
 }
 
 int RunAdapterOwnerFixture() {
@@ -96,18 +105,25 @@ int RunAdapterOwnerFixture() {
     liwetun::Image self, driver;
     if (!liwetun::OpenTrustedImage(liwetun::SelfPath(), self) ||
         !liwetun::OpenTrustedImage(liwetun::Directory(self.path) + L"\\wintun.dll", driver) || !DriverDigest(driver)) return 91;
+    liwetun::Handle stage(CreateFileW((liwetun::Directory(self.path) + L"\\adapter-owner-native-stages.jsonl").c_str(),
+        GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OPEN_REPARSE_POINT, nullptr));
+    if (!stage || stage.get() == INVALID_HANDLE_VALUE) return 100;
+    Stage(stage.get(), 1);
     Library library{LoadLibraryExW(driver.path.c_str(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32)};
     if (!library.value) return 92;
     const auto create = reinterpret_cast<Create>(GetProcAddress(library.value, "WintunCreateAdapter"));
     const auto close = reinterpret_cast<Close>(GetProcAddress(library.value, "WintunCloseAdapter"));
     const auto luid = reinterpret_cast<Luid>(GetProcAddress(library.value, "WintunGetAdapterLUID"));
     if (!create || !close || !luid) return 93;
+    Stage(stage.get(), 2);
     // The fixture retains its own created handle. SDK is another owner and has
     // no authority to adopt/configure it. No pre-existing adapter is removed.
+    Stage(stage.get(), 3);
     Adapter adapter{create(kAlias, L"LiWeTun.CI.ForeignOwner", nullptr), close};
     if (!adapter.value) return 94;
     NET_LUID retained{}; luid(adapter.value, &retained);
     if (!retained.Value) return 95;
+    Stage(stage.get(), 4);
     MIB_IPINTERFACE_ROW marker{};
     marker.Family = AF_INET; marker.InterfaceLuid = retained;
     DWORD status = ERROR_NOT_FOUND;
@@ -119,18 +135,24 @@ int RunAdapterOwnerFixture() {
     if (status != NO_ERROR) return 96;
     marker.NlMtu = kMarkerMtu; marker.Metric = kMarkerMetric;
     marker.UseAutomaticMetric = FALSE; marker.SitePrefixLength = 0;
+    Stage(stage.get(), 5);
     if (SetIpInterfaceEntry(&marker) != NO_ERROR) return 97;
+    Stage(stage.get(), 6);
     const auto baseline = Read(retained);
     if (!baseline || baseline->alias != kAlias || baseline->mtu != kMarkerMtu ||
         baseline->metric != kMarkerMetric || !baseline->addresses.empty()) return 98;
+    Stage(stage.get(), 7);
     std::cout << "{\"ready\":true,\"fixture_created_adapter\":true,\"retained_creation_handle\":true,"
         "\"marker_verified\":true,\"identifiers_exported\":false,\"release_ready\":false}" << std::endl;
     std::string command;
     for (unsigned call = 0; call < 256 && std::getline(std::cin, command); ++call) {
       if (command != "sample") break;
+      Stage(stage.get(), 8);
       Print(*baseline, Read(retained));
     }
+    Stage(stage.get(), 9);
     close(std::exchange(adapter.value, nullptr));
+    Stage(stage.get(), 10);
     bool removed = false;
     for (unsigned attempt = 0; attempt < 50; ++attempt) {
       MIB_IF_ROW2 row{}; row.InterfaceLuid = retained;
@@ -140,6 +162,9 @@ int RunAdapterOwnerFixture() {
     }
     std::cout << "{\"fixture_adapter_removed\":" << (removed ? "true" : "false")
         << ",\"release_ready\":false}" << std::endl;
+    Stage(stage.get(), 11);
+    FreeLibrary(std::exchange(library.value, nullptr));
+    Stage(stage.get(), 12);
     return removed ? 0 : 99;
   } catch (...) { return 100; }
 }

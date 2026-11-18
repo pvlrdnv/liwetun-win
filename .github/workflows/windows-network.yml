@@ -169,12 +169,13 @@ jobs:
           rustup toolchain install 1.95.0 --profile minimal
           if ($LASTEXITCODE -ne 0) { throw 'Rust install failed' }
           $bounded = if ($env:LIWETUN_PRODUCTION_PROBE -eq 'true') { 'OFF' } else { 'ON' }
+          $noGlobalRoutes = if ($env:LIWETUN_ADAPTER_OWNERSHIP_AUDIT -eq 'true') { 'ON' } else { 'OFF' }
           $attachmentGuard = if ($env:ATTACHED_TUN -eq 'true') { 'ON' } else { 'OFF' }
           $ownedHttps = if ($env:LIWETUN_OWNED_PROBE_MODE -like 'https*') { 'ON' } else { 'OFF' }
           $ownedBypass = if ($env:LIWETUN_OWNED_PROBE_MODE -in @('bypass','https-bypass')) { 'ON' } else { 'OFF' }
           $ownedMigration = if ($env:LIWETUN_OWNED_PROBE_MODE -in @('migration','https-migration')) { 'ON' } else { 'OFF' }
           $ownedProbe = if ($env:OWNED_PROBE -eq 'true') { 'ON' } else { 'OFF' }
-          cmake -S native/service -B build/service -A x64 -DLIWETUN_TEST_NO_GLOBAL_ROUTES=OFF "-DLIWETUN_TEST_TUN_NETWORK=$bounded" "-DLIWETUN_TEST_ATTACHED_TUN=$attachmentGuard" "-DLIWETUN_TEST_OWNED_PROBE=$ownedProbe" "-DLIWETUN_TEST_OWNED_MIGRATION=$ownedMigration" "-DLIWETUN_TEST_OWNED_BYPASS=$ownedBypass" "-DLIWETUN_TEST_OWNED_HTTPS=$ownedHttps"
+          cmake -S native/service -B build/service -A x64 "-DLIWETUN_TEST_NO_GLOBAL_ROUTES=$noGlobalRoutes" "-DLIWETUN_TEST_TUN_NETWORK=$bounded" "-DLIWETUN_TEST_ATTACHED_TUN=$attachmentGuard" "-DLIWETUN_TEST_OWNED_PROBE=$ownedProbe" "-DLIWETUN_TEST_OWNED_MIGRATION=$ownedMigration" "-DLIWETUN_TEST_OWNED_BYPASS=$ownedBypass" "-DLIWETUN_TEST_OWNED_HTTPS=$ownedHttps"
           if ($LASTEXITCODE -ne 0) { throw 'Service configure failed' }
           cmake --build build/service --config Release --parallel 2
           if ($LASTEXITCODE -ne 0) { throw 'Service build failed' }
