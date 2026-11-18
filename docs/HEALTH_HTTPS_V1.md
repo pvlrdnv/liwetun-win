@@ -144,3 +144,12 @@ ready; 10 epoch mismatch; 11 entropy unavailable; 12 empty token; 13 passed.
 Only passed preflight may accompany attempted TLS. No OS message, address,
 identifier or secret is added. This observation change does not make a failed
 startup healthy or establish its cause without a matching typed result.
+
+CI-owned admission now observes asynchronous readiness for at most five seconds,
+before any socket/arm/TLS request. Only StateNotReady, TrafficNotReady,
+AttachmentNotReady and EpochMismatch are re-observed; each successful read must
+still match the exact current ready counter/attachment snapshot. The lifetime
+lock is released before each 20 ms pause. Stop/cancellation, terminal API faults,
+clock reversal/freeze or a late successful observation refuse admission. This
+is not an HTTP/TLS retry or health qualification by SDK process start. Native
+synthetic policy and actual Windows regressions are separate evidence.

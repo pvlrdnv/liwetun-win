@@ -2,6 +2,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include "backend.h"
+#include "../health/probe_admission.h"
 #include <algorithm>
 #include <array>
 #include <bcrypt.h>
@@ -38,11 +39,7 @@ template <typename F> struct Cleanup {
   F action;
   ~Cleanup() { try { action(); } catch (...) {} }
 };
-enum class InitializationResult : uint32_t {
-  Unknown, WinsockUnavailable, Cancelled, CoreUnavailable, InstanceUnavailable,
-  StateNotReady, TrafficUnavailable, TrafficNotReady, AttachmentUnavailable,
-  AttachmentNotReady, EpochMismatch, EntropyUnavailable, EmptyToken, Passed
-};
+using InitializationResult = health::ProbeInitialization;
 struct Result {
   uint32_t stage = 1;
   InitializationResult initialization_result = InitializationResult::Unknown;
@@ -290,20 +287,23 @@ void Backend::RunOwnedProbe() noexcept {
     Winsock winsock;
     if (!winsock.ready) refuse(InitializationResult::WinsockUnavailable);
     health::AttachedTun attachment;
-    {
+    result.initialization_result = health::WaitForProbeAdmission([&] {
       std::lock_guard lock(core_mutex_);
-      if (owned_cancel_) refuse(InitializationResult::Cancelled);
-      if (!observed_core_) refuse(InitializationResult::CoreUnavailable);
-      if (!instance_) refuse(InitializationResult::InstanceUnavailable);
-      if (state_ != State::TunnelReady) refuse(InitializationResult::StateNotReady);
+      if (owned_cancel_) return InitializationResult::Cancelled;
+      if (!observed_core_) return InitializationResult::CoreUnavailable;
+      if (!instance_) return InitializationResult::InstanceUnavailable;
+      if (state_ != State::TunnelReady) return InitializationResult::StateNotReady;
       traffic::Snapshot counter;
-      if (traffic_read_(observed_core_, sizeof(counter), &counter) != 1 || !traffic::Valid(counter)) refuse(InitializationResult::TrafficUnavailable);
-      if (counter.flags != 3) refuse(InitializationResult::TrafficNotReady);
-      if (attachment_read_(observed_core_, sizeof(attachment), &attachment) != 1) refuse(InitializationResult::AttachmentUnavailable);
-      if (attachment.flags != 3) refuse(InitializationResult::AttachmentNotReady);
-      if (attachment.epoch != counter.epoch) refuse(InitializationResult::EpochMismatch);
+      if (traffic_read_(observed_core_, sizeof(counter), &counter) != 1 || !traffic::Valid(counter)) return InitializationResult::TrafficUnavailable;
+      if (counter.flags != 3) return InitializationResult::TrafficNotReady;
+      if (attachment_read_(observed_core_, sizeof(attachment), &attachment) != 1) return InitializationResult::AttachmentUnavailable;
+      if (attachment.flags != 3) return InitializationResult::AttachmentNotReady;
+      if (attachment.epoch != counter.epoch) return InitializationResult::EpochMismatch;
+      if (!health::MatchesReadyCounter(attachment, counter)) return InitializationResult::AttachmentNotReady;
       instance = instance_; epoch = counter.epoch;
-    }
+      return InitializationResult::Passed;
+    }, [] { return GetTickCount64(); }, [this] { return owned_cancel_.load(); }, [] { Sleep(20); }, 5000);
+    if (result.initialization_result != InitializationResult::Passed) throw 1;
     probe::Request request;
     request.epoch = epoch;
     if (BCryptGenRandom(nullptr, reinterpret_cast<BYTE*>(&request.token), sizeof(request.token), BCRYPT_USE_SYSTEM_PREFERRED_RNG) < 0) refuse(InitializationResult::EntropyUnavailable);

@@ -56,10 +56,15 @@ jobs:
           @{source_commit='${{ github.sha }}'; policy_contract_passed=$true; windows_read_only_binding_passed=$true; source_guards_passed=$true; tunnel_started=$false; network_configuration_changed=$false; adapter_ownership_qualified=$false; release_ready=$false} | ConvertTo-Json | Set-Content build/probe-evidence/fresh-adapter-contract.json
       - name: Verify read-only CI observer and exact alias pattern without SDK startup
         run: |
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX native/health/test_probe_admission.cpp /Fobuild/probe-admission.obj /Febuild/probe-admission.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Probe admission contract build failed' }
+          & ./build/probe-admission.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Probe admission contract failed' }
           python -m unittest discover -s tools/service -p 'test_adapter_discovery.py'
           if ($LASTEXITCODE -ne 0) { throw 'Adapter discovery fixture contract failed' }
           python tools/service/check_adapter_discovery.py --output build/probe-evidence/adapter-discovery.json
           if ($LASTEXITCODE -ne 0) { throw 'Adapter discovery Windows binding failed' }
+          @{bounded_readiness_observation_passed=$true; late_proof_refused=$true; terminal_faults_not_retried=$true; cancel_before_admission_passed=$true; frozen_or_backwards_clock_refused=$true; actual_sdk_readiness_tested=$false; tunnel_started=$false; release_ready=$false} | ConvertTo-Json | Set-Content build/probe-evidence/probe-admission.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

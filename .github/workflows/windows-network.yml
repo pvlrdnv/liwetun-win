@@ -180,6 +180,13 @@ jobs:
             python -m unittest discover -s tools/sdk -p 'test_fresh_runtime.py'
             if ($LASTEXITCODE -ne 0) { throw 'Fresh adapter runtime guard contracts failed' }
           }
+          if ($env:OWNED_PROBE -eq 'true') {
+            New-Item -ItemType Directory -Force build | Out-Null
+            cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX native/health/test_probe_admission.cpp /Fobuild/probe-admission.obj /Febuild/probe-admission.exe
+            if ($LASTEXITCODE -ne 0) { throw 'Probe admission contract build failed' }
+            & ./build/probe-admission.exe
+            if ($LASTEXITCODE -ne 0) { throw 'Probe admission contract failed' }
+          }
           if ($env:LIWETUN_OWNED_PROBE_MODE -notin @('echo','cancel','deadline','wrong-nonce','migration','epoch-change','bypass','https','https-wrong-nonce','https-untrusted','https-deadline','https-cancel','https-migration','https-epoch-change','https-bypass') -or ($env:LIWETUN_OWNED_PROBE_MODE -ne 'echo' -and $env:OWNED_PROBE -ne 'true')) { throw 'Negative fixture requires owned probe mode' }
           if ($env:LIWETUN_ENDPOINT_STREAM_CLOSE -eq 'true' -and (!$env:LIWETUN_ENDPOINT_FIXTURE_RUN -or $env:OWNED_PROBE -ne 'true')) { throw 'Endpoint wakeup candidate requires explicit focused owned probe fixture' }
           if ($env:LIWETUN_PRODUCTION_PROBE -ne 'true' -and $env:LIWETUN_PRODUCTION_FAMILY -ne 'ipv4') { throw 'Synthetic IPv6 requires production probe mode' }

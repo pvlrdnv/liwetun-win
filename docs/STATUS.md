@@ -15,7 +15,23 @@ Added CI HTTPS receipt schema 2: explicit closed preflight outcome and null TLS
 when not attempted. Validators reject fabricated TLS/HTTP/wire/success facts
 after a preflight refusal. This adds no public IPC/GUI capability or SDK change;
 normal package flags remain OFF. **67 local synthetic fixture tests PASS**.
-Actual typed H2 reproduction and all fresh runtime admission remain pending.
+Typed H2 controls **PASS** on `1299794`: two fresh2 runs 44301861168 / 44301861107
+and legacy control 44301860859. All returned schema 2 / initialization 13 /
+actual TLS 0, verified nonce/path, disarm and full network/WFP restoration.
+[Three closed reports](evidence/fresh2-h2-preflight-44301861168.json). The original
+stage-1 failure did not recur; its exact cause remains unknown and its failed
+receipt is retained. All fresh runtime admission remains closed.
+
+Source inspection shows the CI-owned worker is launched immediately after SDK
+Start returns, while initial readiness observations may still be asynchronous.
+Prepared bounded admission: re-observe only not-ready traffic/attachment/epoch
+facts, under short borrowed-core locks, for at most 5 seconds with cancellation
+and no lock across the 20 ms pauses. Malformed/unavailable APIs, absent instances,
+entropy errors and other terminal faults refuse. A late/frozen/backwards clock
+cannot authorize admission. No socket, tuple arm or HTTP/TLS request is retried
+or started before consistent current ready observations. Native policy tests
+and actual live regressions for this change are pending Windows CI; this does
+not establish the cause of the earlier unclassified stage-1 result.
 
 ## Fresh adapter policy 2 — factory and SDK build PASS, network checks pending
 
