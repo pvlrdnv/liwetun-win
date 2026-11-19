@@ -1,0 +1,57 @@
+name: Windows SDK SOCKS isolation feasibility
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  socks:
+    if: ${{ toJSON(github.event.repository.private) == 'false' }}
+    runs-on: windows-2022
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.10'
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+        with:
+          arch: x64
+      - name: Reuse exact qualified SDK; keep original Wintun outside SDK directory
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $pin = Get-Content native/sdk/runtime-traffic.json -Raw | ConvertFrom-Json
+          $run = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$($pin.source_run)" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $run.name -ne 'Windows SDK qualification' -or $run.conclusion -ne 'success' -or $run.head_sha -ne $pin.source_commit) { throw 'Pinned SDK run mismatch' }
+          gh run download $pin.source_run --repo $env:GITHUB_REPOSITORY --name sdk-development-runtime-not-for-release --dir build/socks-inputs
+          if ($LASTEXITCODE -ne 0) { throw 'SDK input fetch failed' }
+          New-Item -ItemType Directory -Force build/socks-sdk,build/socks-owner,build/socks-evidence | Out-Null
+          foreach ($name in @('trusttunnel.dll','wintun.dll')) {
+            if ((Get-FileHash (Join-Path build/socks-inputs $name) -Algorithm SHA256).Hash.ToLowerInvariant() -ne $pin.files.PSObject.Properties[$name].Value) { throw 'Pinned DLL hash mismatch' }
+          }
+          Copy-Item build/socks-inputs/trusttunnel.dll build/socks-sdk/trusttunnel.dll
+          Copy-Item build/socks-inputs/wintun.dll build/socks-owner/wintun.dll
+          if ((Get-AuthenticodeSignature build/socks-owner/wintun.dll).Status -ne 'Valid') { throw 'Original driver signature mismatch' }
+      - name: Compile synthetic SDK and retained-problem-node probes
+        run: |
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_WIN32_WINNT=0x0A00 native/service/test_sdk_socks_isolation.cpp /Fobuild/socks-sdk/probe.obj /Febuild/socks-sdk/probe.exe /link ws2_32.lib
+          if ($LASTEXITCODE -ne 0) { throw 'SDK SOCKS feasibility probe build failed' }
+          cl /nologo /std:c++20 /W4 /WX /EHsc /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_WIN32_WINNT=0x0A00 native/health/test_windows_adapter_problem_guard.cpp native/service/adapter_admission.cpp /Fobuild/socks-owner/ /Febuild/socks-owner/owner.exe /link bcrypt.lib iphlpapi.lib ws2_32.lib setupapi.lib cfgmgr32.lib uuid.lib ole32.lib advapi32.lib
+          if ($LASTEXITCODE -ne 0) { throw 'Retained node fixture build failed' }
+      - name: SDK lifecycle and local proxy authentication without Wintun loading
+        run: |
+          python tools/service/sdk_socks_isolation_fixture.py
+          if ($LASTEXITCODE -ne 0) { throw 'SOCKS feasibility not established; see closed report' }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: sdk-socks-isolation-safe-evidence
+          path: build/socks-evidence/
+          retention-days: 7
+          if-no-files-found: warn

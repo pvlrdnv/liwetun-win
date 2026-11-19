@@ -35,3 +35,20 @@ Actual local Windows execution compiled the helper and returned a typed `passed`
 observation, without network configuration changes. This does not reproduce the
 owner's earlier refusal. No new CI or desktop connection test was run for this
 script. Temporary owner reports belong under ignored `/temp/`, never in Git.
+
+## Observe normal state transitions without a connection attempt
+
+A bounded watch (120 samples, two seconds between samples plus query time):
+
+```powershell
+.\tools\diagnostics\read-adapter-preflight.ps1 -Watch |
+    Set-Content -Encoding utf8 .\temp\adapter-preflight-watch.jsonl
+```
+
+Create the ignored `temp` folder first if needed. One-shot execution remains the
+default. Watch emits the first observation, state/code changes and the final
+observation, with UTC timestamp and sample index. Ctrl+C stops observation only.
+Do not change the corporate tunnel's state just to generate a transition; this
+can run during normal use. No LiWeTun Start/profile/key is involved. A later
+`passed` observation still cannot explain a past refusal. If execution is blocked
+by policy, do not bypass the policy. Output is private local test material.

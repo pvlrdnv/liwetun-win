@@ -35,6 +35,28 @@ This does not identify the owner's historical predicate or qualify later races.
 GUI **44527665182** passed analysis but a newly added widget test left its timer
 pending at test teardown. Corrected the test to dispose in its body via finally;
 no product workaround or additional service run is needed.
+Retry **44528862824 PASS** on `3c2aadb`: analyze, release build, **248 Dart +
+8 Rust + 6 actual desktop-channel tests**. [GUI evidence](evidence/adapter-admission-ui-44528862824.json);
+[service evidence](evidence/adapter-admission-service-44527659328.json);
+[diagnostic codes and interpretation](ADAPTER_ADMISSION_DIAGNOSIS.md).
+The PowerShell observer now supports bounded, transition-only sampling without
+any Start or profile. Two actual local Windows samples passed schema/privacy
+checks and both returned passed; their private output stays under ignored temp.
+Historical Windows-event observations were unavailable for the refusal window;
+the exact owner-time predicate remains unknown. No owner installer, signature/
+trust change or main-device connection experiment was performed. The known
+late foreign-state cleanup risk remains open. SDK source inspection confirms a
+SOCKS listener exists as a possible fallback; it is not implemented or qualified
+by the admission checks. A separate disposable-only feasibility probe is now
+prepared: reuse the exact qualified DLL with no Wintun beside it, keep a separate
+fixture's disabled node held, verify local SOCKS authentication and SDK Stop/
+unload without loading Wintun, then creator-only fixture cleanup and full network
+baselines. It uses a refused synthetic loopback endpoint, so it cannot qualify
+upstream payload/TLS/Internet. This is not a new product mode or owner package.
+The new manual-only public standard Windows workflow is pending execution.
+Final Dart formatting used the pinned SDK with explicit
+3.10/80-column/default-comma options because the old /tmp lint cache was absent;
+this formatting-only change does not require another Windows build.
 
 ## Second owner report: initial adapter refusal confirmed
 

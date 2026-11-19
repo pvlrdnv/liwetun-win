@@ -1,6 +1,11 @@
 # Read-only Windows 10/11 diagnostic. No service/driver load or network mutation.
 # Emits only closed stages and numeric status; no device identifiers or names.
 # This observation never authorizes a later Start or proves a working tunnel.
+param(
+    [switch]$Watch,
+    [ValidateRange(1, 300)][int]$Samples = 120,
+    [ValidateRange(1, 10)][int]$IntervalSeconds = 2
+)
 $ErrorActionPreference = 'Stop'
 try {
     $source = @'
@@ -66,19 +71,32 @@ public static class LiwetunAdapterReadOnly {
     }
 }
 '@
-    Add-Type -TypeDefinition $source -ErrorAction Stop
-    $aliases = @(Get-NetAdapter -IncludeHidden -ErrorAction Stop)
-    if ($aliases.Count -gt 4096) {
-        $stage = 'alias_inventory_limit'; $code = 0; $admitted = $false
-    } elseif (@($aliases | Where-Object { $_.Name -ieq 'LiWeTun' }).Count -gt 0) {
-        $stage = 'reserved_alias'; $code = 0; $admitted = $false
-    } else {
-        $admitted = [LiwetunAdapterReadOnly]::Read()
-        $stage = [LiwetunAdapterReadOnly]::Stage
-        $code = [LiwetunAdapterReadOnly]::NativeCode
+    if (-not ('LiwetunAdapterReadOnly' -as [type])) { Add-Type -TypeDefinition $source -ErrorAction Stop }
+    $limit = if ($Watch) { $Samples } else { 1 }
+    $previous = ''
+    for ($sample = 1; $sample -le $limit; $sample++) {
+        $stage = 'probe_unavailable'; $code = $null; $admitted = $null
+        try {
+            $aliases = @(Get-NetAdapter -IncludeHidden -ErrorAction Stop)
+            if ($aliases.Count -gt 4096) {
+                $stage = 'alias_inventory_limit'; $code = 0; $admitted = $false
+            } elseif (@($aliases | Where-Object { $_.Name -ieq 'LiWeTun' }).Count -gt 0) {
+                $stage = 'reserved_alias'; $code = 0; $admitted = $false
+            } else {
+                $admitted = [LiwetunAdapterReadOnly]::Read()
+                $stage = [LiwetunAdapterReadOnly]::Stage
+                $code = [LiwetunAdapterReadOnly]::NativeCode
+            }
+        } catch { }
+        $key = '{0}:{1}:{2}' -f $stage,$code,$admitted
+        # Retain transitions, the first sample and the final sample only.
+        if ($key -cne $previous -or $sample -eq $limit) {
+            [ordered]@{schema_version=1;read_only=$true;stage=$stage;native_code=$code;admitted=$admitted;identifiers_exported=$false;proves_tunnel=$false;sample=$sample;at_utc=[DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ');final_sample=($sample -eq $limit)} | ConvertTo-Json -Compress
+        }
+        $previous = $key
+        if ($sample -lt $limit) { Start-Sleep -Seconds $IntervalSeconds }
     }
-    [ordered]@{schema_version=1;read_only=$true;stage=$stage;native_code=$code;admitted=$admitted;identifiers_exported=$false;proves_tunnel=$false} | ConvertTo-Json -Compress
 } catch {
     # Never return exception text; Windows provider errors may contain identifiers.
-    '{"schema_version":1,"read_only":true,"stage":"probe_unavailable","native_code":null,"admitted":null,"identifiers_exported":false,"proves_tunnel":false}'
+    '{"schema_version":1,"read_only":true,"stage":"probe_unavailable","native_code":null,"admitted":null,"identifiers_exported":false,"proves_tunnel":false,"sample":0,"at_utc":null,"final_sample":true}'
 }
