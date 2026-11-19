@@ -18,3 +18,6 @@ windows/flutter/ephemeral/
 native/trusttunnel_bridge/target/
 __pycache__/
 *.pyc
+
+# Private owner diagnostics and local test materials.
+/temp/

@@ -1,4 +1,27 @@
-# Development checkpoint — 2026-11-18
+# Development checkpoint — 2026-11-19
+
+## Second owner report: initial adapter refusal confirmed
+
+Version 0.1.1+2 reports `adapterPreflightRejected`, disconnected state,
+runtime ready and no SDK core observation. This confirms initial read-only
+adapter admission refused Start before SDK initialization or any server attempt;
+it is not evidence of a remote authentication/TLS failure. The exact failing
+predicate was not captured by this version. No connection success is claimed.
+
+Added anchored `/temp/` ignore for private owner reports/screenshots. No files
+under that directory were tracked; checked repository history contains no temp
+path commits. Inputs remain local and are not copied into published evidence.
+
+Prepared [read-only PowerShell observation](../tools/diagnostics/README.md) with
+bounded SetupAPI/CM queries and a closed stage/numeric result; no names, IDs,
+addresses, raw errors, driver loading or device/network changes. Its alias query
+uses Get-NetAdapter, so it is a diagnostic aid rather than the service's exact
+GetIfTable2 admission implementation. Actual local Windows execution compiled
+and ran the helper, returning `passed` at observation time. That later result
+does not reproduce or explain the earlier refusal; adapter state may differ.
+No guard was weakened and no corporate tunnel/device was disabled or repaired.
+No additional Actions runs, installer/trust changes or connection experiments.
+Manual traffic acceptance remains restricted to the separate approved PC.
 
 ## Owner feedback: TT presentation and startup refusal diagnostics
 
