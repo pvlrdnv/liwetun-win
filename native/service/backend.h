@@ -36,6 +36,7 @@ class Backend {
   bool Load(const Image& service);
   void Run();
   static void OnState(void* context, int state);
+  std::atomic<Code> failure_code_{Code::CoreFailure};
   std::atomic<State> state_{State::Disconnected};
   std::atomic<uint32_t> core_state_{UINT32_MAX};
   std::atomic<bool> ready_{false}, busy_{false}, intent_{false};

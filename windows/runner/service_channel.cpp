@@ -3,12 +3,13 @@
 
 ServiceChannel::Value ServiceChannel::Encode(const liwetun::Reply& reply) {
   constexpr const char* codes[]{"ok", "malformed", "denied", "busy", "runtimeUnavailable", "profileRejected",
-      "coreFailure", "serviceUnavailable", "timeout", "untrustedInstallation", "adapterPreflightRejected"};
+      "coreFailure", "serviceUnavailable", "timeout", "untrustedInstallation", "adapterPreflightRejected",
+      "adapterInterfaceUnavailable", "adapterAliasConflict", "adapterSwdUnavailable", "adapterSwdProblem", "adapterRootUnavailable", "adapterRootPresent", "adapterInventoryUnavailable", "adapterPropertyUnavailable", "adapterPropertyInvalid", "adapterNameConflict", "adapterStateUnavailable", "adapterProblem"};
   constexpr const char* states[]{"disconnected", "connecting", "tunnelReady", "recovering", "error"};
   const auto code = static_cast<uint32_t>(reply.code);
   const auto state = static_cast<uint32_t>(reply.state);
   return Value(flutter::EncodableMap{
-      {Value("code"), Value(code < 11 ? codes[code] : "malformed")},
+      {Value("code"), Value(code < sizeof(codes) / sizeof(codes[0]) ? codes[code] : "malformed")},
       {Value("state"), Value(state < 5 ? states[state] : "error")},
       {Value("runtimeReady"), Value(reply.runtime_ready == 1)},
       {Value("coreState"), reply.core_state <= 5 ? Value(static_cast<int32_t>(reply.core_state)) : Value()},

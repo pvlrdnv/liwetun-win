@@ -1,5 +1,32 @@
 # Development checkpoint — 2026-11-19
 
+## Focused diagnosis phase: capture the refusal at Start
+
+Owner has no second PC. Current authorized work is focused on read-only diagnosis
+and disposable CI; main-device service/driver/trust/network changes and connection
+experiments remain excluded. Windows 11 and unrelated features are deferred from
+this focused iteration, not declared qualified.
+
+Added closed admission results 11–22 for interface inventory, alias conflict,
+SWD availability/problem, ROOT availability/presence, device inventory,
+property availability/type, internal name conflict and device state/problem.
+Existing code10 and reply32 ABI remain supported. The initial Start returns the
+specific observation immediately; the second pre-SDK refusal retains its result
+in the backend and GUI polling/journal instead of collapsing into coreFailure.
+Both predicates retain their previous refusal decisions. No names, IDs, native
+messages or connection data enter this diagnostic extension.
+
+Prepared synthetic WinAPI failure contracts for every new result plus an isolated
+original-Wintun session matrix: active session -> ended session/retained healthy
+node -> disabled own node -> creator re-enabled node -> creator-closed node.
+The matrix distinguishes ending a tunnel session from disabling its PnP device;
+it does not reproduce a particular corporate product or qualify later foreign
+state races. Existing signed-service disabled-node control now requires code14.
+All are batched into the existing public standard Windows service workflow.
+LOCAL Python service fixtures: **95 PASS**; workflow YAML and whitespace PASS.
+Flutter /tmp SDK was cleared between sessions and is being restored. Native/Dart
+and actual matrix execution are pending; no new owner installer is delivered.
+
 ## Second owner report: initial adapter refusal confirmed
 
 Version 0.1.1+2 reports `adapterPreflightRejected`, disconnected state,

@@ -101,7 +101,7 @@ int InspectOwnedWfpSessions(bool watch) {
     return 0;
   } catch (...) {
     std::cout << "{\"passed\":false,\"stage\":\"" << stage << "\",\"query_code\":";
-    if (query_code <= static_cast<uint32_t>(Code::AdapterPreflightRejected)) std::cout << query_code;
+    if (query_code <= static_cast<uint32_t>(Code::AdapterProblem)) std::cout << query_code;
     else std::cout << "null";
     std::cout << "}\n";
     return 1;

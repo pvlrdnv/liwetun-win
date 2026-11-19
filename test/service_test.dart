@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:archive/archive.dart';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -162,6 +164,38 @@ void main() {
       expect(gateway.stops, 0);
     },
   );
+
+  for (final code in ServiceCode.values.where((code) => code.isAdapterRefusal)) {
+    test('initial ${code.name} reason survives report export without starting', () async {
+      final gateway = Gateway()..starting = ServiceStatus(code: code, runtimeReady: true);
+      final controller = AppController(service: gateway)..import(tt);
+      addTearDown(controller.dispose);
+      await controller.toggleConnection();
+      expect(controller.stopPossible, false);
+      expect(controller.journal.events.last.reason.name, code.name);
+      final zip = ZipDecoder().decodeBytes(controller.journal.exportZip());
+      final summary = jsonDecode(utf8.decode(zip.findFile('summary.json')!.content as List<int>));
+      expect(summary['service_observation']['code'], code.name);
+      expect(summary['service_observation']['state'], 'disconnected');
+      expect(summary['service_observation']['runtime_ready'], true);
+    });
+  }
+
+  testWidgets('late pre-SDK refusal keeps its reason through polling and allows stop', (tester) async {
+    final gateway = Gateway()..status = const ServiceStatus(
+      code: ServiceCode.adapterSwdProblem, state: ServiceState.error, runtimeReady: true,
+    );
+    final controller = AppController(service: gateway)..import(tt);
+    addTearDown(controller.dispose);
+    await controller.toggleConnection();
+    await tester.pump(const Duration(seconds: 1));
+    expect(controller.serviceStatus.code, ServiceCode.adapterSwdProblem);
+    expect(controller.stopPossible, true);
+    expect(controller.journal.events.last.reason, ReasonCode.adapterSwdProblem);
+    await controller.toggleConnection();
+    expect(gateway.starts, 1);
+    expect(gateway.stops, 1);
+  });
 
   testWidgets('duplicate concurrent click does not repeat start', (
     tester,

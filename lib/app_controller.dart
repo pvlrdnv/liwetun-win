@@ -960,7 +960,8 @@ final class AppController extends ChangeNotifier {
           response.code == ServiceCode.timeout ||
           (stopping &&
               response.code != ServiceCode.ok &&
-              response.code != ServiceCode.coreFailure);
+              response.code != ServiceCode.coreFailure &&
+              !response.code.isAdapterRefusal);
       serviceStatus = uncertain
           ? ServiceStatus(
               code: response.code,
@@ -972,6 +973,7 @@ final class AppController extends ChangeNotifier {
       journal.observeService(response);
       if (response.code == ServiceCode.ok ||
           response.code == ServiceCode.coreFailure ||
+          (response.code.isAdapterRefusal && response.state != ServiceState.disconnected) ||
           uncertain) {
         // Timeout is an uncertain outcome: do not issue a second start or claim
         // disconnection until status is reconciled. The next button stops.
@@ -984,10 +986,10 @@ final class AppController extends ChangeNotifier {
             EventId.serviceRequestUncertain,
             reason: ReasonCode.serviceUnavailable,
           );
-        } else if (response.code == ServiceCode.coreFailure) {
+        } else if (response.code == ServiceCode.coreFailure || response.code.isAdapterRefusal) {
           journal.record(
             EventId.serviceRequestRejected,
-            reason: ReasonCode.coreFailure,
+            reason: _serviceReason(response.code),
           );
         } else {
           journal.record(EventId.serviceRequestAccepted);
@@ -1019,10 +1021,13 @@ final class AppController extends ChangeNotifier {
       if (_disposed || epoch != _serviceEpoch) return;
       journal.observeService(response);
       if (response.code == ServiceCode.ok ||
-          response.code == ServiceCode.coreFailure) {
+          response.code == ServiceCode.coreFailure || response.code.isAdapterRefusal) {
         _failedPolls = 0;
         if (response.state != serviceStatus.state) {
           journal.record(EventId.serviceStateObserved);
+        }
+        if (response.code.isAdapterRefusal && response.code != serviceStatus.code) {
+          journal.record(EventId.serviceRequestRejected, reason: _serviceReason(response.code));
         }
         serviceStatus = response;
         if (response.state == ServiceState.disconnected) {
@@ -1074,15 +1079,17 @@ final class AppController extends ChangeNotifier {
     }
   }
 
-  ReasonCode _serviceReason(ServiceCode code) => switch (code) {
+  ReasonCode _serviceReason(ServiceCode code) {
+    if (code.isAdapterRefusal) return ReasonCode.values.byName(code.name);
+    return switch (code) {
     ServiceCode.denied ||
     ServiceCode.untrustedInstallation => ReasonCode.serviceDenied,
     ServiceCode.profileRejected ||
     ServiceCode.malformed => ReasonCode.malformed,
     ServiceCode.coreFailure => ReasonCode.coreFailure,
-    ServiceCode.adapterPreflightRejected => ReasonCode.adapterPreflightRejected,
     _ => ReasonCode.serviceUnavailable,
-  };
+    };
+  }
 
   String _serviceMessage(ServiceCode code, bool stopping) => switch (code) {
     ServiceCode.ok =>
@@ -1097,7 +1104,7 @@ final class AppController extends ChangeNotifier {
       'Подключение занято или ещё останавливается. Повторите после завершения.',
     ServiceCode.profileRejected ||
     ServiceCode.malformed => 'Служба отклонила параметры подключения.',
-    ServiceCode.adapterPreflightRejected =>
+    _ when code.isAdapterRefusal =>
       'Запуск отклонён проверкой сетевых адаптеров. Ядро не запускалось. Экспортируйте отчёт для диагностики.',
     ServiceCode.coreFailure =>
       'Ядро не смогло подключиться. Состояние уточняется.',

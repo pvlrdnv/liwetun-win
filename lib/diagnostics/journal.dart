@@ -55,6 +55,18 @@ enum ReasonCode {
   serviceDenied,
   coreFailure,
   adapterPreflightRejected,
+  adapterInterfaceUnavailable,
+  adapterAliasConflict,
+  adapterSwdUnavailable,
+  adapterSwdProblem,
+  adapterRootUnavailable,
+  adapterRootPresent,
+  adapterInventoryUnavailable,
+  adapterPropertyUnavailable,
+  adapterPropertyInvalid,
+  adapterNameConflict,
+  adapterStateUnavailable,
+  adapterProblem,
   replay,
   stale,
   accessChanged,
@@ -307,5 +319,5 @@ final class Journal {
   bool get _serviceStateKnown =>
       _serviceObservation?.code == ServiceCode.ok ||
       _serviceObservation?.code == ServiceCode.coreFailure ||
-      _serviceObservation?.code == ServiceCode.adapterPreflightRejected;
+      (_serviceObservation?.code.isAdapterRefusal ?? false);
 }

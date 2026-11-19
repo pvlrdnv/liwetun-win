@@ -11,8 +11,13 @@ constexpr uint32_t kMaxPayload = 8192;
 enum class Command : uint32_t { Ping = 1, Query = 2, Start = 3, Stop = 4, Traffic = 5 };
 enum class Code : uint32_t {
   Ok, Malformed, Denied, Busy, RuntimeUnavailable, ProfileRejected, CoreFailure,
-  ServiceUnavailable, Timeout, UntrustedInstallation, AdapterPreflightRejected
+  ServiceUnavailable, Timeout, UntrustedInstallation, AdapterPreflightRejected,
+  AdapterInterfaceUnavailable, AdapterAliasConflict, AdapterSwdUnavailable, AdapterSwdProblem, AdapterRootUnavailable, AdapterRootPresent, AdapterInventoryUnavailable, AdapterPropertyUnavailable, AdapterPropertyInvalid, AdapterNameConflict, AdapterStateUnavailable, AdapterProblem
 };
+// Appended closed results preserve the existing 32-byte reply ABI.
+inline bool AdapterRefusal(Code code) {
+  return code >= Code::AdapterPreflightRejected && code <= Code::AdapterProblem;
+}
 enum class State : uint32_t { Disconnected, Connecting, TunnelReady, Recovering, Error };
 // TunnelReady is NOT verified working internet; no Connected state is inferred.
 struct Request {

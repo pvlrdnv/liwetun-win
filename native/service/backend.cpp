@@ -73,7 +73,9 @@ Code Backend::Start(std::string uri) {
   if (!ready_) { Clear(uri); return Code::RuntimeUnavailable; }
   std::lock_guard lock(mutex_);
   if (busy_ || stop_ || shutdown_) { Clear(uri); return Code::Busy; }
-  if (!ReservedAdapterNamesAbsent()) { Clear(uri); return Code::AdapterPreflightRejected; }
+  const Code admission = ObserveAdapterAdmission();
+  if (admission != Code::Ok) { Clear(uri); return admission; }
+  failure_code_ = Code::CoreFailure;
   pending_ = std::move(uri);
   core_state_ = UINT32_MAX;
   busy_ = true;
@@ -102,7 +104,7 @@ void Backend::Snapshot(Reply& reply) const {
   reply.state = state_;
   reply.core_state = core_state_;
   reply.runtime_ready = ready_ ? 1u : 0u;
-  if (reply.state == State::Error) reply.code = Code::CoreFailure;
+  if (reply.state == State::Error) reply.code = failure_code_;
 }
 void Backend::SnapshotTraffic(TrafficReply& reply) const {
   if (!traffic_read_) { Snapshot(reply.status); return; }
@@ -234,8 +236,11 @@ void Backend::Run() {
       }
       // Recheck after decoding, immediately before the SDK can open/create its
       // adapter. This is a second refusal gate, not an atomic ownership claim.
-      if (!config.empty() && ReservedAdapterNamesAbsent())
-        core = start_(config.c_str(), false, OnState, this, nullptr, nullptr);
+      if (!config.empty()) {
+        const Code admission = ObserveAdapterAdmission();
+        if (admission == Code::Ok) core = start_(config.c_str(), false, OnState, this, nullptr, nullptr);
+        else failure_code_ = admission;
+      }
     } catch (...) { core = nullptr; }
     Clear(uri); Clear(config);
     {

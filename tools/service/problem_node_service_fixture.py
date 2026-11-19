@@ -52,7 +52,7 @@ def main():
         result['before_start']=sample(owner)
         stage='signed_service_start_refusal'
         session=Child([str(client),'--network-session',str(args.uri_file)])
-        started=json.loads(session.receive());validate_idle_reply(started,10)
+        started=json.loads(session.receive());validate_idle_reply(started,14)
         result['start_response']=started
         validate_idle_reply(session.command('query'),0)
         result['after_refused_start']=sample(owner)

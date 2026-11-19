@@ -14,6 +14,22 @@ enum ServiceCode {
   timeout,
   untrustedInstallation,
   adapterPreflightRejected,
+  adapterInterfaceUnavailable,
+  adapterAliasConflict,
+  adapterSwdUnavailable,
+  adapterSwdProblem,
+  adapterRootUnavailable,
+  adapterRootPresent,
+  adapterInventoryUnavailable,
+  adapterPropertyUnavailable,
+  adapterPropertyInvalid,
+  adapterNameConflict,
+  adapterStateUnavailable,
+  adapterProblem,
+}
+
+extension AdapterRefusalCode on ServiceCode {
+  bool get isAdapterRefusal => index >= ServiceCode.adapterPreflightRejected.index && index <= ServiceCode.adapterProblem.index;
 }
 
 enum ServiceState { disconnected, connecting, tunnelReady, recovering, error }

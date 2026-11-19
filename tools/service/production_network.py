@@ -133,7 +133,7 @@ def owned_wfp(client):
                   'retain_trusted_service', 'read_wfp_sessions'}
         error.wfp_stage = result.get('stage') if result.get('stage') in stages else 'unknown'
         code = result.get('query_code')
-        error.wfp_query_code = code if type(code) is int and 0 <= code <= 10 else None
+        error.wfp_query_code = code if type(code) is int and 0 <= code <= 22 else None
         raise error
     return result
 

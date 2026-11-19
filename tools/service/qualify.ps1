@@ -179,6 +179,15 @@ try {
         $problemProbe = Join-Path $Build 'liwetun_problem_probe.exe'
         if ($cache -contains 'LIWETUN_BUILD_PROBLEM_PROBE:BOOL=ON') {
             if (!(Test-Path $problemProbe)) { throw 'Problem-node CI fixture missing' }
+            $coexistRaw = @(& $problemProbe (Join-Path $root 'wintun.dll') --coexist 2>&1)
+            if ($LASTEXITCODE -ne 0) { throw 'Adapter session-state matrix failed' }
+            $coexist = $coexistRaw -join "`n" | ConvertFrom-Json
+            $expected = @('passed','active_session_accepted','ended_session_retained_node_accepted','disabled_node_reason_verified','creator_restored_own_node','creator_closed_node_absent')
+            foreach ($field in $expected) { if ($coexist.$field -isnot [bool] -or $coexist.$field -cne $true) { throw 'Incomplete adapter matrix' } }
+            foreach ($field in @('sdk_started','identifiers_exported','adapter_ownership_qualified','release_ready')) { if ($coexist.$field -isnot [bool] -or $coexist.$field -cne $false) { throw 'Unexpected adapter matrix qualification' } }
+            if (@($coexist.PSObject.Properties).Count -ne 10) { throw 'Unexpected adapter matrix fields' }
+            $coexist | ConvertTo-Json | Set-Content build/service-evidence/adapter-session-matrix.json
+            $checks.Add('active_ended_disabled_closed_adapter_session_matrix')
             python tools/service/problem_node_service_fixture.py --client $client --helper $problemProbe --driver (Join-Path $root 'wintun.dll') --uri-file build/service-local-uri.txt
             if ($LASTEXITCODE -ne 0) { throw 'Problem-node service refusal failed; see closed receipt' }
             $checks.Add('problem_wintun_start_refused_with_retained_node_preserved')

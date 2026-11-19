@@ -148,7 +148,7 @@ void WINAPI Main(DWORD, LPWSTR*) {
             else if (request.command == Command::Start) {
               reply.code = backend.Start(std::move(payload));
               // This refusal happens only after SDK readiness was established.
-              if (reply.code == Code::AdapterPreflightRejected) reply.runtime_ready = 1;
+              if (AdapterRefusal(reply.code)) reply.runtime_ready = 1;
               if (reply.code == Code::Ok) {
                 lease = std::move(actor); leased = true; lease_closing = false; lease_session = lease.session;
               }

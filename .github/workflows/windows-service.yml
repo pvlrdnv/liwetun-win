@@ -60,6 +60,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Service configure failed' }
           cmake --build build/service --config Release --parallel 2
           if ($LASTEXITCODE -ne 0) { throw 'Service build failed' }
+          & ./build/service/Release/liwetun_admission_contract.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Closed admission failure contracts failed' }
           cargo run --manifest-path native/trusttunnel_bridge/Cargo.toml --locked --release --example synthetic_fixture -- build/native-fixture.json
           if ($LASTEXITCODE -ne 0) { throw 'Synthetic fixture generation failed' }
           $fixtures = Get-Content build/native-fixture.json -Raw | ConvertFrom-Json
