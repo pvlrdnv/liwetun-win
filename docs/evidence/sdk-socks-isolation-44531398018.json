@@ -1,0 +1,56 @@
+{
+  "source_run": 44531398018,
+  "source_commit": "94e00a29b0d54b57e7e6eb82804adc0aa15426a9",
+  "runner_os": "windows-2022",
+  "qualified_sdk_source_run": 44038398682,
+  "sdk_sha256": "fcafa344cd1ce143a928c3f1cfc63f25686e7f6b739aa7ed58d4736d082d1ca5",
+  "report_sha256": "3b552f5574b228138615c019527d126bed7e6978af0129e49a9ce9a60ce1c24c",
+  "report": {
+    "passed": true,
+    "identifies_owner_refusal": false,
+    "upstream_payload_verified": false,
+    "production_profile_used": false,
+    "release_ready": false,
+    "identifiers_exported": false,
+    "before_sdk": {
+      "retained_node_present": true,
+      "disabled_state_unchanged": true
+    },
+    "sdk_started": {
+      "ready": true,
+      "authenticated_socks_handshake": true,
+      "no_auth_refused": true,
+      "wrong_proxy_auth_refused": true,
+      "wintun_not_loaded": true,
+      "upstream_payload_verified": false
+    },
+    "during_sdk": {
+      "retained_node_present": true,
+      "disabled_state_unchanged": true
+    },
+    "sdk_stopped": {
+      "stopped": true,
+      "wintun_not_loaded": true,
+      "upstream_payload_verified": false
+    },
+    "after_sdk": {
+      "retained_node_present": true,
+      "disabled_state_unchanged": true
+    },
+    "creator_cleanup": {
+      "creator_restored_own_node": true,
+      "creator_closed_own_handle": true,
+      "released_node_absent": true,
+      "adapter_ownership_qualified": false,
+      "release_ready": false
+    },
+    "routes_dns_restored": true,
+    "adapter_baseline_restored": true
+  },
+  "scope": "sdk_socks_local_auth_lifecycle_without_wintun_not_upstream_payload_or_product_readiness",
+  "browser_integration_qualified": false,
+  "non_elevated_process_qualified": false,
+  "windows_10_qualified": false,
+  "windows_11_qualified": false,
+  "release_ready": false
+}

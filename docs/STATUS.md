@@ -53,7 +53,17 @@ fixture's disabled node held, verify local SOCKS authentication and SDK Stop/
 unload without loading Wintun, then creator-only fixture cleanup and full network
 baselines. It uses a refused synthetic loopback endpoint, so it cannot qualify
 upstream payload/TLS/Internet. This is not a new product mode or owner package.
-The new manual-only public standard Windows workflow is pending execution.
+Actual **44531398018 PASS** on `94e00a2`, using the exact qualified aggregate
+DLL without SDK rebuild: local authenticated SOCKS handshake accepted, no-auth
+and wrong-password clients refused, Wintun never loaded across start/Stop/unload,
+held disabled foreign fixture unchanged throughout, creator-only restoration/
+closure and full adapter/route/DNS baselines. No service/trust installation.
+[Closed evidence](evidence/sdk-socks-isolation-44531398018.json).
+This establishes a feasible driver-free SDK path, not upstream payload/TLS,
+browser integration, non-elevated process operation, desktop acceptance or a
+shippable mode. A limited one-application first test is offered as a scope choice;
+full-system TUN remains the original objective unless the owner chooses this
+intermediate slice. No GUI proxy mode or owner installer was implemented.
 Final Dart formatting used the pinned SDK with explicit
 3.10/80-column/default-comma options because the old /tmp lint cache was absent;
 this formatting-only change does not require another Windows build.
