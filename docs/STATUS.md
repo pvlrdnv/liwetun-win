@@ -25,7 +25,16 @@ state races. Existing signed-service disabled-node control now requires code14.
 All are batched into the existing public standard Windows service workflow.
 LOCAL Python service fixtures: **95 PASS**; workflow YAML and whitespace PASS.
 Flutter /tmp SDK was cleared between sessions and is being restored. Native/Dart
-and actual matrix execution are pending; no new owner installer is delivered.
+and actual matrix execution were pending at this checkpoint; no owner installer
+is delivered. Actual service **44527659328 PASS** on `e17bd0d`: synthetic closed
+failure contracts, **21 signed-service groups**, active/ended/disabled/restored/
+closed original-Wintun fixture matrix and code14 end-to-end refusal, with full
+adapter/route/DNS restoration. Ending a data session retained a healthy node and
+passed admission; disabling the fixture node specifically returned SwdProblem.
+This does not identify the owner's historical predicate or qualify later races.
+GUI **44527665182** passed analysis but a newly added widget test left its timer
+pending at test teardown. Corrected the test to dispose in its body via finally;
+no product workaround or additional service run is needed.
 
 ## Second owner report: initial adapter refusal confirmed
 

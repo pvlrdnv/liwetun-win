@@ -29,7 +29,9 @@ enum ServiceCode {
 }
 
 extension AdapterRefusalCode on ServiceCode {
-  bool get isAdapterRefusal => index >= ServiceCode.adapterPreflightRejected.index && index <= ServiceCode.adapterProblem.index;
+  bool get isAdapterRefusal =>
+      index >= ServiceCode.adapterPreflightRejected.index &&
+      index <= ServiceCode.adapterProblem.index;
 }
 
 enum ServiceState { disconnected, connecting, tunnelReady, recovering, error }

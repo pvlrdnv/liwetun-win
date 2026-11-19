@@ -186,15 +186,18 @@ void main() {
       code: ServiceCode.adapterSwdProblem, state: ServiceState.error, runtimeReady: true,
     );
     final controller = AppController(service: gateway)..import(tt);
-    addTearDown(controller.dispose);
-    await controller.toggleConnection();
-    await tester.pump(const Duration(seconds: 1));
-    expect(controller.serviceStatus.code, ServiceCode.adapterSwdProblem);
-    expect(controller.stopPossible, true);
-    expect(controller.journal.events.last.reason, ReasonCode.adapterSwdProblem);
-    await controller.toggleConnection();
-    expect(gateway.starts, 1);
-    expect(gateway.stops, 1);
+    try {
+      await controller.toggleConnection();
+      await tester.pump(const Duration(seconds: 1));
+      expect(controller.serviceStatus.code, ServiceCode.adapterSwdProblem);
+      expect(controller.stopPossible, true);
+      expect(controller.journal.events.last.reason, ReasonCode.adapterSwdProblem);
+      await controller.toggleConnection();
+      expect(gateway.starts, 1);
+      expect(gateway.stops, 1);
+    } finally {
+      controller.dispose();
+    }
   });
 
   testWidgets('duplicate concurrent click does not repeat start', (
